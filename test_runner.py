@@ -5,16 +5,15 @@ import numpy as np
 from sumo_rl_environment import SumoRLEnvironment
 
 # --- KONFIGURÁCIÓ ---
-NET_FILE = "/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/mega_catalogue_v2.net.xml"
-LOGIC_JSON = "/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/traffic_lights.json"
-DETECTOR_FILE = "/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/detectors.add.xml"
-ROUTE_FILE = "/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/random_traffic.rou.xml"
+NET_FILE = "mega_catalogue_v2.net.xml"
+LOGIC_JSON = "traffic_lights.json"
+DETECTOR_FILE = "detectors.add.xml"
+ROUTE_FILE = "random_traffic.rou.xml"
+
 
 def main():
-    print("--- SUMO RL Environment Teszt (Heavy Traffic) ---")
+    print("--- SUMO RL: Resource Optimized Execution ---")
 
-    # MÓDOSÍTÁS: A traffic_period értékét 0.1-re vettem.
-    # Ez azt jelenti, hogy másodpercenként 10 autó próbál elindulni a hálózaton.
     env = SumoRLEnvironment(
         net_file=NET_FILE,
         logic_json_file=LOGIC_JSON,
@@ -24,61 +23,75 @@ def main():
         min_green_time=5,
         delta_time=1,
         measure_during_transition=False,
-        sumo_gui=False,
+        sumo_gui=True,
         random_traffic=True,
-        
-        # --- ITT A LÉNYEG ---
-        traffic_period=0.1,   # 0.1 = 10 autó/mp (Nagyon sűrű!) | 0.2 = 5 autó/mp (Sűrű)
-        traffic_duration=3600 # 1 órányi forgalom generálása
-        # --------------------
+        traffic_period=0.1,
+        traffic_duration=3600
     )
 
-    print("Resetting environment (Forgalom generálása)...")
+    print("Resetting environment...")
     observations, infos = env.reset()
-    print("Szimuláció elindult! (Várj kicsit, amíg a járművek beérnek a központba)")
+    print("Szimuláció elindult!")
+
+    ai_calls = 0
+    total_opportunities = 0
 
     try:
         total_steps = 1000
         for step in range(total_steps):
-            
-            # Véletlenszerű cselekvések
+
+            # --- INTELLIGENS DÖNTÉSHOZATAL ---
             actions = {}
+
             for jid, agent in env.agents.items():
-                available_phases = list(agent.logic_phases.keys())
-                action = random.choice(available_phases)
-                actions[jid] = action
+                total_opportunities += 1
 
-            next_obs, rewards, terminated, truncated, infos = env.step(actions)
+                # Itt használjuk az INFOS-t a státusz ellenőrzésére
+                is_ready = infos[jid]['ready']
 
-            # Debug kiíratás minden 10. lépésben, hogy ne spammelje tele a konzolt
+                if is_ready:
+                    ai_calls += 1
+                    available_phases = list(agent.logic_phases.keys())
+                    action = random.choice(available_phases)
+                    actions[jid] = action
+                else:
+                    pass
+
+                    # --- LÉPÉS ---
+            next_obs, rewards, terminated, truncated, next_infos = env.step(actions)
+
+            infos = next_infos
+            observations = next_obs
+
+            # --- DEBUG KIÍRATÁS (JAVÍTVA) ---
             if step % 10 == 0:
                 first_jid = list(env.agents.keys())[0]
-                
-                # Mostantól az obs egy DICT!
-                obs = next_obs[first_jid] 
-                current_phase = int(obs['phase'][0]) # Így érjük el a fázist
-                occ_vector = obs['occupancy']        # Ez egy tömb
-                flow_vector = obs['flow']            # Ez is egy tömb
-                
+                obs = observations[first_jid]
+
+                current_phase = int(obs['phase'][0])
                 reward = rewards[first_jid]
-                is_ready = infos[first_jid]['ready']
-                status_str = "READY" if is_ready else "BUSY"
-                
+
+                # A státuszt most már az 'infos' (is_ready) alapján írjuk ki,
+                # mert az obs-ban nincs benne.
+                is_ready_now = infos[first_jid]['ready']
+                status_str = "READY" if is_ready_now else "BUSY"
+
                 print(f"Step {step:03d} | Agent {first_jid}: Ph={current_phase} [{status_str}] | "
-                      f"AvgOcc={np.mean(occ_vector):.2f} | Reward={reward:.2f}")
+                      f"Reward={reward:.2f} | AI Calls: {ai_calls}/{total_opportunities}")
 
             if terminated["__all__"]:
                 break
 
     except KeyboardInterrupt:
         print("\nTeszt leállítva.")
-    
+
     finally:
         print("Bezárás...")
         env.close()
 
+
 if __name__ == "__main__":
-    if not os.path.exists(NET_FILE) or not os.path.exists(LOGIC_JSON):
-        print(f"HIBA: Hiányzó fájlok ({NET_FILE}, {LOGIC_JSON}).")
+    if not os.path.exists(NET_FILE):
+        print("HIBA: Hiányzó fájlok.")
     else:
         main()
