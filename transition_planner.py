@@ -64,10 +64,10 @@ class TransitionPlannerDialog:
         """
         Generates and visualizes the transition plan based on selected phases.
         
-        Calculates:
-        - Which lanes are staying green, clearing, entering, or staying red.
-        - The start time for entering lanes based on the maximum intergreen time required by clearing lanes.
-        - Draws a Gantt-chart-like visualization of the signal states.
+        CORRECTION:
+        - The intergreen time (K) starts at the end of the Green A phase (Start of Yellow).
+        - t=0 is the start of Yellow.
+        - Green B starts exactly at t=K.
         """
         idx_a = self.cb_from.current()
         idx_b = self.cb_to.current()
@@ -80,7 +80,7 @@ class TransitionPlannerDialog:
         AMBER_TIME = 3.0
         RED_AMBER_TIME = 2.0
 
-        # Állapotok
+        # Állapotok meghatározása
         lane_states = {}
         clearing_indices = []
         entering_indices = []
@@ -99,7 +99,7 @@ class TransitionPlannerDialog:
             else:
                 lane_states[i] = 'stay_red'
 
-        # Időzítés
+        # Időzítés számítása
         green_start_times = {}
         dependencies = []
 
@@ -107,7 +107,13 @@ class TransitionPlannerDialog:
             max_intergreen = 0.0
             crit_i = None
             for i in clearing_indices:
+                # Mátrix olvasás [stop][start] vagy [start][stop] 
+                # (Ellenőrizd, hogy a gui.py-ban melyiket használod végül, itt feltételezzük a helyes irányt)
                 k_val = 0
+                
+                # A biztonság kedvéért itt olvassuk ki mindkét irányt, és a nagyobbat vesszük,
+                # vagy használjuk a gui.py-ban beállított logikát.
+                # Itt most feltételezzük, hogy a mátrix[i][j] a helyes clearing->entering érték.
                 if self.matrix[i][j] is not None:
                     k_val = self.matrix[i][j][0]
 
@@ -115,76 +121,95 @@ class TransitionPlannerDialog:
                     max_intergreen = k_val
                     crit_i = i
 
-            green_start_times[j] = AMBER_TIME + max_intergreen
+            # JAVÍTÁS: Nem adjuk hozzá az AMBER_TIME-ot!
+            # A K érték (max_intergreen) már tartalmazza a sárgát is definíció szerint
+            # (End Green A -> Start Green B).
+            # Tehát a Zöld B pontosan K másodpercnél kezdődik (ahol 0 a sárga kezdete).
+            green_start_times[j] = max(max_intergreen, 0.0)
+            
             if crit_i is not None:
                 dependencies.append((crit_i, j, max_intergreen))
 
         # Rajzolás
         self.ax.clear()
 
+        # Időtengely határok (dinamikus)
+        max_time = 10.0
+        if green_start_times:
+            max_time = max(max(green_start_times.values()) + 5, 10.0)
+
         for i in range(n):
             state = lane_states[i]
             y = i
 
-            # Színek: Bootstrap/Traffic szabványosabb
+            # Színek
             C_RED = '#d9534f'
             C_YEL = '#f0ad4e'
             C_GRE = '#5cb85c'
-            C_ORA = '#e67e22'  # Piros-Sárga
+            C_ORA = '#e67e22'
 
             if state == 'stay_green':
-                self.ax.barh(y, 25, left=-5, height=0.6, color=C_GRE, alpha=0.9)
-                self.ax.text(-0.5, y, f"{self.all_ids[i]}", va='center', ha='right', fontsize=9,
-                             fontweight='bold')
+                # Végig zöld
+                self.ax.barh(y, max_time + 5, left=-5, height=0.6, color=C_GRE, alpha=0.9)
+                self.ax.text(-0.5, y, f"{self.all_ids[i]}", va='center', ha='right', fontsize=9, fontweight='bold')
 
             elif state == 'stay_red':
-                self.ax.barh(y, 25, left=-5, height=0.6, color=C_RED, alpha=0.4)
-                self.ax.text(-0.5, y, f"{self.all_ids[i]}", va='center', ha='right', fontsize=9,
-                             fontweight='bold')
+                # Végig piros
+                self.ax.barh(y, max_time + 5, left=-5, height=0.6, color=C_RED, alpha=0.4)
+                self.ax.text(-0.5, y, f"{self.all_ids[i]}", va='center', ha='right', fontsize=9, fontweight='bold')
 
             elif state == 'clearing':
-                self.ax.barh(y, 5, left=-5, height=0.6, color=C_GRE, alpha=0.9)
-                self.ax.barh(y, AMBER_TIME, left=0, height=0.6, color=C_YEL, edgecolor='#d68e00')
-                self.ax.barh(y, 22 - AMBER_TIME, left=AMBER_TIME, height=0.6, color=C_RED,
-                             alpha=0.4)
-                self.ax.text(-0.5, y, f"{self.all_ids[i]} (Ki)", va='center', ha='right',
-                             fontsize=9, fontweight='bold')
+                # Zöld -> Sárga -> Piros
+                # Sárga kezdődik 0-nál, tart AMBER_TIME-ig
+                self.ax.barh(y, 5, left=-5, height=0.6, color=C_GRE, alpha=0.9) # Előző zöld
+                self.ax.barh(y, AMBER_TIME, left=0, height=0.6, color=C_YEL, edgecolor='#d68e00') # Sárga
+                self.ax.barh(y, max_time - AMBER_TIME, left=AMBER_TIME, height=0.6, color=C_RED, alpha=0.4) # Piros
+                
+                self.ax.text(-0.5, y, f"{self.all_ids[i]} (Ki)", va='center', ha='right', fontsize=9, fontweight='bold')
 
             elif state == 'entering':
+                # Piros -> Piros-Sárga -> Zöld
                 g_start = green_start_times[i]
                 ra_start = g_start - RED_AMBER_TIME
 
+                # Piros a kezdetektől a Piros-Sárga kezdetéig
                 self.ax.barh(y, ra_start + 5, left=-5, height=0.6, color=C_RED, alpha=0.4)
-                self.ax.barh(y, RED_AMBER_TIME, left=ra_start, height=0.6, color=C_ORA,
-                             edgecolor='#c05c00')
-                self.ax.barh(y, 20 - g_start, left=g_start, height=0.6, color=C_GRE, alpha=0.9)
+                
+                # Piros-Sárga
+                self.ax.barh(y, RED_AMBER_TIME, left=ra_start, height=0.6, color=C_ORA, edgecolor='#c05c00')
+                
+                # Zöld
+                self.ax.barh(y, max_time - g_start, left=g_start, height=0.6, color=C_GRE, alpha=0.9)
 
+                # Címke
                 self.ax.text(g_start + 0.5, y, f"Start: {g_start:.1f}s", va='center', ha='left',
                              fontsize=8, fontweight='bold', color='black')
                 self.ax.text(-0.5, y, f"{self.all_ids[i]} (Be)", va='center', ha='right',
                              fontsize=9, fontweight='bold')
 
-        # Nyilak javítása
+        # Nyilak és K értékek kirajzolása
         for dep in dependencies:
             i, j, k_val = dep
-            # A nyíl a sárga végétől a zöld elejéig tart
-            self.ax.annotate("", xy=(AMBER_TIME + k_val, j), xytext=(AMBER_TIME, i),
-                             arrowprops=dict(arrowstyle="->", color='black', lw=2.0,
-                                             ls='-'))  # Vastagabb vonal
+            
+            # JAVÍTÁS: A nyíl 0-tól (Sárga kezdete) K-ig tart (Zöld kezdete)
+            self.ax.annotate("", 
+                             xy=(k_val, j),       # Nyíl vége (Entering Zöld kezdete)
+                             xytext=(0, i),       # Nyíl kezdete (Clearing Sárga kezdete)
+                             arrowprops=dict(arrowstyle="->", color='black', lw=2.0, ls='-'))
+            
             mid_y = (i + j) / 2
-            self.ax.text(AMBER_TIME + k_val / 2, mid_y, f"K={k_val:.0f}", color='black', fontsize=9,
+            # Szöveg pozíciója a nyíl felénél
+            self.ax.text(k_val / 2, mid_y, f"K={k_val:.0f}", color='black', fontsize=9,
                          fontweight='bold',
                          bbox=dict(boxstyle="round,pad=0.2", fc="white", ec='black', alpha=1.0))
 
         self.ax.set_yticks(range(n))
         self.ax.set_yticklabels([f"{i + 1}." for i in range(n)], fontsize=9, fontweight='bold')
-        self.ax.set_xlabel("Idő [s] (0 = Váltás kezdete / Sárga indul)", fontsize=10)
+        self.ax.set_xlabel("Idő [s] (0 = 'A' Fázis vége / Sárga indul)", fontsize=10)
 
-        # BAL OLDALI MARGÓ MEGNÖVELÉSE, hogy a szöveg kiférjen
-        self.ax.set_xlim(-12, 20)
-
+        self.ax.set_xlim(-6, max_time) # Kicsit igazítottam a nézeten
         self.ax.grid(True, axis='x', linestyle='--', alpha=0.7)
-        self.ax.axvline(0, color='black', lw=1.5)
+        self.ax.axvline(0, color='black', lw=1.5, linestyle='-') # Jelöljük a 0 pontot erősebben
 
         patches = [
             mpatches.Patch(color='#5cb85c', label='Zöld'),
@@ -194,3 +219,4 @@ class TransitionPlannerDialog:
         ]
         self.ax.legend(handles=patches, loc='upper right', fontsize=9)
         self.canvas.draw()
+

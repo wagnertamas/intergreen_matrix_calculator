@@ -872,14 +872,22 @@ class JunctionApp:
 
     # --- 5. ÚJ: FULL EXPORT (JAVÍTOTT MÁTRIX + RÉSZLETES JSON LÁNC) ---
 
+    # --- 5. ÚJ: FULL EXPORT (ÖSSZES KOMBINÁCIÓ + JAVÍTOTT MÁTRIX) ---
+
+    # --- 5. ÚJ: FULL EXPORT (VISSZAÁLLÍTOTT MÁTRIX OLVASÁS + TELJES LÁNC) ---
+
+    # --- 5. ÚJ: FULL EXPORT (VÉGLEGES: GRAFIKONNAL EGYEZŐ LOGIKA) ---
+
     def export_all_to_sumo(self):
         """
-        Exports traffic light configurations to SUMO (.add.xml) and JSON formats.
+        Kiexportálja a közlekedési lámpákat SUMO (.add.xml) és JSON (.json) formátumban.
         
-        Features:
-        - Generates static traffic light logic.
-        - Creates phase transitions with dynamic overlaps (yellow/red-yellow).
-        - Exports a JSON file with detailed phase and transition information for RL agents.
+        MŰKÖDÉS:
+        1. Mátrix olvasása a helyes [stop][start] (Honnan->Hova) irányban.
+        2. Idővonal-vágásos (Timeline Slicing) generálás:
+           - Nem fix blokkokat rak egymás után, hanem kiszámolja a "kritikus időpontokat"
+             (Sárga vége, Piros-Sárga kezdete), és ezek mentén vágja fel az időt.
+           - Ez pontosan ugyanazt az eredményt adja, mint a 'Fázisátmenet Tervező' vizuális sávjai.
         """
         filename_xml = filedialog.asksaveasfilename(defaultextension=".add.xml",
                                                     filetypes=[("SUMO Additional", "*.add.xml"),
@@ -930,7 +938,7 @@ class JunctionApp:
                             if data['matrix'][i][j] is not None:
                                 c_matrix[i, j] = True
 
-                # 2. Klikkek
+                # 2. Klikkek (Logikai Zöldek)
                 G = nx.Graph()
                 G.add_nodes_from(range(n))
                 for i in range(n):
@@ -951,24 +959,18 @@ class JunctionApp:
                     "programID": "0",
                     "phases": [],
                     "logic_phases": {},
-                    "transitions": {}  # Itt lesz a sorrend (sequence)
+                    "transitions": {}
                 }
 
                 sumo_phase_counter = 0
                 num_logic_phases = len(cliques)
 
-                # Segédlista a fázisok utólagos frissítéséhez (next index)
-                all_generated_phases = []
-
-                # 3. Ciklus generálása
+                # ==========================================
+                # LÉPÉS 1: CSAK A ZÖLD FÁZISOK (Hogy fix indexük legyen az elején)
+                # ==========================================
                 for i in range(num_logic_phases):
                     current_phase_idxs = set(cliques[i])
-                    next_logic_idx = (i + 1) % num_logic_phases
-                    next_phase_idxs = set(cliques[next_logic_idx])
 
-                    # ==========================================
-                    # A) ZÖLD FÁZIS
-                    # ==========================================
                     state_g = ['r'] * n
                     for lane_idx in range(n):
                         if lane_idx in current_phase_idxs:
@@ -983,138 +985,142 @@ class JunctionApp:
                         "duration": MIN_GREEN_TIME,
                         "state": state_g_str,
                         "type": "green",
-                        "logic_idx": i,
-                        # Green-nél nincs fix 'next', mert az RL dönt
+                        "logic_idx": i
                     }
                     junction_json["phases"].append(p_obj)
-                    all_generated_phases.append(p_obj)
-
                     junction_json["logic_phases"][str(i)] = sumo_phase_counter
 
-                    green_phase_index = sumo_phase_counter
                     sumo_phase_counter += 1
 
-                    # ==========================================
-                    # B) ÁTMENET (Dinamikus Overlap)
-                    # ==========================================
-                    transition_steps = []  # Ez gyűjti a LÁNCOT
+                # ==========================================
+                # LÉPÉS 2: AZ ÖSSZES ÁTMENET GENERÁLÁSA
+                # ==========================================
+                for i in range(num_logic_phases):       # HONNAN
+                    for j in range(num_logic_phases):   # HOVA
 
-                    stopping = []
-                    starting = []
-                    staying = []
+                        if i == j: continue
 
-                    for lane_idx in range(n):
-                        is_curr = lane_idx in current_phase_idxs
-                        is_next = lane_idx in next_phase_idxs
+                        current_phase_idxs = set(cliques[i])
+                        next_phase_idxs = set(cliques[j])
 
-                        if is_curr and not is_next:
-                            stopping.append(lane_idx)
-                        elif not is_curr and is_next:
-                            starting.append(lane_idx)
-                        elif is_curr and is_next:
-                            staying.append(lane_idx)
+                        transition_steps = []
+                        
+                        stopping = []
+                        starting = []
+                        staying = []
 
-                    # --- MÁTRIX JAVÍTÁS (4s vs 5s) ---
-                    K_needed = 0.0
-                    for stop_idx in stopping:
-                        for start_idx in starting:
-                            # JAVÍTVA: [start][stop] -> Így jön ki a 4s a te példádban
-                            val = data['matrix'][start_idx][stop_idx]
-                            if val is not None:
-                                if val[0] > K_needed: K_needed = val[0]
+                        for lane_idx in range(n):
+                            is_curr = lane_idx in current_phase_idxs
+                            is_next = lane_idx in next_phase_idxs
 
-                    # Ha nincs váltás (ritka)
-                    if not stopping and not starting:
-                        key = f"{i}->{next_logic_idx}"
-                        junction_json["transitions"][key] = []
-                        continue
+                            if is_curr and not is_next:
+                                stopping.append(lane_idx)
+                            elif not is_curr and is_next:
+                                starting.append(lane_idx)
+                            elif is_curr and is_next:
+                                staying.append(lane_idx)
 
-                    # Időzítés
-                    transition_total_time = max(K_needed, YELLOW_TIME)
-                    t_yellow_end = YELLOW_TIME
-                    t_redyellow_start = max(0.0, transition_total_time - RED_YELLOW_TIME)
-                    t_end = transition_total_time
+                        # --- MÁTRIX MAX KERESÉS (HELYES IRÁNY) ---
+                        K_needed = 0.0
+                        for stop_idx in stopping:
+                            for start_idx in starting:
+                                # [stop][start] = Clearing -> Entering
+                                # Ez adja a nagyobb, helyes biztonsági időket
+                                val = data['matrix'][stop_idx][start_idx]
+                                if val is not None:
+                                    if val[0] > K_needed: K_needed = val[0]
 
-                    cut_points = sorted(
-                        list(set([0.0, t_yellow_end, t_redyellow_start, t_end])))
-                    cut_points = [t for t in cut_points if t >= 0 and t <= t_end]
+                        # Ha nincs mit csinálni
+                        if not stopping and not starting:
+                            key = f"{i}->{j}"
+                            junction_json["transitions"][key] = []
+                            continue
 
-                    prev_t = 0.0
+                        # --- IDŐZÍTÉS ÉS VÁGÓPONTOK (A GRAFIKON LOGIKÁJA) ---
+                        # A teljes átmenet hossza a mátrix érték (K), de minimum a sárga hossza.
+                        transition_total_time = max(K_needed, YELLOW_TIME)
+                        
+                        # Időpontok az idővonalon (t=0 a Sárga kezdete)
+                        t_yellow_end = YELLOW_TIME
+                        t_redyellow_start = max(0.0, transition_total_time - RED_YELLOW_TIME)
+                        t_end = transition_total_time
 
-                    # Előző fázis objektum (a láncoláshoz)
-                    last_phase_obj = None
+                        # Vágópontok összegyűjtése és rendezése
+                        cut_points = sorted(
+                            list(set([0.0, t_yellow_end, t_redyellow_start, t_end])))
+                        # Csak a [0, t_end] tartomány érdekes
+                        cut_points = [t for t in cut_points if t >= 0 and t <= t_end]
 
-                    for t_idx, t in enumerate(cut_points):
-                        if t <= prev_t: continue
-                        duration = t - prev_t
-                        if duration < 0.1: continue
+                        prev_t = 0.0
+                        last_phase_obj = None
 
-                        mid_t = (prev_t + t) / 2.0
-                        current_state_chars = ['r'] * n
+                        # Szakaszok generálása a vágópontok között
+                        for t_idx, t in enumerate(cut_points):
+                            if t <= prev_t: continue
+                            duration = t - prev_t
+                            if duration < 0.1: continue # Túl rövid szakaszok szűrése
 
-                        for idx_lane in range(n):
-                            if idx_lane in staying:
-                                current_state_chars[idx_lane] = 'G'
-                            elif idx_lane in stopping:
-                                if mid_t < t_yellow_end:
-                                    current_state_chars[idx_lane] = 'y'
+                            mid_t = (prev_t + t) / 2.0
+                            current_state_chars = ['r'] * n
+
+                            for idx_lane in range(n):
+                                if idx_lane in staying:
+                                    # Aki marad, az végig Zöld
+                                    current_state_chars[idx_lane] = 'G'
+                                elif idx_lane in stopping:
+                                    # LEÁLLÓ: Sárga (0-tól t_yellow_end-ig), utána Piros
+                                    if mid_t < t_yellow_end:
+                                        current_state_chars[idx_lane] = 'y'
+                                    else:
+                                        current_state_chars[idx_lane] = 'r'
+                                elif idx_lane in starting:
+                                    # INDULÓ: Piros, majd a végén Piros-Sárga
+                                    if mid_t < t_redyellow_start:
+                                        current_state_chars[idx_lane] = 'r'
+                                    else:
+                                        current_state_chars[idx_lane] = 'u'
                                 else:
                                     current_state_chars[idx_lane] = 'r'
-                            elif idx_lane in starting:
-                                if mid_t < t_redyellow_start:
-                                    current_state_chars[idx_lane] = 'r'
-                                else:
-                                    current_state_chars[idx_lane] = 'u'
-                            else:
-                                current_state_chars[idx_lane] = 'r'
 
-                        state_str = "".join(current_state_chars)
+                            state_str = "".join(current_state_chars)
 
-                        ET.SubElement(tlLogic, "phase", duration=f"{duration:.1f}",
-                                      state=state_str)
+                            ET.SubElement(tlLogic, "phase", duration=f"{duration:.1f}",
+                                          state=state_str)
 
-                        p_type = "transition"
-                        if 'y' in state_str and 'u' in state_str:
-                            p_type = "overlap_yellow_redyellow"
-                        elif 'y' in state_str:
-                            p_type = "yellow"
-                        elif 'u' in state_str:
-                            p_type = "red_yellow"
-                        elif 'r' in state_str and 'G' not in state_str:
-                            p_type = "all_red"
+                            # Típus meghatározása a karakterek alapján
+                            p_type = "transition"
+                            has_y = 'y' in state_str
+                            has_u = 'u' in state_str # 'u' = red-yellow
+                            
+                            if has_y and has_u:
+                                p_type = "overlap_yellow_redyellow" # Átlapolás
+                            elif has_y:
+                                p_type = "yellow"
+                            elif has_u:
+                                p_type = "red_yellow"
+                            elif not has_y and not has_u:
+                                p_type = "all_red" # Tiszta vörös
 
-                        t_obj = {
-                            "index": sumo_phase_counter,
-                            "duration": float(f"{duration:.1f}"),
-                            "state": state_str,
-                            "type": p_type,
-                            "from_logic": i,
-                            "to_logic": next_logic_idx
-                        }
-                        junction_json["phases"].append(t_obj)
-                        all_generated_phases.append(t_obj)
+                            t_obj = {
+                                "index": sumo_phase_counter,
+                                "duration": float(f"{duration:.1f}"),
+                                "state": state_str,
+                                "type": p_type,
+                                "from_logic": i,
+                                "to_logic": j
+                            }
+                            junction_json["phases"].append(t_obj)
 
-                        # Lánc építése: az előző átmeneti fázis mutasson erre
-                        if last_phase_obj:
-                            last_phase_obj["next_index"] = sumo_phase_counter
+                            if last_phase_obj:
+                                last_phase_obj["next_index"] = sumo_phase_counter
+                            last_phase_obj = t_obj
 
-                        last_phase_obj = t_obj
+                            transition_steps.append(sumo_phase_counter)
+                            sumo_phase_counter += 1
+                            prev_t = t
 
-                        transition_steps.append(sumo_phase_counter)
-                        sumo_phase_counter += 1
-                        prev_t = t
-
-                    # Az utolsó átmeneti fázis mutasson a következő logikai Zöldre
-                    # (Bár az indexe még nem ismert a következő körig, de logikailag odatartozik)
-                    # Ezért inkább a 'transitions' listát használjuk RL-hez, de a 'next_index'
-                    # az átmeneten belül most már él.
-
-                    key = f"{i}->{next_logic_idx}"
-                    junction_json["transitions"][key] = transition_steps
-
-                # Utólagos 'next_index' javítás, hogy körkörös legyen a lista?
-                # Nem feltétlen szükséges, mert az RL ugrik a Zöldek között.
-                # A lényeg, hogy a 'transitions' lista megvan.
+                        key = f"{i}->{j}"
+                        junction_json["transitions"][key] = transition_steps
 
                 json_export_data[jid] = junction_json
 
@@ -1127,7 +1133,7 @@ class JunctionApp:
                 json.dump(json_export_data, f, indent=4)
 
             messagebox.showinfo("Siker",
-                                f"Javított Export Kész!\n(Matrix index csere + JSON szekvencia)")
+                                f"Export Kész!\nJSON és SUMO átmenetek pontosan követik a grafikus tervet.")
 
         except Exception as e:
             messagebox.showerror("Hiba", str(e))
@@ -1135,7 +1141,7 @@ class JunctionApp:
             traceback.print_exc()
         finally:
             progress_win.destroy()
-
+    
     def indent(self, elem, level=0):
         i = "\n" + level * "  "
         if len(elem):

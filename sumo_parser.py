@@ -1,20 +1,7 @@
 import xml.etree.ElementTree as ET
 
 class SumoInternalParser:
-    """
-    Parses a SUMO network XML file (.net.xml) to extract junction and lane information.
-    
-    This class is responsible for reading the XML structure of a SUMO network,
-    identifying internal and normal lanes, and grouping them by junctions.
-    It extracts geometry (shapes) which are essential for the intergreen time calculations.
-    """
     def __init__(self, file_path):
-        """
-        Initialize the parser with the given file path.
-
-        Args:
-            file_path (str): The absolute or relative path to the .net.xml file.
-        """
         print(f"Fájl feldolgozása: {file_path}")
         self.file_path = file_path
         self.tree = ET.parse(file_path)
@@ -26,10 +13,6 @@ class SumoInternalParser:
         print(f"Betöltve: {len(self.junctions)} csomópont.")
 
     def _load_data(self):
-        """
-        Iterates through all 'edge' elements in the XML to load lane shapes.
-        Separates 'internal' lanes (inside junctions) from normal lanes.
-        """
         for edge in self.root.findall("edge"):
             func = edge.get("function")
             target_dict = self.internal_lanes if func == "internal" else self.normal_lanes
@@ -45,19 +28,9 @@ class SumoInternalParser:
                     target_dict[lid] = points
 
     def _group_by_junctions(self):
-        """
-        Groups the loaded lane data by junctions.
-        
-        Filters for specific junction types (traffic_light, priority, etc.).
-        Calculates relative coordinates for visualization (relative to junction center).
-
-        Returns:
-            list: A list of dictionaries, where each dictionary represents a junction
-                  and contains its ID, position, shape, and associated lane segments.
-        """
         junctions_data = []
         for junc in self.root.findall("junction"):
-            if junc.get("type") in ["traffic_light", "priority", "right_before_left", "zipper"]:
+            if junc.get("type") in ['traffic_light', 'traffic_light_right_on_red']:
                 jx = float(junc.get("x"))
                 jy = float(junc.get("y"))
                 jid = junc.get("id")
