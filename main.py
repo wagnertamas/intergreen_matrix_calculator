@@ -1,3 +1,5 @@
+# FIX: Import numpy BEFORE tkinter to prevent macOS crash (binary incompatibility)
+import numpy
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import sys
@@ -49,7 +51,7 @@ class MainLauncher:
         self.btn_detectors.pack(fill="x", pady=5)
         
         # Gomb: Tanítás (Későbbi fejlesztés)
-        self.btn_train = ttk.Button(tools_frame, text="RL Ágens Tanítás Indítása", state="disabled")
+        self.btn_train = ttk.Button(tools_frame, text="RL Ágens Tanítás Indítása", command=self.open_training_tool, state="disabled")
         self.btn_train.pack(fill="x", pady=5)
 
     def load_network(self):
@@ -66,6 +68,7 @@ class MainLauncher:
                 # Gombok aktiválása
                 self.btn_matrix.config(state="normal")
                 self.btn_detectors.config(state="normal")
+                self.btn_train.config(state="normal")
             except Exception as e:
                 messagebox.showerror("Hiba", f"Nem sikerült betölteni a hálózatot:\n{e}")
 
@@ -74,9 +77,42 @@ class MainLauncher:
         # Új ablakban nyitjuk meg a meglévő GUI-t
         new_window = tk.Toplevel(self.root)
         app = JunctionApp(new_window, self.parser)
-        # Figyelem: A JunctionApp-ban lévő root.mainloop() hívást ki kell venni vagy kezelni, 
-        # mert a főablak már futtat egy mainloop-ot.
-        # A gui.py-t kicsit módosítani kell (lásd lejjebb).
+
+    def open_training_tool(self):
+        """Opens the RL Training Dialog."""
+        if not self.network_file: return
+        
+        # Feltételezzük, hogy a .json és a detektor fájl ugyanott van, mint a hálózat,
+        # vagy a korábbi logikából következtetjük ki.
+        # A gui.py szerint: settings_file = parser.file_path + ".settings.json"
+        
+        # Itt egyszerűsítünk: keressük a 'traffic_lights.json' és 'detectors.add.xml' fájlokat
+        # az aktuális munkakönyvtárban, vagy a hálózat mellett.
+        
+        base_dir = os.path.dirname(self.network_file)
+        logic_file = os.path.join(base_dir, "traffic_lights.json")
+        detector_file = os.path.join(base_dir, "detectors.add.xml")
+        
+        if not os.path.exists(logic_file):
+            # Fallback 1: Current Dir
+            logic_file = "traffic_lights.json"
+            if not os.path.exists(logic_file):
+                # Fallback 2: data/ Dir
+                logic_file = os.path.join("data", "traffic_lights.json")
+            
+        if not os.path.exists(detector_file):
+            # Fallback 1: Current Dir
+            detector_file = "detectors.add.xml"
+            if not os.path.exists(detector_file):
+                # Fallback 2: data/ Dir
+                detector_file = os.path.join("data", "detectors.add.xml")
+            
+        if not os.path.exists(logic_file) or not os.path.exists(detector_file):
+            messagebox.showerror("Hiba", f"Nem találhatók a konfigurációs fájlok:\n{logic_file}\n{detector_file}")
+            return
+
+        from rl_trainer import TrainingDialog
+        TrainingDialog(self.root, self.network_file, logic_file, detector_file)
 
     def open_detector_tool(self):
         if not self.parser: return

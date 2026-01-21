@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-01-19 22:03:52.239135 by Eclipse SUMO randomTrips.py UNKNOWN
+<!-- generated on 2026-01-21 14:34:52.789500 by Eclipse SUMO randomTrips.py UNKNOWN
 <configuration>
-    <net-file value="mega_catalogue_v2.net.xml"/>
+    <net-file value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/mega_catalogue_v2.net.xml"/>
     <output-trip-file value="random_traffic.rou.xml"/>
     <fringe-factor value="10"/>
     <min-distance value="50.0"/>
-    <end value="300.0"/>
-    <period value="1.0"/>
+    <period value="0.42309301773289953"/>
 </configuration>
 -->
 
-<!-- generated on 2026-01-19T22:03:52.233795+01:00 by Eclipse SUMO duarouter 1.25.0
+<!-- generated on 2026-01-21T14:34:52.726211+01:00 by Eclipse SUMO duarouter 1.25.0
 <duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
-        <net-file value="mega_catalogue_v2.net.xml"/>
+        <net-file value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/mega_catalogue_v2.net.xml"/>
         <route-files value="random_traffic.rou.xml"/>
     </input>
 
@@ -26,7 +25,7 @@
 
     <time>
         <begin value="0"/>
-        <end value="300.0"/>
+        <end value="3600.0"/>
     </time>
 
     <report>
@@ -39,28 +38,892 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vehicle id="56" depart="56.00">
+    <vehicle id="56" depart="23.69">
         <route edges="e43_w e43_ce"/>
     </vehicle>
-    <vehicle id="78" depart="78.00">
+    <vehicle id="78" depart="33.00">
         <route edges="e21_n e21_ce"/>
     </vehicle>
-    <vehicle id="88" depart="88.00">
+    <vehicle id="88" depart="37.23">
         <route edges="e25_cs e25_cs.35"/>
     </vehicle>
-    <vehicle id="106" depart="106.00">
+    <vehicle id="106" depart="44.85">
         <route edges="e45_e e45_cw"/>
     </vehicle>
-    <vehicle id="118" depart="118.00">
+    <vehicle id="118" depart="49.92">
         <route edges="e33_main_e e33_main_cw"/>
     </vehicle>
-    <vehicle id="228" depart="228.00">
+    <vehicle id="228" depart="96.47">
         <route edges="e22_e e22_cw"/>
     </vehicle>
-    <vehicle id="242" depart="242.00">
+    <vehicle id="242" depart="102.39">
         <route edges="e21_n e21_ce"/>
     </vehicle>
-    <vehicle id="279" depart="279.00">
+    <vehicle id="279" depart="118.04">
         <route edges="e42_s2cw e42_cw2ce e42_ce2e"/>
+    </vehicle>
+    <vehicle id="321" depart="135.81">
+        <route edges="e25_w e25_w.89 e25_ce"/>
+    </vehicle>
+    <vehicle id="334" depart="141.31">
+        <route edges="e33_side_n e33_main_cw"/>
+    </vehicle>
+    <vehicle id="358" depart="151.47">
+        <route edges="e45_e e45_cw"/>
+    </vehicle>
+    <vehicle id="365" depart="154.43">
+        <route edges="e23_s e23_ce"/>
+    </vehicle>
+    <vehicle id="396" depart="167.54">
+        <route edges="e22_n e22_cs"/>
+    </vehicle>
+    <vehicle id="400" depart="169.24">
+        <route edges="e32_main_w e32_main_ce"/>
+    </vehicle>
+    <vehicle id="405" depart="171.35">
+        <route edges="e35_side_s e35_main_ce"/>
+    </vehicle>
+    <vehicle id="435" depart="184.05">
+        <route edges="e21_w e21_cs"/>
+    </vehicle>
+    <vehicle id="452" depart="191.24">
+        <route edges="e33_side_s e33_main_cw"/>
+    </vehicle>
+    <vehicle id="542" depart="229.32">
+        <route edges="e32_side_s e32_main_cw"/>
+    </vehicle>
+    <vehicle id="587" depart="248.36">
+        <route edges="e32_side_s e32_side_cn"/>
+    </vehicle>
+    <vehicle id="596" depart="252.16">
+        <route edges="e23_n e23_ce"/>
+    </vehicle>
+    <vehicle id="611" depart="258.51">
+        <route edges="e22_w e22_ce"/>
+    </vehicle>
+    <vehicle id="635" depart="268.66">
+        <route edges="e43_w e43_ce"/>
+    </vehicle>
+    <vehicle id="646" depart="273.32">
+        <route edges="e23_w e23_cs"/>
+    </vehicle>
+    <vehicle id="647" depart="273.74">
+        <route edges="e15_nw e15_cs"/>
+    </vehicle>
+    <vehicle id="665" depart="281.36">
+        <route edges="e45_e e45_cs"/>
+    </vehicle>
+    <vehicle id="702" depart="297.01">
+        <route edges="e31_side_s e31_main_cw"/>
+    </vehicle>
+    <vehicle id="739" depart="312.67">
+        <route edges="e45_s e45_ce"/>
+    </vehicle>
+    <vehicle id="802" depart="339.32">
+        <route edges="e12_w e12_ce"/>
+    </vehicle>
+    <vehicle id="803" depart="339.74">
+        <route edges="e25_n e25_cw"/>
+    </vehicle>
+    <vehicle id="817" depart="345.67">
+        <route edges="e31_side_n e31_main_ce"/>
+    </vehicle>
+    <vehicle id="839" depart="354.98">
+        <route edges="e25_w e25_w.89 e25_cn"/>
+    </vehicle>
+    <vehicle id="852" depart="360.48">
+        <route edges="e41_s e41_cn"/>
+    </vehicle>
+    <vehicle id="855" depart="361.74">
+        <route edges="e33_side_n e33_main_cw"/>
+    </vehicle>
+    <vehicle id="869" depart="367.67">
+        <route edges="e34_main_e e34_side_cs"/>
+    </vehicle>
+    <vehicle id="873" depart="369.36">
+        <route edges="e22_s e22_cn"/>
+    </vehicle>
+    <vehicle id="875" depart="370.21">
+        <route edges="e23_e e23_cn"/>
+    </vehicle>
+    <vehicle id="881" depart="372.74">
+        <route edges="e22_s e22_cn"/>
+    </vehicle>
+    <vehicle id="934" depart="395.17">
+        <route edges="e14_e e14_cs"/>
+    </vehicle>
+    <vehicle id="963" depart="407.44">
+        <route edges="e43_e e43_cw"/>
+    </vehicle>
+    <vehicle id="992" depart="419.71">
+        <route edges="e43_n e43_cw"/>
+    </vehicle>
+    <vehicle id="1022" depart="432.40">
+        <route edges="e31_side_n e31_main_ce"/>
+    </vehicle>
+    <vehicle id="1070" depart="452.71">
+        <route edges="e43_e e43_cn"/>
+    </vehicle>
+    <vehicle id="1092" depart="462.02">
+        <route edges="e34_side_n e34_main_ce"/>
+    </vehicle>
+    <vehicle id="1120" depart="473.86">
+        <route edges="e23_n e23_ce"/>
+    </vehicle>
+    <vehicle id="1121" depart="474.29">
+        <route edges="e42_e2ce e42_ce2cw e42_cw2w"/>
+    </vehicle>
+    <vehicle id="1153" depart="487.83">
+        <route edges="e32_side_s e32_side_cn"/>
+    </vehicle>
+    <vehicle id="1177" depart="497.98">
+        <route edges="e41_e e41_cw"/>
+    </vehicle>
+    <vehicle id="1183" depart="500.52">
+        <route edges="e33_main_e e33_main_cw"/>
+    </vehicle>
+    <vehicle id="1188" depart="502.63">
+        <route edges="e13_e e13_cw"/>
+    </vehicle>
+    <vehicle id="1201" depart="508.13">
+        <route edges="e31_main_w e31_main_ce"/>
+    </vehicle>
+    <vehicle id="1291" depart="546.21">
+        <route edges="e31_side_n e31_main_cw"/>
+    </vehicle>
+    <vehicle id="1297" depart="548.75">
+        <route edges="e45_s e45_cw"/>
+    </vehicle>
+    <vehicle id="1315" depart="556.37">
+        <route edges="e35_main_e e35_side_cn"/>
+    </vehicle>
+    <vehicle id="1371" depart="580.06">
+        <route edges="e13_s e13_cw"/>
+    </vehicle>
+    <vehicle id="1375" depart="581.75">
+        <route edges="e22_e e22_cw"/>
+    </vehicle>
+    <vehicle id="1410" depart="596.56">
+        <route edges="e15_ne e15_cs"/>
+    </vehicle>
+    <vehicle id="1419" depart="600.37">
+        <route edges="e41_w e41_cs"/>
+    </vehicle>
+    <vehicle id="1439" depart="608.83">
+        <route edges="e32_side_n e32_main_cw"/>
+    </vehicle>
+    <vehicle id="1451" depart="613.91">
+        <route edges="e42_s2cw e42_cw2w"/>
+    </vehicle>
+    <vehicle id="1484" depart="627.87">
+        <route edges="e22_s e22_cw"/>
+    </vehicle>
+    <vehicle id="1489" depart="629.99">
+        <route edges="e33_main_e e33_main_cw"/>
+    </vehicle>
+    <vehicle id="1495" depart="632.52">
+        <route edges="e35_main_w e35_side_cn"/>
+    </vehicle>
+    <vehicle id="1510" depart="638.87">
+        <route edges="e21_n e21_cw"/>
+    </vehicle>
+    <vehicle id="1525" depart="645.22">
+        <route edges="e45_s e45_cn"/>
+    </vehicle>
+    <vehicle id="1538" depart="650.72">
+        <route edges="e44_w e44_ce"/>
+    </vehicle>
+    <vehicle id="1557" depart="658.76">
+        <route edges="e15_nw e15_cs"/>
+    </vehicle>
+    <vehicle id="1578" depart="667.64">
+        <route edges="e34_main_e e34_side_cn"/>
+    </vehicle>
+    <vehicle id="1602" depart="677.80">
+        <route edges="e34_main_w e34_side_cn"/>
+    </vehicle>
+    <vehicle id="1605" depart="679.06">
+        <route edges="e24_w e24_ce"/>
+    </vehicle>
+    <vehicle id="1674" depart="708.26">
+        <route edges="e13_w e13_ce"/>
+    </vehicle>
+    <vehicle id="1675" depart="708.68">
+        <route edges="e15_s e15_cnw"/>
+    </vehicle>
+    <vehicle id="1686" depart="713.33">
+        <route edges="e21_w e21_cn"/>
+    </vehicle>
+    <vehicle id="1713" depart="724.76">
+        <route edges="e22_e e22_cw"/>
+    </vehicle>
+    <vehicle id="1763" depart="745.91">
+        <route edges="e31_main_e e31_main_cw"/>
+    </vehicle>
+    <vehicle id="1828" depart="773.41">
+        <route edges="e23_n e23_cs"/>
+    </vehicle>
+    <vehicle id="1834" depart="775.95">
+        <route edges="e33_main_w e33_side_cn"/>
+    </vehicle>
+    <vehicle id="1884" depart="797.11">
+        <route edges="e42_w2cw e42_cw2s"/>
+    </vehicle>
+    <vehicle id="1912" depart="808.95">
+        <route edges="e32_main_w e32_main_ce"/>
+    </vehicle>
+    <vehicle id="1930" depart="816.57">
+        <route edges="e25_w e25_w.89 e25_cn"/>
+    </vehicle>
+    <vehicle id="1943" depart="822.07">
+        <route edges="e14_s e14_cw"/>
+    </vehicle>
+    <vehicle id="1985" depart="839.84">
+        <route edges="e13_s e13_cw"/>
+    </vehicle>
+    <vehicle id="1992" depart="842.80">
+        <route edges="e34_main_e e34_side_cn"/>
+    </vehicle>
+    <vehicle id="1993" depart="843.22">
+        <route edges="e23_e e23_cs"/>
+    </vehicle>
+    <vehicle id="2042" depart="863.96">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="2063" depart="872.84">
+        <route edges="e34_side_n e34_main_cw"/>
+    </vehicle>
+    <vehicle id="2068" depart="874.96">
+        <route edges="e43_s e43_ce"/>
+    </vehicle>
+    <vehicle id="2141" depart="905.84">
+        <route edges="e33_main_e e33_side_cn"/>
+    </vehicle>
+    <vehicle id="2147" depart="908.38">
+        <route edges="e22_e e22_cs"/>
+    </vehicle>
+    <vehicle id="2150" depart="909.65">
+        <route edges="e25_w E0"/>
+    </vehicle>
+    <vehicle id="2152" depart="910.50">
+        <route edges="e25_w E0"/>
+    </vehicle>
+    <vehicle id="2155" depart="911.77">
+        <route edges="e24_e e24_cs"/>
+    </vehicle>
+    <vehicle id="2158" depart="913.03">
+        <route edges="e24_n e24_ce"/>
+    </vehicle>
+    <vehicle id="2166" depart="916.42">
+        <route edges="e33_side_s e33_main_cw"/>
+    </vehicle>
+    <vehicle id="2181" depart="922.77">
+        <route edges="e42_s2cw e42_cw2ce e42_ce2e"/>
+    </vehicle>
+    <vehicle id="2209" depart="934.61">
+        <route edges="e41_e e41_cw"/>
+    </vehicle>
+    <vehicle id="2215" depart="937.15">
+        <route edges="e15_nw e15_cne"/>
+    </vehicle>
+    <vehicle id="2261" depart="956.61">
+        <route edges="e23_e e23_cw"/>
+    </vehicle>
+    <vehicle id="2357" depart="997.23">
+        <route edges="e33_main_w e33_side_cn"/>
+    </vehicle>
+    <vehicle id="2365" depart="1000.61">
+        <route edges="e45_w e45_cs"/>
+    </vehicle>
+    <vehicle id="2372" depart="1003.58">
+        <route edges="e24_w e24_cs"/>
+    </vehicle>
+    <vehicle id="2457" depart="1039.54">
+        <route edges="e31_side_s e31_side_cn"/>
+    </vehicle>
+    <vehicle id="2499" depart="1057.31">
+        <route edges="e35_side_s e35_main_ce"/>
+    </vehicle>
+    <vehicle id="2505" depart="1059.85">
+        <route edges="e41_s e41_cn"/>
+    </vehicle>
+    <vehicle id="2545" depart="1076.77">
+        <route edges="e25_w e25_w.89 e25_cn"/>
+    </vehicle>
+    <vehicle id="2596" depart="1098.35">
+        <route edges="e24_n e24_ce"/>
+    </vehicle>
+    <vehicle id="2671" depart="1130.08">
+        <route edges="e35_side_s e35_side_cn"/>
+    </vehicle>
+    <vehicle id="2756" depart="1166.04">
+        <route edges="e41_w e41_ce"/>
+    </vehicle>
+    <vehicle id="2788" depart="1179.58">
+        <route edges="e41_w e41_ce"/>
+    </vehicle>
+    <vehicle id="2811" depart="1189.31">
+        <route edges="e33_side_s e33_main_cw"/>
+    </vehicle>
+    <vehicle id="2842" depart="1202.43">
+        <route edges="e41_w e41_cs"/>
+    </vehicle>
+    <vehicle id="2859" depart="1209.62">
+        <route edges="e31_main_e e31_side_cn"/>
+    </vehicle>
+    <vehicle id="2891" depart="1223.16">
+        <route edges="e34_side_s e34_main_cw"/>
+    </vehicle>
+    <vehicle id="2897" depart="1225.70">
+        <route edges="e23_s e23_cw"/>
+    </vehicle>
+    <vehicle id="2940" depart="1243.89">
+        <route edges="e35_main_e e35_side_cs"/>
+    </vehicle>
+    <vehicle id="2993" depart="1266.32">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="3049" depart="1290.01">
+        <route edges="e12_e e12_cs"/>
+    </vehicle>
+    <vehicle id="3068" depart="1298.05">
+        <route edges="e34_side_n e34_main_ce"/>
+    </vehicle>
+    <vehicle id="3079" depart="1302.70">
+        <route edges="e23_w e23_cs"/>
+    </vehicle>
+    <vehicle id="3089" depart="1306.93">
+        <route edges="e24_e e24_cn"/>
+    </vehicle>
+    <vehicle id="3138" depart="1327.67">
+        <route edges="e43_e e43_cs"/>
+    </vehicle>
+    <vehicle id="3181" depart="1345.86">
+        <route edges="e42_e2ce e42_ce2n"/>
+    </vehicle>
+    <vehicle id="3206" depart="1356.44">
+        <route edges="e24_s e24_cw"/>
+    </vehicle>
+    <vehicle id="3225" depart="1364.47">
+        <route edges="e34_side_s e34_side_cn"/>
+    </vehicle>
+    <vehicle id="3226" depart="1364.90">
+        <route edges="e35_main_w e35_main_ce"/>
+    </vehicle>
+    <vehicle id="3247" depart="1373.78">
+        <route edges="e22_e e22_cw"/>
+    </vehicle>
+    <vehicle id="3282" depart="1388.59">
+        <route edges="e24_e e24_cn"/>
+    </vehicle>
+    <vehicle id="3321" depart="1405.09">
+        <route edges="e15_nw e15_cne"/>
+    </vehicle>
+    <vehicle id="3351" depart="1417.78">
+        <route edges="e33_main_e e33_main_cw"/>
+    </vehicle>
+    <vehicle id="3382" depart="1430.90">
+        <route edges="e21_n e21_cw"/>
+    </vehicle>
+    <vehicle id="3383" depart="1431.32">
+        <route edges="e23_n e23_cs"/>
+    </vehicle>
+    <vehicle id="3390" depart="1434.29">
+        <route edges="e13_w e13_ce"/>
+    </vehicle>
+    <vehicle id="3409" depart="1442.32">
+        <route edges="e24_w e24_cs"/>
+    </vehicle>
+    <vehicle id="3460" depart="1463.90">
+        <route edges="e25_w e25_w.89 e25_cn"/>
+    </vehicle>
+    <vehicle id="3481" depart="1472.79">
+        <route edges="e43_s e43_cn"/>
+    </vehicle>
+    <vehicle id="3490" depart="1476.59">
+        <route edges="e25_s e25_cn"/>
+    </vehicle>
+    <vehicle id="3570" depart="1510.44">
+        <route edges="e42_e2ce e42_ce2n"/>
+    </vehicle>
+    <vehicle id="3613" depart="1528.64">
+        <route edges="e33_main_e e33_side_cn"/>
+    </vehicle>
+    <vehicle id="3652" depart="1545.14">
+        <route edges="e42_n2ce e42_ce2cw e42_cw2w"/>
+    </vehicle>
+    <vehicle id="3656" depart="1546.83">
+        <route edges="e34_main_w e34_side_cs"/>
+    </vehicle>
+    <vehicle id="3703" depart="1566.71">
+        <route edges="e23_e e23_cw"/>
+    </vehicle>
+    <vehicle id="3726" depart="1576.44">
+        <route edges="e15_s e15_cnw"/>
+    </vehicle>
+    <vehicle id="3740" depart="1582.37">
+        <route edges="e41_s e41_ce"/>
+    </vehicle>
+    <vehicle id="3756" depart="1589.14">
+        <route edges="e33_side_s e33_main_ce"/>
+    </vehicle>
+    <vehicle id="3798" depart="1606.91">
+        <route edges="e35_main_e e35_main_cw"/>
+    </vehicle>
+    <vehicle id="3828" depart="1619.60">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="3853" depart="1630.18">
+        <route edges="e34_side_s e34_side_cn"/>
+    </vehicle>
+    <vehicle id="3903" depart="1651.33">
+        <route edges="e25_s e25_cn"/>
+    </vehicle>
+    <vehicle id="3918" depart="1657.68">
+        <route edges="e31_side_n e31_main_ce"/>
+    </vehicle>
+    <vehicle id="3971" depart="1680.10">
+        <route edges="e23_w e23_ce"/>
+    </vehicle>
+    <vehicle id="3973" depart="1680.95">
+        <route edges="e35_main_e e35_main_cw"/>
+    </vehicle>
+    <vehicle id="4011" depart="1697.03">
+        <route edges="e33_main_e e33_side_cs"/>
+    </vehicle>
+    <vehicle id="4142" depart="1752.45">
+        <route edges="e31_main_e e31_side_cs"/>
+    </vehicle>
+    <vehicle id="4176" depart="1766.84">
+        <route edges="e35_main_w e35_main_ce"/>
+    </vehicle>
+    <vehicle id="4213" depart="1782.49">
+        <route edges="e15_s e15_cnw"/>
+    </vehicle>
+    <vehicle id="4224" depart="1787.14">
+        <route edges="e13_w e13_cs"/>
+    </vehicle>
+    <vehicle id="4249" depart="1797.72">
+        <route edges="e22_w e22_ce"/>
+    </vehicle>
+    <vehicle id="4324" depart="1829.45">
+        <route edges="e15_nw e15_cne"/>
+    </vehicle>
+    <vehicle id="4330" depart="1831.99">
+        <route edges="e12_w e12_cs"/>
+    </vehicle>
+    <vehicle id="4358" depart="1843.84">
+        <route edges="e13_w e13_ce"/>
+    </vehicle>
+    <vehicle id="4361" depart="1845.11">
+        <route edges="e44_n e44_ce"/>
+    </vehicle>
+    <vehicle id="4388" depart="1856.53">
+        <route edges="e35_side_s e35_main_ce"/>
+    </vehicle>
+    <vehicle id="4406" depart="1864.15">
+        <route edges="e12_w e12_cs"/>
+    </vehicle>
+    <vehicle id="4444" depart="1880.23">
+        <route edges="e35_side_s e35_main_cw"/>
+    </vehicle>
+    <vehicle id="4460" depart="1886.99">
+        <route edges="e23_n e23_cs"/>
+    </vehicle>
+    <vehicle id="4486" depart="1898.00">
+        <route edges="e33_side_n e33_side_cs"/>
+    </vehicle>
+    <vehicle id="4527" depart="1915.34">
+        <route edges="e35_side_s e35_side_cn"/>
+    </vehicle>
+    <vehicle id="4577" depart="1936.50">
+        <route edges="e45_n e45_cw"/>
+    </vehicle>
+    <vehicle id="4602" depart="1947.07">
+        <route edges="e33_side_n e33_side_cs"/>
+    </vehicle>
+    <vehicle id="4617" depart="1953.42">
+        <route edges="e45_s e45_cw"/>
+    </vehicle>
+    <vehicle id="4640" depart="1963.15">
+        <route edges="e33_side_n e33_main_ce"/>
+    </vehicle>
+    <vehicle id="4666" depart="1974.15">
+        <route edges="e14_e e14_cw"/>
+    </vehicle>
+    <vehicle id="4687" depart="1983.04">
+        <route edges="e15_ne e15_cnw"/>
+    </vehicle>
+    <vehicle id="4704" depart="1990.23">
+        <route edges="e21_n e21_cw"/>
+    </vehicle>
+    <vehicle id="4736" depart="2003.77">
+        <route edges="e31_side_s e31_main_ce"/>
+    </vehicle>
+    <vehicle id="4798" depart="2030.00">
+        <route edges="e22_w e22_cn"/>
+    </vehicle>
+    <vehicle id="4930" depart="2085.85">
+        <route edges="e44_w e44_ce"/>
+    </vehicle>
+    <vehicle id="5029" depart="2127.73">
+        <route edges="e25_n e25_cs e25_cs.35"/>
+    </vehicle>
+    <vehicle id="5050" depart="2136.62">
+        <route edges="e23_e e23_cw"/>
+    </vehicle>
+    <vehicle id="5069" depart="2144.66">
+        <route edges="e32_side_n e32_main_ce"/>
+    </vehicle>
+    <vehicle id="5089" depart="2153.12">
+        <route edges="e22_s e22_cw"/>
+    </vehicle>
+    <vehicle id="5093" depart="2154.81">
+        <route edges="e43_s e43_ce"/>
+    </vehicle>
+    <vehicle id="5100" depart="2157.77">
+        <route edges="e43_e e43_cw"/>
+    </vehicle>
+    <vehicle id="5104" depart="2159.47">
+        <route edges="e33_main_e e33_main_cw"/>
+    </vehicle>
+    <vehicle id="5144" depart="2176.39">
+        <route edges="e25_n e25_ce"/>
+    </vehicle>
+    <vehicle id="5196" depart="2198.39">
+        <route edges="e15_ne e15_cs"/>
+    </vehicle>
+    <vehicle id="5253" depart="2222.51">
+        <route edges="e41_e e41_cs"/>
+    </vehicle>
+    <vehicle id="5304" depart="2244.09">
+        <route edges="e14_s e14_cw"/>
+    </vehicle>
+    <vehicle id="5422" depart="2294.01">
+        <route edges="e41_n e41_cw"/>
+    </vehicle>
+    <vehicle id="5435" depart="2299.51">
+        <route edges="e13_s e13_cw"/>
+    </vehicle>
+    <vehicle id="5502" depart="2327.86">
+        <route edges="e22_e e22_cs"/>
+    </vehicle>
+    <vehicle id="5546" depart="2346.47">
+        <route edges="e23_e e23_cw"/>
+    </vehicle>
+    <vehicle id="5559" depart="2351.97">
+        <route edges="e33_side_s e33_main_cw"/>
+    </vehicle>
+    <vehicle id="5568" depart="2355.78">
+        <route edges="e42_w2cw e42_cw2s"/>
+    </vehicle>
+    <vehicle id="5571" depart="2357.05">
+        <route edges="e44_w e44_ce"/>
+    </vehicle>
+    <vehicle id="5581" depart="2361.28">
+        <route edges="e11_e e11_cs"/>
+    </vehicle>
+    <vehicle id="5602" depart="2370.17">
+        <route edges="e22_e e22_cn"/>
+    </vehicle>
+    <vehicle id="5622" depart="2378.63">
+        <route edges="e23_e e23_cw"/>
+    </vehicle>
+    <vehicle id="5629" depart="2381.59">
+        <route edges="e41_n e41_cs"/>
+    </vehicle>
+    <vehicle id="5643" depart="2387.51">
+        <route edges="e34_side_s e34_main_ce"/>
+    </vehicle>
+    <vehicle id="5657" depart="2393.44">
+        <route edges="e32_side_n e32_side_cs"/>
+    </vehicle>
+    <vehicle id="5677" depart="2401.90">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="5682" depart="2404.01">
+        <route edges="e14_w e14_cs"/>
+    </vehicle>
+    <vehicle id="5683" depart="2404.44">
+        <route edges="e41_n e41_cs"/>
+    </vehicle>
+    <vehicle id="5687" depart="2406.13">
+        <route edges="e41_s e41_cn"/>
+    </vehicle>
+    <vehicle id="5691" depart="2407.82">
+        <route edges="e23_n e23_cs"/>
+    </vehicle>
+    <vehicle id="5708" depart="2415.01">
+        <route edges="e34_main_w e34_side_cn"/>
+    </vehicle>
+    <vehicle id="5716" depart="2418.40">
+        <route edges="e14_w e14_cs"/>
+    </vehicle>
+    <vehicle id="5727" depart="2423.05">
+        <route edges="e25_w e25_w.89 e25_cs e25_cs.35"/>
+    </vehicle>
+    <vehicle id="5737" depart="2427.28">
+        <route edges="e41_w e41_cs"/>
+    </vehicle>
+    <vehicle id="5756" depart="2435.32">
+        <route edges="e21_w e21_ce"/>
+    </vehicle>
+    <vehicle id="5822" depart="2463.25">
+        <route edges="e33_main_w e33_side_cs"/>
+    </vehicle>
+    <vehicle id="5842" depart="2471.71">
+        <route edges="e15_s e15_cne"/>
+    </vehicle>
+    <vehicle id="5890" depart="2492.02">
+        <route edges="e41_e e41_cw"/>
+    </vehicle>
+    <vehicle id="5912" depart="2501.33">
+        <route edges="e41_w e41_ce"/>
+    </vehicle>
+    <vehicle id="5956" depart="2519.94">
+        <route edges="e42_e2ce e42_ce2cw e42_cw2s"/>
+    </vehicle>
+    <vehicle id="6033" depart="2552.52">
+        <route edges="e15_nw e15_cne"/>
+    </vehicle>
+    <vehicle id="6069" depart="2567.75">
+        <route edges="e44_n e44_cs"/>
+    </vehicle>
+    <vehicle id="6073" depart="2569.44">
+        <route edges="e23_n e23_cw"/>
+    </vehicle>
+    <vehicle id="6121" depart="2589.75">
+        <route edges="e24_w e24_cs"/>
+    </vehicle>
+    <vehicle id="6124" depart="2591.02">
+        <route edges="e33_main_e e33_side_cn"/>
+    </vehicle>
+    <vehicle id="6237" depart="2638.83">
+        <route edges="e45_n e45_ce"/>
+    </vehicle>
+    <vehicle id="6263" depart="2649.83">
+        <route edges="e34_side_n e34_side_cs"/>
+    </vehicle>
+    <vehicle id="6276" depart="2655.33">
+        <route edges="e41_w e41_cn"/>
+    </vehicle>
+    <vehicle id="6283" depart="2658.29">
+        <route edges="e13_s e13_cw"/>
+    </vehicle>
+    <vehicle id="6296" depart="2663.79">
+        <route edges="e15_ne e15_cnw"/>
+    </vehicle>
+    <vehicle id="6323" depart="2675.22">
+        <route edges="e25_w e25_w.89 e25_cs e25_cs.35"/>
+    </vehicle>
+    <vehicle id="6360" depart="2690.87">
+        <route edges="e32_main_w e32_side_cn"/>
+    </vehicle>
+    <vehicle id="6373" depart="2696.37">
+        <route edges="e41_n e41_cs"/>
+    </vehicle>
+    <vehicle id="6379" depart="2698.91">
+        <route edges="e22_n e22_cw"/>
+    </vehicle>
+    <vehicle id="6437" depart="2723.45">
+        <route edges="e23_n e23_ce"/>
+    </vehicle>
+    <vehicle id="6480" depart="2741.64">
+        <route edges="e24_s e24_ce"/>
+    </vehicle>
+    <vehicle id="6577" depart="2782.68">
+        <route edges="e41_n e41_cw"/>
+    </vehicle>
+    <vehicle id="6595" depart="2790.30">
+        <route edges="e43_w e43_ce"/>
+    </vehicle>
+    <vehicle id="6632" depart="2805.95">
+        <route edges="e12_s e12_cw"/>
+    </vehicle>
+    <vehicle id="6646" depart="2811.88">
+        <route edges="e22_e e22_cn"/>
+    </vehicle>
+    <vehicle id="6731" depart="2847.84">
+        <route edges="e42_e2ce e42_ce2cw e42_cw2s"/>
+    </vehicle>
+    <vehicle id="6773" depart="2865.61">
+        <route edges="e31_main_w e31_main_ce"/>
+    </vehicle>
+    <vehicle id="6837" depart="2892.69">
+        <route edges="e41_w e41_cn"/>
+    </vehicle>
+    <vehicle id="6841" depart="2894.38">
+        <route edges="e45_s e45_cw"/>
+    </vehicle>
+    <vehicle id="6888" depart="2914.26">
+        <route edges="e34_main_w e34_side_cs"/>
+    </vehicle>
+    <vehicle id="6896" depart="2917.65">
+        <route edges="e13_w e13_cs"/>
+    </vehicle>
+    <vehicle id="6929" depart="2931.61">
+        <route edges="e31_main_w e31_side_cs"/>
+    </vehicle>
+    <vehicle id="6972" depart="2949.80">
+        <route edges="e41_n e41_cs"/>
+    </vehicle>
+    <vehicle id="6988" depart="2956.57">
+        <route edges="e23_s e23_cn"/>
+    </vehicle>
+    <vehicle id="7027" depart="2973.07">
+        <route edges="e15_nw e15_cs"/>
+    </vehicle>
+    <vehicle id="7030" depart="2974.34">
+        <route edges="e32_main_w e32_main_ce"/>
+    </vehicle>
+    <vehicle id="7031" depart="2974.77">
+        <route edges="e42_w2cw e42_cw2ce e42_ce2e"/>
+    </vehicle>
+    <vehicle id="7032" depart="2975.19">
+        <route edges="e32_main_w e32_side_cn"/>
+    </vehicle>
+    <vehicle id="7041" depart="2979.00">
+        <route edges="e25_w e25_w.89 e25_cs e25_cs.35"/>
+    </vehicle>
+    <vehicle id="7079" depart="2995.08">
+        <route edges="e34_main_w e34_side_cn"/>
+    </vehicle>
+    <vehicle id="7090" depart="2999.73">
+        <route edges="e22_s e22_cn"/>
+    </vehicle>
+    <vehicle id="7139" depart="3020.46">
+        <route edges="e43_n e43_cs"/>
+    </vehicle>
+    <vehicle id="7173" depart="3034.85">
+        <route edges="e35_main_w e35_main_ce"/>
+    </vehicle>
+    <vehicle id="7210" depart="3050.50">
+        <route edges="e11_e e11_cs"/>
+    </vehicle>
+    <vehicle id="7223" depart="3056.00">
+        <route edges="e22_s e22_cn"/>
+    </vehicle>
+    <vehicle id="7235" depart="3061.08">
+        <route edges="e31_side_n e31_side_cs"/>
+    </vehicle>
+    <vehicle id="7282" depart="3080.96">
+        <route edges="e24_e e24_cs"/>
+    </vehicle>
+    <vehicle id="7304" depart="3090.27">
+        <route edges="e33_main_e e33_side_cn"/>
+    </vehicle>
+    <vehicle id="7322" depart="3097.89">
+        <route edges="e22_e e22_cn"/>
+    </vehicle>
+    <vehicle id="7422" depart="3140.20">
+        <route edges="e41_w e41_cs"/>
+    </vehicle>
+    <vehicle id="7426" depart="3141.89">
+        <route edges="e32_main_w e32_side_cn"/>
+    </vehicle>
+    <vehicle id="7439" depart="3147.39">
+        <route edges="e42_w2cw e42_cw2ce e42_ce2n"/>
+    </vehicle>
+    <vehicle id="7448" depart="3151.20">
+        <route edges="e42_n2ce e42_ce2e"/>
+    </vehicle>
+    <vehicle id="7561" depart="3199.01">
+        <route edges="e24_s e24_cn"/>
+    </vehicle>
+    <vehicle id="7651" depart="3237.08">
+        <route edges="e25_n e25_ce"/>
+    </vehicle>
+    <vehicle id="7669" depart="3244.70">
+        <route edges="e43_e e43_cn"/>
+    </vehicle>
+    <vehicle id="7696" depart="3256.12">
+        <route edges="e21_s e21_cw"/>
+    </vehicle>
+    <vehicle id="7718" depart="3265.43">
+        <route edges="e45_n e45_ce"/>
+    </vehicle>
+    <vehicle id="7741" depart="3275.16">
+        <route edges="e42_n2ce e42_ce2cw e42_cw2w"/>
+    </vehicle>
+    <vehicle id="7746" depart="3277.28">
+        <route edges="e31_side_s e31_main_ce"/>
+    </vehicle>
+    <vehicle id="7749" depart="3278.55">
+        <route edges="e32_side_s e32_main_cw"/>
+    </vehicle>
+    <vehicle id="7759" depart="3282.78">
+        <route edges="e31_side_n e31_main_cw"/>
+    </vehicle>
+    <vehicle id="7768" depart="3286.59">
+        <route edges="e22_n e22_cs"/>
+    </vehicle>
+    <vehicle id="7770" depart="3287.43">
+        <route edges="e42_e2ce e42_ce2cw e42_cw2w"/>
+    </vehicle>
+    <vehicle id="7826" depart="3311.13">
+        <route edges="e23_w e23_ce"/>
+    </vehicle>
+    <vehicle id="7859" depart="3325.09">
+        <route edges="e41_n e41_cw"/>
+    </vehicle>
+    <vehicle id="7877" depart="3332.70">
+        <route edges="e22_n e22_cs"/>
+    </vehicle>
+    <vehicle id="7897" depart="3341.17">
+        <route edges="e41_e e41_cs"/>
+    </vehicle>
+    <vehicle id="7911" depart="3347.09">
+        <route edges="e42_n2ce e42_ce2e"/>
+    </vehicle>
+    <vehicle id="7939" depart="3358.94">
+        <route edges="e44_n e44_cs"/>
+    </vehicle>
+    <vehicle id="7946" depart="3361.90">
+        <route edges="e45_s e45_cn"/>
+    </vehicle>
+    <vehicle id="7950" depart="3363.59">
+        <route edges="e42_e2ce e42_ce2cw e42_cw2s"/>
+    </vehicle>
+    <vehicle id="8001" depart="3385.17">
+        <route edges="e31_side_s e31_main_cw"/>
+    </vehicle>
+    <vehicle id="8022" depart="3394.05">
+        <route edges="e22_n e22_cs"/>
+    </vehicle>
+    <vehicle id="8057" depart="3408.86">
+        <route edges="e12_w e12_cs"/>
+    </vehicle>
+    <vehicle id="8060" depart="3410.13">
+        <route edges="e41_n e41_cw"/>
+    </vehicle>
+    <vehicle id="8091" depart="3423.25">
+        <route edges="e34_side_s e34_side_cn"/>
+    </vehicle>
+    <vehicle id="8103" depart="3428.32">
+        <route edges="e31_side_s e31_side_cn"/>
+    </vehicle>
+    <vehicle id="8143" depart="3445.25">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="8245" depart="3488.40">
+        <route edges="e41_n e41_ce"/>
+    </vehicle>
+    <vehicle id="8248" depart="3489.67">
+        <route edges="e32_main_e e32_side_cn"/>
+    </vehicle>
+    <vehicle id="8272" depart="3499.83">
+        <route edges="e25_s e25_cn"/>
+    </vehicle>
+    <vehicle id="8284" depart="3504.90">
+        <route edges="e43_n e43_cw"/>
+    </vehicle>
+    <vehicle id="8398" depart="3553.14">
+        <route edges="e34_main_e e34_side_cn"/>
+    </vehicle>
+    <vehicle id="8426" depart="3564.98">
+        <route edges="e12_w e12_ce"/>
+    </vehicle>
+    <vehicle id="8429" depart="3566.25">
+        <route edges="e24_s e24_cw"/>
     </vehicle>
 </routes>

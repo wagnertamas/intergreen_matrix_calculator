@@ -1,0 +1,19 @@
+# Core
+numpy
+pandas
+
+# GUI & Plotting
+matplotlib
+scipy
+shapely
+networkx
+
+# Reinforcement Learning
+gymnasium
+stable-baselines3
+shimmy>=2.0.0
+tensorboard
+torch
+
+# Logging
+wandb

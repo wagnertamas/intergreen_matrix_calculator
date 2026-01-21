@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-01-21T14:34:52.996172+01:00 by Eclipse SUMO duarouter 1.25.0
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/finish/mega_catalogue_v2.net.xml"/>
+        <route-files value="random_traffic.rou.xml"/>
+    </input>
+
+    <output>
+        <output-file value="random_traffic.rou.xml.tmp"/>
+        <alternatives-output value="NUL"/>
+        <write-trips value="true"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+        <end value="3600.0"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <ignore-errors value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <trip id="56" depart="23.69" from="e43_w" to="e43_ce"/>
+    <trip id="78" depart="33.00" from="e21_n" to="e21_ce"/>
+    <trip id="88" depart="37.23" from="e25_cs" to="e25_cs.35"/>
+    <trip id="106" depart="44.85" from="e45_e" to="e45_cw"/>
+    <trip id="118" depart="49.92" from="e33_main_e" to="e33_main_cw"/>
+    <trip id="228" depart="96.47" from="e22_e" to="e22_cw"/>
+    <trip id="242" depart="102.39" from="e21_n" to="e21_ce"/>
+    <trip id="279" depart="118.04" from="e42_s2cw" to="e42_ce2e"/>
+    <trip id="321" depart="135.81" from="e25_w" to="e25_ce"/>
+    <trip id="334" depart="141.31" from="e33_side_n" to="e33_main_cw"/>
+    <trip id="358" depart="151.47" from="e45_e" to="e45_cw"/>
+    <trip id="365" depart="154.43" from="e23_s" to="e23_ce"/>
+    <trip id="396" depart="167.54" from="e22_n" to="e22_cs"/>
+    <trip id="400" depart="169.24" from="e32_main_w" to="e32_main_ce"/>
+    <trip id="405" depart="171.35" from="e35_side_s" to="e35_main_ce"/>
+    <trip id="435" depart="184.05" from="e21_w" to="e21_cs"/>
+    <trip id="452" depart="191.24" from="e33_side_s" to="e33_main_cw"/>
+    <trip id="542" depart="229.32" from="e32_side_s" to="e32_main_cw"/>
+    <trip id="587" depart="248.36" from="e32_side_s" to="e32_side_cn"/>
+    <trip id="596" depart="252.16" from="e23_n" to="e23_ce"/>
+    <trip id="611" depart="258.51" from="e22_w" to="e22_ce"/>
+    <trip id="635" depart="268.66" from="e43_w" to="e43_ce"/>
+    <trip id="646" depart="273.32" from="e23_w" to="e23_cs"/>
+    <trip id="647" depart="273.74" from="e15_nw" to="e15_cs"/>
+    <trip id="665" depart="281.36" from="e45_e" to="e45_cs"/>
+    <trip id="702" depart="297.01" from="e31_side_s" to="e31_main_cw"/>
+    <trip id="739" depart="312.67" from="e45_s" to="e45_ce"/>
+    <trip id="802" depart="339.32" from="e12_w" to="e12_ce"/>
+    <trip id="803" depart="339.74" from="e25_n" to="e25_cw"/>
+    <trip id="817" depart="345.67" from="e31_side_n" to="e31_main_ce"/>
+    <trip id="839" depart="354.98" from="e25_w" to="e25_cn"/>
+    <trip id="852" depart="360.48" from="e41_s" to="e41_cn"/>
+    <trip id="855" depart="361.74" from="e33_side_n" to="e33_main_cw"/>
+    <trip id="869" depart="367.67" from="e34_main_e" to="e34_side_cs"/>
+    <trip id="873" depart="369.36" from="e22_s" to="e22_cn"/>
+    <trip id="875" depart="370.21" from="e23_e" to="e23_cn"/>
+    <trip id="881" depart="372.74" from="e22_s" to="e22_cn"/>
+    <trip id="934" depart="395.17" from="e14_e" to="e14_cs"/>
+    <trip id="963" depart="407.44" from="e43_e" to="e43_cw"/>
+    <trip id="992" depart="419.71" from="e43_n" to="e43_cw"/>
+    <trip id="1022" depart="432.40" from="e31_side_n" to="e31_main_ce"/>
+    <trip id="1070" depart="452.71" from="e43_e" to="e43_cn"/>
+    <trip id="1092" depart="462.02" from="e34_side_n" to="e34_main_ce"/>
+    <trip id="1120" depart="473.86" from="e23_n" to="e23_ce"/>
+    <trip id="1121" depart="474.29" from="e42_e2ce" to="e42_cw2w"/>
+    <trip id="1153" depart="487.83" from="e32_side_s" to="e32_side_cn"/>
+    <trip id="1177" depart="497.98" from="e41_e" to="e41_cw"/>
+    <trip id="1183" depart="500.52" from="e33_main_e" to="e33_main_cw"/>
+    <trip id="1188" depart="502.63" from="e13_e" to="e13_cw"/>
+    <trip id="1201" depart="508.13" from="e31_main_w" to="e31_main_ce"/>
+    <trip id="1291" depart="546.21" from="e31_side_n" to="e31_main_cw"/>
+    <trip id="1297" depart="548.75" from="e45_s" to="e45_cw"/>
+    <trip id="1315" depart="556.37" from="e35_main_e" to="e35_side_cn"/>
+    <trip id="1371" depart="580.06" from="e13_s" to="e13_cw"/>
+    <trip id="1375" depart="581.75" from="e22_e" to="e22_cw"/>
+    <trip id="1410" depart="596.56" from="e15_ne" to="e15_cs"/>
+    <trip id="1419" depart="600.37" from="e41_w" to="e41_cs"/>
+    <trip id="1439" depart="608.83" from="e32_side_n" to="e32_main_cw"/>
+    <trip id="1451" depart="613.91" from="e42_s2cw" to="e42_cw2w"/>
+    <trip id="1484" depart="627.87" from="e22_s" to="e22_cw"/>
+    <trip id="1489" depart="629.99" from="e33_main_e" to="e33_main_cw"/>
+    <trip id="1495" depart="632.52" from="e35_main_w" to="e35_side_cn"/>
+    <trip id="1510" depart="638.87" from="e21_n" to="e21_cw"/>
+    <trip id="1525" depart="645.22" from="e45_s" to="e45_cn"/>
+    <trip id="1538" depart="650.72" from="e44_w" to="e44_ce"/>
+    <trip id="1557" depart="658.76" from="e15_nw" to="e15_cs"/>
+    <trip id="1578" depart="667.64" from="e34_main_e" to="e34_side_cn"/>
+    <trip id="1602" depart="677.80" from="e34_main_w" to="e34_side_cn"/>
+    <trip id="1605" depart="679.06" from="e24_w" to="e24_ce"/>
+    <trip id="1674" depart="708.26" from="e13_w" to="e13_ce"/>
+    <trip id="1675" depart="708.68" from="e15_s" to="e15_cnw"/>
+    <trip id="1686" depart="713.33" from="e21_w" to="e21_cn"/>
+    <trip id="1713" depart="724.76" from="e22_e" to="e22_cw"/>
+    <trip id="1763" depart="745.91" from="e31_main_e" to="e31_main_cw"/>
+    <trip id="1828" depart="773.41" from="e23_n" to="e23_cs"/>
+    <trip id="1834" depart="775.95" from="e33_main_w" to="e33_side_cn"/>
+    <trip id="1884" depart="797.11" from="e42_w2cw" to="e42_cw2s"/>
+    <trip id="1912" depart="808.95" from="e32_main_w" to="e32_main_ce"/>
+    <trip id="1930" depart="816.57" from="e25_w" to="e25_cn"/>
+    <trip id="1943" depart="822.07" from="e14_s" to="e14_cw"/>
+    <trip id="1985" depart="839.84" from="e13_s" to="e13_cw"/>
+    <trip id="1992" depart="842.80" from="e34_main_e" to="e34_side_cn"/>
+    <trip id="1993" depart="843.22" from="e23_e" to="e23_cs"/>
+    <trip id="2042" depart="863.96" from="e41_n" to="e41_ce"/>
+    <trip id="2063" depart="872.84" from="e34_side_n" to="e34_main_cw"/>
+    <trip id="2068" depart="874.96" from="e43_s" to="e43_ce"/>
+    <trip id="2141" depart="905.84" from="e33_main_e" to="e33_side_cn"/>
+    <trip id="2147" depart="908.38" from="e22_e" to="e22_cs"/>
+    <trip id="2150" depart="909.65" from="e25_w" to="E0"/>
+    <trip id="2152" depart="910.50" from="e25_w" to="E0"/>
+    <trip id="2155" depart="911.77" from="e24_e" to="e24_cs"/>
+    <trip id="2158" depart="913.03" from="e24_n" to="e24_ce"/>
+    <trip id="2166" depart="916.42" from="e33_side_s" to="e33_main_cw"/>
+    <trip id="2181" depart="922.77" from="e42_s2cw" to="e42_ce2e"/>
+    <trip id="2209" depart="934.61" from="e41_e" to="e41_cw"/>
+    <trip id="2215" depart="937.15" from="e15_nw" to="e15_cne"/>
+    <trip id="2261" depart="956.61" from="e23_e" to="e23_cw"/>
+    <trip id="2357" depart="997.23" from="e33_main_w" to="e33_side_cn"/>
+    <trip id="2365" depart="1000.61" from="e45_w" to="e45_cs"/>
+    <trip id="2372" depart="1003.58" from="e24_w" to="e24_cs"/>
+    <trip id="2457" depart="1039.54" from="e31_side_s" to="e31_side_cn"/>
+    <trip id="2499" depart="1057.31" from="e35_side_s" to="e35_main_ce"/>
+    <trip id="2505" depart="1059.85" from="e41_s" to="e41_cn"/>
+    <trip id="2545" depart="1076.77" from="e25_w" to="e25_cn"/>
+    <trip id="2596" depart="1098.35" from="e24_n" to="e24_ce"/>
+    <trip id="2671" depart="1130.08" from="e35_side_s" to="e35_side_cn"/>
+    <trip id="2756" depart="1166.04" from="e41_w" to="e41_ce"/>
+    <trip id="2788" depart="1179.58" from="e41_w" to="e41_ce"/>
+    <trip id="2811" depart="1189.31" from="e33_side_s" to="e33_main_cw"/>
+    <trip id="2842" depart="1202.43" from="e41_w" to="e41_cs"/>
+    <trip id="2859" depart="1209.62" from="e31_main_e" to="e31_side_cn"/>
+    <trip id="2891" depart="1223.16" from="e34_side_s" to="e34_main_cw"/>
+    <trip id="2897" depart="1225.70" from="e23_s" to="e23_cw"/>
+    <trip id="2940" depart="1243.89" from="e35_main_e" to="e35_side_cs"/>
+    <trip id="2993" depart="1266.32" from="e41_n" to="e41_ce"/>
+    <trip id="3049" depart="1290.01" from="e12_e" to="e12_cs"/>
+    <trip id="3068" depart="1298.05" from="e34_side_n" to="e34_main_ce"/>
+    <trip id="3079" depart="1302.70" from="e23_w" to="e23_cs"/>
+    <trip id="3089" depart="1306.93" from="e24_e" to="e24_cn"/>
+    <trip id="3138" depart="1327.67" from="e43_e" to="e43_cs"/>
+    <trip id="3181" depart="1345.86" from="e42_e2ce" to="e42_ce2n"/>
+    <trip id="3206" depart="1356.44" from="e24_s" to="e24_cw"/>
+    <trip id="3225" depart="1364.47" from="e34_side_s" to="e34_side_cn"/>
+    <trip id="3226" depart="1364.90" from="e35_main_w" to="e35_main_ce"/>
+    <trip id="3247" depart="1373.78" from="e22_e" to="e22_cw"/>
+    <trip id="3282" depart="1388.59" from="e24_e" to="e24_cn"/>
+    <trip id="3321" depart="1405.09" from="e15_nw" to="e15_cne"/>
+    <trip id="3351" depart="1417.78" from="e33_main_e" to="e33_main_cw"/>
+    <trip id="3382" depart="1430.90" from="e21_n" to="e21_cw"/>
+    <trip id="3383" depart="1431.32" from="e23_n" to="e23_cs"/>
+    <trip id="3390" depart="1434.29" from="e13_w" to="e13_ce"/>
+    <trip id="3409" depart="1442.32" from="e24_w" to="e24_cs"/>
+    <trip id="3460" depart="1463.90" from="e25_w" to="e25_cn"/>
+    <trip id="3481" depart="1472.79" from="e43_s" to="e43_cn"/>
+    <trip id="3490" depart="1476.59" from="e25_s" to="e25_cn"/>
+    <trip id="3570" depart="1510.44" from="e42_e2ce" to="e42_ce2n"/>
+    <trip id="3613" depart="1528.64" from="e33_main_e" to="e33_side_cn"/>
+    <trip id="3652" depart="1545.14" from="e42_n2ce" to="e42_cw2w"/>
+    <trip id="3656" depart="1546.83" from="e34_main_w" to="e34_side_cs"/>
+    <trip id="3703" depart="1566.71" from="e23_e" to="e23_cw"/>
+    <trip id="3726" depart="1576.44" from="e15_s" to="e15_cnw"/>
+    <trip id="3740" depart="1582.37" from="e41_s" to="e41_ce"/>
+    <trip id="3756" depart="1589.14" from="e33_side_s" to="e33_main_ce"/>
+    <trip id="3798" depart="1606.91" from="e35_main_e" to="e35_main_cw"/>
+    <trip id="3828" depart="1619.60" from="e41_n" to="e41_ce"/>
+    <trip id="3853" depart="1630.18" from="e34_side_s" to="e34_side_cn"/>
+    <trip id="3903" depart="1651.33" from="e25_s" to="e25_cn"/>
+    <trip id="3918" depart="1657.68" from="e31_side_n" to="e31_main_ce"/>
+    <trip id="3971" depart="1680.10" from="e23_w" to="e23_ce"/>
+    <trip id="3973" depart="1680.95" from="e35_main_e" to="e35_main_cw"/>
+    <trip id="4011" depart="1697.03" from="e33_main_e" to="e33_side_cs"/>
+    <trip id="4142" depart="1752.45" from="e31_main_e" to="e31_side_cs"/>
+    <trip id="4176" depart="1766.84" from="e35_main_w" to="e35_main_ce"/>
+    <trip id="4213" depart="1782.49" from="e15_s" to="e15_cnw"/>
+    <trip id="4224" depart="1787.14" from="e13_w" to="e13_cs"/>
+    <trip id="4249" depart="1797.72" from="e22_w" to="e22_ce"/>
+    <trip id="4324" depart="1829.45" from="e15_nw" to="e15_cne"/>
+    <trip id="4330" depart="1831.99" from="e12_w" to="e12_cs"/>
+    <trip id="4358" depart="1843.84" from="e13_w" to="e13_ce"/>
+    <trip id="4361" depart="1845.11" from="e44_n" to="e44_ce"/>
+    <trip id="4388" depart="1856.53" from="e35_side_s" to="e35_main_ce"/>
+    <trip id="4406" depart="1864.15" from="e12_w" to="e12_cs"/>
+    <trip id="4444" depart="1880.23" from="e35_side_s" to="e35_main_cw"/>
+    <trip id="4460" depart="1886.99" from="e23_n" to="e23_cs"/>
+    <trip id="4486" depart="1898.00" from="e33_side_n" to="e33_side_cs"/>
+    <trip id="4527" depart="1915.34" from="e35_side_s" to="e35_side_cn"/>
+    <trip id="4577" depart="1936.50" from="e45_n" to="e45_cw"/>
+    <trip id="4602" depart="1947.07" from="e33_side_n" to="e33_side_cs"/>
+    <trip id="4617" depart="1953.42" from="e45_s" to="e45_cw"/>
+    <trip id="4640" depart="1963.15" from="e33_side_n" to="e33_main_ce"/>
+    <trip id="4666" depart="1974.15" from="e14_e" to="e14_cw"/>
+    <trip id="4687" depart="1983.04" from="e15_ne" to="e15_cnw"/>
+    <trip id="4704" depart="1990.23" from="e21_n" to="e21_cw"/>
+    <trip id="4736" depart="2003.77" from="e31_side_s" to="e31_main_ce"/>
+    <trip id="4798" depart="2030.00" from="e22_w" to="e22_cn"/>
+    <trip id="4930" depart="2085.85" from="e44_w" to="e44_ce"/>
+    <trip id="5029" depart="2127.73" from="e25_n" to="e25_cs.35"/>
+    <trip id="5050" depart="2136.62" from="e23_e" to="e23_cw"/>
+    <trip id="5069" depart="2144.66" from="e32_side_n" to="e32_main_ce"/>
+    <trip id="5089" depart="2153.12" from="e22_s" to="e22_cw"/>
+    <trip id="5093" depart="2154.81" from="e43_s" to="e43_ce"/>
+    <trip id="5100" depart="2157.77" from="e43_e" to="e43_cw"/>
+    <trip id="5104" depart="2159.47" from="e33_main_e" to="e33_main_cw"/>
+    <trip id="5144" depart="2176.39" from="e25_n" to="e25_ce"/>
+    <trip id="5196" depart="2198.39" from="e15_ne" to="e15_cs"/>
+    <trip id="5253" depart="2222.51" from="e41_e" to="e41_cs"/>
+    <trip id="5304" depart="2244.09" from="e14_s" to="e14_cw"/>
+    <trip id="5422" depart="2294.01" from="e41_n" to="e41_cw"/>
+    <trip id="5435" depart="2299.51" from="e13_s" to="e13_cw"/>
+    <trip id="5502" depart="2327.86" from="e22_e" to="e22_cs"/>
+    <trip id="5546" depart="2346.47" from="e23_e" to="e23_cw"/>
+    <trip id="5559" depart="2351.97" from="e33_side_s" to="e33_main_cw"/>
+    <trip id="5568" depart="2355.78" from="e42_w2cw" to="e42_cw2s"/>
+    <trip id="5571" depart="2357.05" from="e44_w" to="e44_ce"/>
+    <trip id="5581" depart="2361.28" from="e11_e" to="e11_cs"/>
+    <trip id="5602" depart="2370.17" from="e22_e" to="e22_cn"/>
+    <trip id="5622" depart="2378.63" from="e23_e" to="e23_cw"/>
+    <trip id="5629" depart="2381.59" from="e41_n" to="e41_cs"/>
+    <trip id="5643" depart="2387.51" from="e34_side_s" to="e34_main_ce"/>
+    <trip id="5657" depart="2393.44" from="e32_side_n" to="e32_side_cs"/>
+    <trip id="5677" depart="2401.90" from="e41_n" to="e41_ce"/>
+    <trip id="5682" depart="2404.01" from="e14_w" to="e14_cs"/>
+    <trip id="5683" depart="2404.44" from="e41_n" to="e41_cs"/>
+    <trip id="5687" depart="2406.13" from="e41_s" to="e41_cn"/>
+    <trip id="5691" depart="2407.82" from="e23_n" to="e23_cs"/>
+    <trip id="5708" depart="2415.01" from="e34_main_w" to="e34_side_cn"/>
+    <trip id="5716" depart="2418.40" from="e14_w" to="e14_cs"/>
+    <trip id="5727" depart="2423.05" from="e25_w" to="e25_cs.35"/>
+    <trip id="5737" depart="2427.28" from="e41_w" to="e41_cs"/>
+    <trip id="5756" depart="2435.32" from="e21_w" to="e21_ce"/>
+    <trip id="5822" depart="2463.25" from="e33_main_w" to="e33_side_cs"/>
+    <trip id="5842" depart="2471.71" from="e15_s" to="e15_cne"/>
+    <trip id="5890" depart="2492.02" from="e41_e" to="e41_cw"/>
+    <trip id="5912" depart="2501.33" from="e41_w" to="e41_ce"/>
+    <trip id="5956" depart="2519.94" from="e42_e2ce" to="e42_cw2s"/>
+    <trip id="6033" depart="2552.52" from="e15_nw" to="e15_cne"/>
+    <trip id="6069" depart="2567.75" from="e44_n" to="e44_cs"/>
+    <trip id="6073" depart="2569.44" from="e23_n" to="e23_cw"/>
+    <trip id="6121" depart="2589.75" from="e24_w" to="e24_cs"/>
+    <trip id="6124" depart="2591.02" from="e33_main_e" to="e33_side_cn"/>
+    <trip id="6237" depart="2638.83" from="e45_n" to="e45_ce"/>
+    <trip id="6263" depart="2649.83" from="e34_side_n" to="e34_side_cs"/>
+    <trip id="6276" depart="2655.33" from="e41_w" to="e41_cn"/>
+    <trip id="6283" depart="2658.29" from="e13_s" to="e13_cw"/>
+    <trip id="6296" depart="2663.79" from="e15_ne" to="e15_cnw"/>
+    <trip id="6323" depart="2675.22" from="e25_w" to="e25_cs.35"/>
+    <trip id="6360" depart="2690.87" from="e32_main_w" to="e32_side_cn"/>
+    <trip id="6373" depart="2696.37" from="e41_n" to="e41_cs"/>
+    <trip id="6379" depart="2698.91" from="e22_n" to="e22_cw"/>
+    <trip id="6437" depart="2723.45" from="e23_n" to="e23_ce"/>
+    <trip id="6480" depart="2741.64" from="e24_s" to="e24_ce"/>
+    <trip id="6577" depart="2782.68" from="e41_n" to="e41_cw"/>
+    <trip id="6595" depart="2790.30" from="e43_w" to="e43_ce"/>
+    <trip id="6632" depart="2805.95" from="e12_s" to="e12_cw"/>
+    <trip id="6646" depart="2811.88" from="e22_e" to="e22_cn"/>
+    <trip id="6731" depart="2847.84" from="e42_e2ce" to="e42_cw2s"/>
+    <trip id="6773" depart="2865.61" from="e31_main_w" to="e31_main_ce"/>
+    <trip id="6837" depart="2892.69" from="e41_w" to="e41_cn"/>
+    <trip id="6841" depart="2894.38" from="e45_s" to="e45_cw"/>
+    <trip id="6888" depart="2914.26" from="e34_main_w" to="e34_side_cs"/>
+    <trip id="6896" depart="2917.65" from="e13_w" to="e13_cs"/>
+    <trip id="6929" depart="2931.61" from="e31_main_w" to="e31_side_cs"/>
+    <trip id="6972" depart="2949.80" from="e41_n" to="e41_cs"/>
+    <trip id="6988" depart="2956.57" from="e23_s" to="e23_cn"/>
+    <trip id="7027" depart="2973.07" from="e15_nw" to="e15_cs"/>
+    <trip id="7030" depart="2974.34" from="e32_main_w" to="e32_main_ce"/>
+    <trip id="7031" depart="2974.77" from="e42_w2cw" to="e42_ce2e"/>
+    <trip id="7032" depart="2975.19" from="e32_main_w" to="e32_side_cn"/>
+    <trip id="7041" depart="2979.00" from="e25_w" to="e25_cs.35"/>
+    <trip id="7079" depart="2995.08" from="e34_main_w" to="e34_side_cn"/>
+    <trip id="7090" depart="2999.73" from="e22_s" to="e22_cn"/>
+    <trip id="7139" depart="3020.46" from="e43_n" to="e43_cs"/>
+    <trip id="7173" depart="3034.85" from="e35_main_w" to="e35_main_ce"/>
+    <trip id="7210" depart="3050.50" from="e11_e" to="e11_cs"/>
+    <trip id="7223" depart="3056.00" from="e22_s" to="e22_cn"/>
+    <trip id="7235" depart="3061.08" from="e31_side_n" to="e31_side_cs"/>
+    <trip id="7282" depart="3080.96" from="e24_e" to="e24_cs"/>
+    <trip id="7304" depart="3090.27" from="e33_main_e" to="e33_side_cn"/>
+    <trip id="7322" depart="3097.89" from="e22_e" to="e22_cn"/>
+    <trip id="7422" depart="3140.20" from="e41_w" to="e41_cs"/>
+    <trip id="7426" depart="3141.89" from="e32_main_w" to="e32_side_cn"/>
+    <trip id="7439" depart="3147.39" from="e42_w2cw" to="e42_ce2n"/>
+    <trip id="7448" depart="3151.20" from="e42_n2ce" to="e42_ce2e"/>
+    <trip id="7561" depart="3199.01" from="e24_s" to="e24_cn"/>
+    <trip id="7651" depart="3237.08" from="e25_n" to="e25_ce"/>
+    <trip id="7669" depart="3244.70" from="e43_e" to="e43_cn"/>
+    <trip id="7696" depart="3256.12" from="e21_s" to="e21_cw"/>
+    <trip id="7718" depart="3265.43" from="e45_n" to="e45_ce"/>
+    <trip id="7741" depart="3275.16" from="e42_n2ce" to="e42_cw2w"/>
+    <trip id="7746" depart="3277.28" from="e31_side_s" to="e31_main_ce"/>
+    <trip id="7749" depart="3278.55" from="e32_side_s" to="e32_main_cw"/>
+    <trip id="7759" depart="3282.78" from="e31_side_n" to="e31_main_cw"/>
+    <trip id="7768" depart="3286.59" from="e22_n" to="e22_cs"/>
+    <trip id="7770" depart="3287.43" from="e42_e2ce" to="e42_cw2w"/>
+    <trip id="7826" depart="3311.13" from="e23_w" to="e23_ce"/>
+    <trip id="7859" depart="3325.09" from="e41_n" to="e41_cw"/>
+    <trip id="7877" depart="3332.70" from="e22_n" to="e22_cs"/>
+    <trip id="7897" depart="3341.17" from="e41_e" to="e41_cs"/>
+    <trip id="7911" depart="3347.09" from="e42_n2ce" to="e42_ce2e"/>
+    <trip id="7939" depart="3358.94" from="e44_n" to="e44_cs"/>
+    <trip id="7946" depart="3361.90" from="e45_s" to="e45_cn"/>
+    <trip id="7950" depart="3363.59" from="e42_e2ce" to="e42_cw2s"/>
+    <trip id="8001" depart="3385.17" from="e31_side_s" to="e31_main_cw"/>
+    <trip id="8022" depart="3394.05" from="e22_n" to="e22_cs"/>
+    <trip id="8057" depart="3408.86" from="e12_w" to="e12_cs"/>
+    <trip id="8060" depart="3410.13" from="e41_n" to="e41_cw"/>
+    <trip id="8091" depart="3423.25" from="e34_side_s" to="e34_side_cn"/>
+    <trip id="8103" depart="3428.32" from="e31_side_s" to="e31_side_cn"/>
+    <trip id="8143" depart="3445.25" from="e41_n" to="e41_ce"/>
+    <trip id="8245" depart="3488.40" from="e41_n" to="e41_ce"/>
+    <trip id="8248" depart="3489.67" from="e32_main_e" to="e32_side_cn"/>
+    <trip id="8272" depart="3499.83" from="e25_s" to="e25_cn"/>
+    <trip id="8284" depart="3504.90" from="e43_n" to="e43_cw"/>
+    <trip id="8398" depart="3553.14" from="e34_main_e" to="e34_side_cn"/>
+    <trip id="8426" depart="3564.98" from="e12_w" to="e12_ce"/>
+    <trip id="8429" depart="3566.25" from="e24_s" to="e24_cw"/>
+</routes>

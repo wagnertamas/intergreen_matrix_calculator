@@ -6,15 +6,15 @@ import os
 import sys
 import subprocess
 import time
+import random
 
 # libsumo használata (gyorsabb, nincs socket overhead)
-# Ha libsumo nem elérhető, visszaesünk traci-ra
+# A felhasználó kérésére CSAK libsumo-t használunk.
 try:
     import libsumo as traci
     USE_LIBSUMO = True
 except ImportError:
-    import traci
-    USE_LIBSUMO = False
+    raise ImportError("Hiba: A 'libsumo' modul nem található! Kérlek állítsd be helyesen a PYTHONPATH-t vagy a SUMO_HOME-ot.")
 
 
 class SumoRLEnvironment(gym.Env):
@@ -75,7 +75,11 @@ class SumoRLEnvironment(gym.Env):
             self.is_running = False
 
         if self.random_traffic:
-            self.generate_random_traffic()
+            # Dynamic Traffic Generation for Robustness
+            # Randomize traffic desnity (period) to expose agent to sparse and dense traffic.
+            # Range: 0.1 (Dense) to 1.5 (Sparse)
+            dynamic_period = random.uniform(0.1, 1.5)
+            self.generate_random_traffic(period=dynamic_period)
 
         # SUMO parancs összeállítása (libsumo nem támogatja a GUI-t!)
         if self.sumo_gui:
@@ -100,25 +104,45 @@ class SumoRLEnvironment(gym.Env):
 
         self._map_network_elements()
 
-        # Ágensek inicializálása
+        # Warm-up Phase
+        # Random duration between 3 and 10 minutes
+        warmup_seconds = random.randint(180, 600)
+        # warmup_seconds = 0 # Uncomment to disable for debugging
+        print(f"[WARMUP] Warming up for {warmup_seconds} seconds ({warmup_seconds} steps)...")
+        
+        for _ in range(warmup_seconds):
+            # Step agents randomly
+            for jid, agent in self.agents.items():
+                agent.collect_measurements() # IMPORTANT: Update internal timers (min_green, transition)
+                agent.update_logic()
+                
+                if agent.is_ready_for_action():
+                     # Pick Random Phase
+                     # self.action_space is defined as Discrete(num_phases) in setup_spaces.
+                     # So efficient random choice:
+                     rnd_action = random.randint(0, agent.num_phases - 1)
+                     agent.set_target_phase(rnd_action)
+            
+            traci.simulationStep()
+            
+        print(f"[WARMUP] Completed.")
+
+        # Ágensek inicializálása (Reset metrics AFTER warmup)
         for agent in self.agents.values():
-            agent.current_logic_idx = 0
-            agent.target_logic_idx = 0
-            agent.is_transitioning = False
-            agent.transition_queue = []
-            agent.transition_cursor = 0
-            agent.transition_step_timer = 0
-            agent.min_green_timer = 0
-            agent.current_sumo_state = "??????"
-            agent.current_sumo_phase_idx = 0
+            # Keep logic state but reset metrics
+            # agent.current_logic_idx = ... # Don't reset phase state, stick to where we are
+            agent.reset_step_metrics()
+            # We don't want to reset 'is_transitioning' etc because we might be mid-transition!
+            # Just reset the reward accumulators.
 
         observations = {jid: agent.get_observation() for jid, agent in self.agents.items()}
-        infos = {jid: {"ready": True} for jid in self.junction_ids}
+        infos = {jid: {"ready": agent.is_ready_for_action()} for jid in self.junction_ids}
 
         return observations, infos
 
-    def generate_random_traffic(self):
-        print("Forgalom generálása folyamatban...")
+    def generate_random_traffic(self, period=None):
+        p = period if period is not None else self.traffic_period
+        print(f"Forgalom generálása folyamatban (Period={p:.2f})...")
         if 'SUMO_HOME' in os.environ:
             tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
             sys.path.append(tools)
@@ -137,7 +161,7 @@ class SumoRLEnvironment(gym.Env):
             "-n", self.net_file,
             "-o", self.route_file,
             "-e", str(self.traffic_duration),
-            "-p", str(self.traffic_period),
+            "-p", str(p),
             "--fringe-factor", "10",
             "--validate",
             "--min-distance", "50"
@@ -186,7 +210,7 @@ class SumoRLEnvironment(gym.Env):
         for _ in range(self.delta_time):
             for agent in self.agents.values():
                 agent.update_logic()
-            traci
+            traci.simulationStep()
             for agent in self.agents.values():
                 agent.collect_measurements()
 
@@ -201,16 +225,24 @@ class SumoRLEnvironment(gym.Env):
 
         for jid, agent in self.agents.items():
             observations[jid] = agent.get_observation()
-            infos[jid] = {"ready": agent.is_ready_for_action()}
-
+            
             avg_travel_time = agent.get_avg_travel_time_metric()
             total_co2 = agent.get_total_co2_metric()
+            
+            # Store raw metrics in info for logging
+            infos[jid] = {
+                "ready": agent.is_ready_for_action(),
+                "metric_travel_time": avg_travel_time,
+                "metric_co2": total_co2
+            }
+
 
             reward = -1 * (w_time * avg_travel_time + w_co2 * total_co2)
             rewards[jid] = reward
 
         terminated["__all__"] = (traci.simulation.getMinExpectedNumber() <= 0)
-
+        truncated["__all__"] = (traci.simulation.getTime() >= self.traffic_duration)
+        
         return observations, rewards, terminated, truncated, infos
 
     def close(self):
