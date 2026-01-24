@@ -57,6 +57,8 @@ class IndependentDQNTrainer:
         self.buffer_size = self.hyperparams.get("buffer_size", 10000)
         self.gamma = self.hyperparams.get("gamma", 0.99)
         self.exploration_fraction = self.hyperparams.get("exploration_fraction", 0.1)
+        self.train_freq = self.hyperparams.get("train_freq", 4)
+        self.gradient_steps = self.hyperparams.get("gradient_steps", 1)
         
         self.env_kwargs = env_kwargs
         
@@ -190,8 +192,8 @@ class IndependentDQNTrainer:
                 # New: Network Size
                 policy_kwargs=policy_kwargs,
                 target_update_interval=1000,
-                train_freq=4,
-                gradient_steps=1,
+                train_freq=self.train_freq,
+                gradient_steps=self.gradient_steps,
                 device=device
             )
             
@@ -339,8 +341,8 @@ class IndependentDQNTrainer:
                     raise e
                 
                 # Train
-                if global_step > 100 and global_step % 4 == 0:
-                     model.train(gradient_steps=1, batch_size=32)
+                if global_step > 100 and global_step % self.train_freq == 0:
+                     model.train(gradient_steps=self.gradient_steps, batch_size=self.batch_size)
                      # SB3 Logger Dump szükségeltetik a Tensorboard íráshoz
                      if global_step % 100 == 0:
                          model.logger.record("time/total_timesteps", global_step, exclude="tensorboard")
@@ -552,10 +554,24 @@ class TrainingDialog(tk.Toplevel):
         self.entry_expl.insert(0, "0.85")
         self.entry_expl.grid(row=8, column=1)
 
+        # Performance Tuning (New)
+        tk.Label(frame_sett, text="Train Freq (Higher=Faster Sim):").grid(row=9, column=0, sticky="w")
+        frame_perf = tk.Frame(frame_sett)
+        frame_perf.grid(row=9, column=1, sticky="w")
+        
+        self.entry_train_freq = tk.Entry(frame_perf, width=5)
+        self.entry_train_freq.insert(0, "4")
+        self.entry_train_freq.pack(side="left")
+        
+        tk.Label(frame_perf, text="Grad Steps:").pack(side="left", padx=5)
+        self.entry_grad_steps = tk.Entry(frame_perf, width=5)
+        self.entry_grad_steps.insert(0, "1")
+        self.entry_grad_steps.pack(side="left")
+
         # Advanced Settings
-        tk.Label(frame_sett, text="NN Architecture:").grid(row=9, column=0, sticky="w")
+        tk.Label(frame_sett, text="NN Architecture:").grid(row=10, column=0, sticky="w")
         frame_nn = tk.Frame(frame_sett)
-        frame_nn.grid(row=9, column=1, sticky="w")
+        frame_nn.grid(row=10, column=1, sticky="w")
         
         tk.Label(frame_nn, text="Layers (1-3):").pack(side="left")
         self.entry_num_layers = tk.Entry(frame_nn, width=5)
@@ -567,9 +583,9 @@ class TrainingDialog(tk.Toplevel):
         self.entry_layer_size.insert(0, "64")
         self.entry_layer_size.pack(side="left")
 
-        tk.Label(frame_sett, text="Reward Weights (Time, CO2):").grid(row=10, column=0, sticky="w")
+        tk.Label(frame_sett, text="Reward Weights (Time, CO2):").grid(row=11, column=0, sticky="w")
         frame_rw = tk.Frame(frame_sett)
-        frame_rw.grid(row=10, column=1, sticky="w")
+        frame_rw.grid(row=11, column=1, sticky="w")
         self.entry_w_time = tk.Entry(frame_rw, width=5)
         self.entry_w_time.insert(0, "1.0")
         self.entry_w_time.pack(side="left")
@@ -580,10 +596,10 @@ class TrainingDialog(tk.Toplevel):
         # Early Stopping
         self.var_early_stop = tk.BooleanVar(value=False)
         self.chk_early_stop = tk.Checkbutton(frame_sett, text="Enable Early Stopping", variable=self.var_early_stop)
-        self.chk_early_stop.grid(row=11, column=0, sticky="w")
+        self.chk_early_stop.grid(row=12, column=0, sticky="w")
 
         frame_es = tk.Frame(frame_sett)
-        frame_es.grid(row=11, column=1, sticky="w")
+        frame_es.grid(row=12, column=1, sticky="w")
         tk.Label(frame_es, text="Patience:").pack(side="left")
         self.entry_patience = tk.Entry(frame_es, width=5)
         self.entry_patience.insert(0, "20")
@@ -596,7 +612,7 @@ class TrainingDialog(tk.Toplevel):
         # Infinite Training
         self.var_infinite = tk.BooleanVar(value=False)
         self.chk_infinite = tk.Checkbutton(frame_sett, text="Infinite Training (Auto-Restart)", variable=self.var_infinite, fg="blue")
-        self.chk_infinite.grid(row=12, column=0, columnspan=2, sticky="w", pady=5)
+        self.chk_infinite.grid(row=13, column=0, columnspan=2, sticky="w", pady=5)
 
 
         # Buttons
@@ -648,6 +664,10 @@ class TrainingDialog(tk.Toplevel):
             num_layers = int(self.entry_num_layers.get())
             layer_size = int(self.entry_layer_size.get())
             
+            # New Performance Tuning
+            train_freq = int(self.entry_train_freq.get())
+            gradient_steps = int(self.entry_grad_steps.get())
+            
             if n_envs_requested > 1:
                 tk.messagebox.showwarning("Figyelem", "A Párhuzamos Tanítás (Parallel Training) backend implementációja még folyamatban van.\nJelenleg 1 környezettel fut.")
                 n_envs_requested = 1
@@ -681,8 +701,10 @@ class TrainingDialog(tk.Toplevel):
                         "es_enabled": enable_es,
                         "es_patience": es_patience,
                         "es_min_delta": es_min_delta,
-                        "num_layers": num_layers, # Pass dynamic architecture
-                        "layer_size": layer_size
+                        "num_layers": num_layers,  
+                        "layer_size": layer_size,
+                        "train_freq": train_freq,
+                        "gradient_steps": gradient_steps
                     },
                     reward_weights={'time': w_time, 'co2': w_co2},
                 )

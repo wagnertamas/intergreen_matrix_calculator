@@ -229,7 +229,29 @@ def calculate_junction_data(jdata):
         if len(coords_np) > 0: all_x.extend(coords_np[:, 0]); all_y.extend(coords_np[:, 1])
         color = colors[idx]
         short_name = get_short_name(path_data['id'])
-        res = {'id': short_name, 'color': color, 'x_smooth': [], 'y_smooth': [],
+        
+        color = colors[idx]
+        short_name = get_short_name(path_data['id'])
+        
+        # [FIX] Extract SUMO Link Index for JSON Export
+        # Prioritize logic_idx from SumoInternalParser (via connection map)
+        logic_idx = path_data.get('logic_idx', -1)
+        
+        if logic_idx == -1:
+            try:
+                # Fallback: Parse ID if logic_idx not found
+                # Logic: ID format is usually ":JID_INDEX_LANE" or ":JID_INDEX_LANE + ..."
+                # Example: ":R1C4_C_0_0" -> Index 0
+                raw_id = path_data['id'].split(" + ")[0]
+                if raw_id.startswith(":"): raw_id = raw_id[1:]
+                parts = raw_id.split("_")
+                if len(parts) >= 2:
+                    logic_idx = int(parts[-2])
+            except Exception as e:
+                print(f"Warning: Could not parse logic index from {path_data['id']}: {e}")
+                logic_idx = idx # Last resort fallback
+            
+        res = {'id': short_name, 'logic_idx': logic_idx, 'color': color, 'x_smooth': [], 'y_smooth': [],
                'radius_data': None, 'line_obj': None, 'min_r': float('inf'), 'start_vec': None,
                'end_vec': None}
         is_spline = False

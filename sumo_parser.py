@@ -8,11 +8,13 @@ class SumoInternalParser:
         self.root = self.tree.getroot()
         self.internal_lanes = {}
         self.normal_lanes = {}
+        self.lane_to_link_index = {} # [NEW] Map internal lane ID -> Link Index
         self._load_data()
         self.junctions = self._group_by_junctions()
         print(f"Betöltve: {len(self.junctions)} csomópont.")
 
     def _load_data(self):
+        # 1. Edges & Lanes
         for edge in self.root.findall("edge"):
             func = edge.get("function")
             target_dict = self.internal_lanes if func == "internal" else self.normal_lanes
@@ -26,6 +28,16 @@ class SumoInternalParser:
                             x, y = map(float, pair.split(","))
                             points.append((x, y))
                     target_dict[lid] = points
+        
+        # 2. [NEW] Connections (Map 'via' lane to 'linkIndex')
+        for conn in self.root.findall("connection"):
+            via = conn.get("via")
+            link_idx = conn.get("linkIndex")
+            if via and link_idx is not None:
+                try:
+                    self.lane_to_link_index[via] = int(link_idx)
+                except ValueError:
+                    pass
 
     def _group_by_junctions(self):
         junctions_data = []
@@ -54,7 +66,10 @@ class SumoInternalParser:
                 for lid, points in self.internal_lanes.items():
                     if lid.startswith(prefix):
                         rel_points = [(p[0] - jx, p[1] - jy) for p in points]
-                        segments.append({'id': lid, 'points': rel_points})
+                        # [NEW] Attach Logic Index
+                        l_idx = self.lane_to_link_index.get(lid, -1)
+                        # Fallback for old parsing logic if not found (though unlikely for valid TLS)
+                        segments.append({'id': lid, 'points': rel_points, 'logic_idx': l_idx})
                 if segments:
                     junctions_data.append(
                         {'id': jid, 'x': jx, 'y': jy, 'segments': segments, 'shape': rel_shape,

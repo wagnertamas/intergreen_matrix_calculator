@@ -968,13 +968,28 @@ class JunctionApp:
                 # ==========================================
                 # LÉPÉS 1: CSAK A ZÖLD FÁZISOK (Hogy fix indexük legyen az elején)
                 # ==========================================
+                
+                # [FIX] Determine SUMO state string length based on MAX index
+                all_logic_idxs = [l['logic_idx'] for l in data['lines']]
+                max_logic_idx = max(all_logic_idxs) if all_logic_idxs else (n - 1)
+                # Ensure we cover at least n indices, but extend if logic_idx > n
+                total_state_len = max(n, max_logic_idx + 1)
+                
                 for i in range(num_logic_phases):
                     current_phase_idxs = set(cliques[i])
 
-                    state_g = ['r'] * n
+                    state_g = ['r'] * total_state_len
                     for lane_idx in range(n):
+                        # Use the extracted SUMO index if available
+                        sumo_idx = data['lines'][lane_idx].get('logic_idx', lane_idx)
+                        if sumo_idx >= total_state_len: 
+                            # Should not happen given calculated total_state_len
+                            print(f"Warning: sumo_idx {sumo_idx} out of bounds {total_state_len}")
+                            continue
+                            
                         if lane_idx in current_phase_idxs:
-                            state_g[lane_idx] = 'G'
+                            state_g[sumo_idx] = 'G'
+                    
                     state_g_str = "".join(state_g)
 
                     ET.SubElement(tlLogic, "phase", duration=str(MIN_GREEN_TIME),
@@ -1061,26 +1076,30 @@ class JunctionApp:
                             if duration < 0.1: continue # Túl rövid szakaszok szűrése
 
                             mid_t = (prev_t + t) / 2.0
-                            current_state_chars = ['r'] * n
+                            current_state_chars = ['r'] * total_state_len
 
                             for idx_lane in range(n):
+                                # Use SUMO index mapping
+                                sumo_idx = data['lines'][idx_lane].get('logic_idx', idx_lane)
+                                if sumo_idx >= total_state_len: continue
+
                                 if idx_lane in staying:
                                     # Aki marad, az végig Zöld
-                                    current_state_chars[idx_lane] = 'G'
+                                    current_state_chars[sumo_idx] = 'G'
                                 elif idx_lane in stopping:
                                     # LEÁLLÓ: Sárga (0-tól t_yellow_end-ig), utána Piros
                                     if mid_t < t_yellow_end:
-                                        current_state_chars[idx_lane] = 'y'
+                                        current_state_chars[sumo_idx] = 'y'
                                     else:
-                                        current_state_chars[idx_lane] = 'r'
+                                        current_state_chars[sumo_idx] = 'r'
                                 elif idx_lane in starting:
                                     # INDULÓ: Piros, majd a végén Piros-Sárga
                                     if mid_t < t_redyellow_start:
-                                        current_state_chars[idx_lane] = 'r'
+                                        current_state_chars[sumo_idx] = 'r'
                                     else:
-                                        current_state_chars[idx_lane] = 'u'
+                                        current_state_chars[sumo_idx] = 'u'
                                 else:
-                                    current_state_chars[idx_lane] = 'r'
+                                    current_state_chars[sumo_idx] = 'r'
 
                             state_str = "".join(current_state_chars)
 

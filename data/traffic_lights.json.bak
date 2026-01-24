@@ -1114,28 +1114,28 @@
             {
                 "index": 0,
                 "duration": 5.0,
-                "state": "GGGrrrrrrrrGGGG",
+                "state": "GGGrrrrrrGGGG",
                 "type": "green",
                 "logic_idx": 0
             },
             {
                 "index": 1,
                 "duration": 5.0,
-                "state": "GGGrrGGGrrrGrrr",
+                "state": "GGGGGGrrrGrrr",
                 "type": "green",
                 "logic_idx": 1
             },
             {
                 "index": 2,
                 "duration": 5.0,
-                "state": "rrrrrGGGGGGGrrr",
+                "state": "rrrGGGGGGGrrr",
                 "type": "green",
                 "logic_idx": 2
             },
             {
                 "index": 3,
                 "duration": 3.0,
-                "state": "GGGrrrrrrrrGyyy",
+                "state": "GGGrrrrrrGyyy",
                 "type": "yellow",
                 "from_logic": 0,
                 "to_logic": 1,
@@ -1144,7 +1144,7 @@
             {
                 "index": 4,
                 "duration": 2.0,
-                "state": "GGGrruuurrrGrrr",
+                "state": "GGGuuurrrGrrr",
                 "type": "red_yellow",
                 "from_logic": 0,
                 "to_logic": 1
@@ -1152,7 +1152,7 @@
             {
                 "index": 5,
                 "duration": 3.0,
-                "state": "yyyrrrrrrrrGyyy",
+                "state": "yyyrrrrrrGyyy",
                 "type": "yellow",
                 "from_logic": 0,
                 "to_logic": 2,
@@ -1161,7 +1161,7 @@
             {
                 "index": 6,
                 "duration": 2.0,
-                "state": "rrrrruuuuuuGrrr",
+                "state": "rrruuuuuuGrrr",
                 "type": "red_yellow",
                 "from_logic": 0,
                 "to_logic": 2
@@ -1169,7 +1169,7 @@
             {
                 "index": 7,
                 "duration": 3.0,
-                "state": "GGGrryyyrrrGrrr",
+                "state": "GGGyyyrrrGrrr",
                 "type": "yellow",
                 "from_logic": 1,
                 "to_logic": 0,
@@ -1178,7 +1178,7 @@
             {
                 "index": 8,
                 "duration": 1.0,
-                "state": "GGGrrrrrrrrGrrr",
+                "state": "GGGrrrrrrGrrr",
                 "type": "all_red",
                 "from_logic": 1,
                 "to_logic": 0,
@@ -1187,7 +1187,7 @@
             {
                 "index": 9,
                 "duration": 2.0,
-                "state": "GGGrrrrrrrrGuuu",
+                "state": "GGGrrrrrrGuuu",
                 "type": "red_yellow",
                 "from_logic": 1,
                 "to_logic": 0
@@ -1195,7 +1195,7 @@
             {
                 "index": 10,
                 "duration": 2.0,
-                "state": "yyyrrGGGrrrGrrr",
+                "state": "yyyGGGrrrGrrr",
                 "type": "yellow",
                 "from_logic": 1,
                 "to_logic": 2,
@@ -1204,7 +1204,7 @@
             {
                 "index": 11,
                 "duration": 1.0,
-                "state": "yyyrrGGGuuuGrrr",
+                "state": "yyyGGGuuuGrrr",
                 "type": "overlap_yellow_redyellow",
                 "from_logic": 1,
                 "to_logic": 2,
@@ -1213,7 +1213,7 @@
             {
                 "index": 12,
                 "duration": 1.0,
-                "state": "rrrrrGGGuuuGrrr",
+                "state": "rrrGGGuuuGrrr",
                 "type": "red_yellow",
                 "from_logic": 1,
                 "to_logic": 2
@@ -1221,7 +1221,7 @@
             {
                 "index": 13,
                 "duration": 3.0,
-                "state": "rrrrryyyyyyGrrr",
+                "state": "rrryyyyyyGrrr",
                 "type": "yellow",
                 "from_logic": 2,
                 "to_logic": 0,
@@ -1230,7 +1230,7 @@
             {
                 "index": 14,
                 "duration": 2.0,
-                "state": "rrrrrrrrrrrGrrr",
+                "state": "rrrrrrrrrGrrr",
                 "type": "all_red",
                 "from_logic": 2,
                 "to_logic": 0,
@@ -1239,7 +1239,7 @@
             {
                 "index": 15,
                 "duration": 2.0,
-                "state": "uuurrrrrrrrGuuu",
+                "state": "uuurrrrrrGuuu",
                 "type": "red_yellow",
                 "from_logic": 2,
                 "to_logic": 0
@@ -1247,7 +1247,7 @@
             {
                 "index": 16,
                 "duration": 3.0,
-                "state": "rrrrrGGGyyyGrrr",
+                "state": "rrrGGGyyyGrrr",
                 "type": "yellow",
                 "from_logic": 2,
                 "to_logic": 1,
@@ -1256,7 +1256,7 @@
             {
                 "index": 17,
                 "duration": 2.0,
-                "state": "rrrrrGGGrrrGrrr",
+                "state": "rrrGGGrrrGrrr",
                 "type": "all_red",
                 "from_logic": 2,
                 "to_logic": 1,
@@ -1265,7 +1265,7 @@
             {
                 "index": 18,
                 "duration": 2.0,
-                "state": "uuurrGGGrrrGrrr",
+                "state": "uuuGGGrrrGrrr",
                 "type": "red_yellow",
                 "from_logic": 2,
                 "to_logic": 1
