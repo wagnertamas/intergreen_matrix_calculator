@@ -35,12 +35,15 @@ class SumoRLEnvironment(gym.Env):
                  sumo_gui=False,
                  random_traffic=True,
                  traffic_period=1.0,
-                 traffic_duration=3600):
+
+                 traffic_duration=3600,
+                 statistic_output_file=None): # [NEW]
 
         self.net_file = net_file
         self.logic_json_file = logic_json_file
         self.detector_file = detector_file
         self.route_file = route_file
+        self.statistic_output_file = statistic_output_file # [NEW]
 
         self.reward_weights = reward_weights
         self.min_green_time = min_green_time
@@ -76,9 +79,15 @@ class SumoRLEnvironment(gym.Env):
 
         if self.random_traffic:
             # Dynamic Traffic Generation for Robustness
-            # Randomize traffic desnity (period) to expose agent to sparse and dense traffic.
-            # Range: 0.1 (Dense) to 1.5 (Sparse)
-            dynamic_period = random.uniform(0.1, 1.5)
+            # Allow override via options (e.g. for testing/debugging)
+            if options and 'traffic_period' in options:
+                dynamic_period = options['traffic_period']
+            else:
+                # Randomize traffic desnity (period) to expose agent to sparse and dense traffic.
+                # Range: 0.001 (Max) to 0.005 (Min).
+                # User specified range: 0.001 - 0.005.
+                dynamic_period = random.uniform(0.001, 0.005)
+            
             self.generate_random_traffic(period=dynamic_period)
 
         # SUMO parancs összeállítása (libsumo nem támogatja a GUI-t!)
@@ -89,6 +98,7 @@ class SumoRLEnvironment(gym.Env):
             "-n", self.net_file,
             "-r", self.route_file,
             "-a", self.detector_file,
+            "--threads", "4",
             "--no-step-log", "true",
             "--waiting-time-memory", "10000",
             "--ignore-route-errors", "true",
@@ -96,6 +106,13 @@ class SumoRLEnvironment(gym.Env):
             "--no-warnings", "true",
             "--xml-validation", "never"
         ]
+
+        # [NEW] Add statistics export options if a file path is provided
+        if self.statistic_output_file:
+            sumo_cmd.extend([
+                "--statistic-output", self.statistic_output_file,
+                "--duration-log.statistics", "true"
+            ])
 
         # libsumo: load() használata (nincs label, nincs socket)
         traci.load(sumo_cmd)
@@ -105,8 +122,11 @@ class SumoRLEnvironment(gym.Env):
         self._map_network_elements()
 
         # Warm-up Phase
-        # Random duration between 3 and 10 minutes
+        # Allow override via options (e.g. for testing)
         warmup_seconds = random.randint(180, 600)
+        if options and 'warmup_seconds' in options:
+            warmup_seconds = options['warmup_seconds']
+            
         # warmup_seconds = 0 # Uncomment to disable for debugging
         print(f"[WARMUP] Warming up for {warmup_seconds} seconds ({warmup_seconds} steps)...")
         
@@ -142,7 +162,8 @@ class SumoRLEnvironment(gym.Env):
 
     def generate_random_traffic(self, period=None):
         p = period if period is not None else self.traffic_period
-        print(f"Forgalom generálása folyamatban (Period={p:.2f})...")
+        # Use simple string formatting to avoid truncation of small periods like 0.0005
+        print(f"Forgalom generálása folyamatban (Period={p})...")
         if 'SUMO_HOME' in os.environ:
             tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
             sys.path.append(tools)
@@ -164,7 +185,9 @@ class SumoRLEnvironment(gym.Env):
             "-p", str(p),
             "--fringe-factor", "10",
             "--validate",
-            "--min-distance", "50"
+            "--min-distance", "50",
+            "--duarouter-routing-algorithm", "CH",
+            "--duarouter-routing-threads", "6",
         ]
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -177,6 +200,7 @@ class SumoRLEnvironment(gym.Env):
 
         for jid, agent in self.agents.items():
             agent.reset_step_metrics()
+            agent.reset_logic()  # [FIX] Reset internal logic state (e.g. queue, timer) to sync with fresh SUMO
 
             temp_detectors = []
             agent.incoming_lanes = []
@@ -233,11 +257,45 @@ class SumoRLEnvironment(gym.Env):
             infos[jid] = {
                 "ready": agent.is_ready_for_action(),
                 "metric_travel_time": avg_travel_time,
-                "metric_co2": total_co2
+                "metric_co2": total_co2,
+                "metric_veh_count": agent.accumulated_veh_count / max(1, agent.steps_measured) # Average vehicles seen per step
             }
 
+            # [REWARD TRANSFORMATION] Log-Sigmoid (Log-Distance)
+            # Based on PCA analysis constants provided by user:
+            # MU_TIME = 11.211313, STD_TIME = 1.129861
+            # MU_CO2 = 0.483506, STD_CO2 = 0.121195
+            
+            # NOTE: avg_travel_time and total_co2 are "Total per step" (Sum of vehicles), NOT normalized.
+            # The PCA analysis was performed on these "Total" metrics?
+            # From previous context, user reverted to Total metrics for reward. 
+            # Assuming the constants match the scale of 'avg_travel_time' (which is actually Total Travel Time per step).
+            
+            MU_TIME  = 11.211313
+            STD_TIME = 1.129861
+            MU_CO2   = 0.483506
+            STD_CO2  = 0.121195
 
-            reward = -1 * (w_time * avg_travel_time + w_co2 * total_co2)
+            # 1. Z-score in Log Space
+            # Add small epsilon to avoid log(0)
+            z_time = (np.log(avg_travel_time + 1e-5) - MU_TIME) / (STD_TIME + 1e-9)
+            z_co2  = (np.log(total_co2 + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
+            
+            # 2. Sigmoid (0 -> 1)
+            # This maps the "badness" (accumulated cost) to a probability-like score.
+            # Higher Z (more congestion) -> Score close to 1.
+            # Lower Z (free flow) -> Score close to 0.
+            score_time = 1 / (1 + np.exp(-z_time))
+            score_co2  = 1 / (1 + np.exp(-z_co2))
+            
+            # 3. Reward (Maximize Quality)
+            # We want to MAXIMIZE reward, so we invert the score (1 - Badness).
+            # Best possible = 1.0 (Zero congestion)
+            # Worst possible = 0.0 (Infinite congestion)
+            r_time = 1.0 - score_time
+            r_co2  = 1.0 - score_co2
+            
+            reward = w_time * r_time + w_co2 * r_co2
             rewards[jid] = reward
 
         terminated["__all__"] = (traci.simulation.getMinExpectedNumber() <= 0)
@@ -287,15 +345,7 @@ class TrafficAgent:
 
         self.num_phases = len(self.logic_phases)
 
-        self.current_logic_idx = 0
-        self.target_logic_idx = 0
-
-        self.is_transitioning = False
-        self.transition_queue = []  # Ez most indexek listája lesz: [1, 2, 3]
-        self.transition_cursor = 0
-        self.transition_step_timer = 0
-
-        self.min_green_timer = 0
+        self.reset_logic()
 
         # Aktuális SUMO állapot követése (debug célra)
         self.current_sumo_state = "??????"
@@ -310,6 +360,18 @@ class TrafficAgent:
         self.next_logic_idx_cache = 0
         self.action_space = None
         self.observation_space = None
+
+    def reset_logic(self):
+        """Reset internal logic state to initial values."""
+        self.current_logic_idx = 0
+        self.target_logic_idx = 0
+        self.is_transitioning = False
+        self.transition_queue = []
+        self.transition_cursor = 0
+        self.transition_step_timer = 0
+        self.min_green_timer = 0
+        self.current_sumo_state = "??????"
+        self.current_sumo_phase_idx = 0
 
     def setup_spaces(self):
         num_detectors = len(self.detectors)
@@ -326,13 +388,18 @@ class TrafficAgent:
         self.det_accumulated_occ = {d: 0.0 for d in self.detectors}
         self.accumulated_travel_time = 0.0
         self.accumulated_co2 = 0.0
+        self.accumulated_veh_count = 0 # [NEW] Track total vehicles for normalization
 
     def is_ready_for_action(self):
         return (not self.is_transitioning) and (self.min_green_timer <= 0)
 
     def set_target_phase(self, target_idx):
         if self.is_ready_for_action():
-            self.target_logic_idx = target_idx
+            # Validáció: csak érvényes logic index fogadható el
+            if target_idx in self.logic_phases:
+                self.target_logic_idx = target_idx
+            else:
+                print(f"[WARN] {self.jid}: Érvénytelen target_idx={target_idx}, num_phases={self.num_phases}")
 
     def update_logic(self):
         """
@@ -371,7 +438,13 @@ class TrafficAgent:
                     self.is_transitioning = False
                     self.current_logic_idx = self.next_logic_idx_cache
 
-                    # Cél fázis indexe
+                    # Cél fázis indexe - ELLENŐRZÉS
+                    if self.current_logic_idx not in self.logic_phases:
+                        print(f"[ERROR] {self.jid}: current_logic_idx={self.current_logic_idx} nem található a logic_phases-ben!")
+                        print(f"        logic_phases keys: {list(self.logic_phases.keys())}")
+                        print(f"        next_logic_idx_cache: {self.next_logic_idx_cache}")
+                        # Fallback: visszaállítás 0-ra
+                        self.current_logic_idx = 0
                     target_sumo_idx = self.logic_phases[self.current_logic_idx]
 
                     # Kikeresés
@@ -388,6 +461,10 @@ class TrafficAgent:
         # 2. Zöld állapot (Green Hold)
         else:
             # Mindig biztosítjuk, hogy a helyes lámpakép legyen kint
+            if self.current_logic_idx not in self.logic_phases:
+                print(f"[ERROR-GREEN] {self.jid}: current_logic_idx={self.current_logic_idx} nem található!")
+                print(f"              logic_phases keys: {list(self.logic_phases.keys())}")
+                self.current_logic_idx = 0
             target_sumo_idx = self.logic_phases[self.current_logic_idx]
             target_state = self.phase_registry[target_sumo_idx]['state']
 
@@ -417,8 +494,13 @@ class TrafficAgent:
         self.next_logic_idx_cache = next_idx
 
     def collect_measurements(self):
-        if self.is_transitioning and not self.measure_during_transition:
-            return
+        # [FIX] Always measure! Transition time counts for Total Travel Time.
+        # if self.is_transitioning and not self.measure_during_transition:
+        #    return
+
+        self.steps_measured += 1
+
+
 
         self.steps_measured += 1
 
@@ -428,14 +510,28 @@ class TrafficAgent:
 
         step_tt_sum = 0.0
         step_co2_sum = 0.0
-        valid = 0
+        step_veh_count = 0
+        
         for lane in self.incoming_lanes:
-            step_tt_sum += traci.lane.getTraveltime(lane)
+            # [REVERTED] User requested Estimated Travel Time for Transfer Learning context.
+            # Using getTraveltime which returns (Lane Length / Mean Speed).
+            # This is "Instantaneous Travel Time" for a hypothetical vehicle entering the lane.
+            tt = traci.lane.getTraveltime(lane)
+            veh_on_lane = traci.lane.getLastStepVehicleNumber(lane)
+            
+            # Weighted average by vehicle count? Or just sum for the lane?
+            # User wants: "Travel Time... normalized".
+            # If we sum travel times of all lanes, we get a huge number dependent on # of lanes.
+            # We should probably average it?
+            
+            # Let's accumulate both sums and normalize in get_avg_metric.
+            step_tt_sum += tt
             step_co2_sum += traci.lane.getCO2Emission(lane)
-            valid += 1
-        if valid > 0:
-            self.accumulated_travel_time += (step_tt_sum / valid)
+            step_veh_count += veh_on_lane
+        
+        self.accumulated_travel_time += step_tt_sum
         self.accumulated_co2 += step_co2_sum
+        self.accumulated_veh_count += step_veh_count # Track total vehicles for normalization
 
     def get_observation(self):
         num_dets = len(self.detectors)
@@ -456,6 +552,8 @@ class TrafficAgent:
         }
 
     def get_avg_travel_time_metric(self):
+        # [REVERTED AGAIN] User requested NO normalization by vehicle count.
+        # Just return the accumulated Estimated Travel Time per step.
         if self.steps_measured == 0:
             return 0.0
         return self.accumulated_travel_time / self.steps_measured
@@ -463,4 +561,10 @@ class TrafficAgent:
     def get_total_co2_metric(self):
         if not self.incoming_lanes:
             return 0.0
-        return (self.accumulated_co2 / 1000.0) / len(self.incoming_lanes)
+        
+        # [REVERTED AGAIN] User requested NO normalization by vehicle count.
+        # Total CO2 per step.
+        if self.steps_measured == 0:
+            return 0.0
+            
+        return (self.accumulated_co2 / 1000.0) / self.steps_measured

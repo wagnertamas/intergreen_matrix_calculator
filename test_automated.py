@@ -22,10 +22,11 @@ import numpy as np
 from typing import Dict, List, Tuple
 
 # --- KONFIGURÁCIÓ ---
-NET_FILE = "mega_catalogue_v2.net.xml"
-LOGIC_JSON = "traffic_lights.json"
-DETECTOR_FILE = "detectors.add.xml"
-ROUTE_FILE = "random_traffic.rou.xml"
+NET_FILE = "./data/mega_catalogue_v2.net.xml"
+LOGIC_JSON = "./data/traffic_lights.json"
+DETECTOR_FILE = "./data/detectors.add.xml"
+ROUTE_FILE = "./random_traffic.rou.xml"
+WARMUP_SECONDS = 180
 
 # Színes kimenet
 GREEN = "\033[92m"
@@ -151,7 +152,7 @@ class SumoRLTester:
         result = TestResult("Environment reset")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
             if not isinstance(observations, dict):
                 result.fail("observations nem dict")
@@ -172,7 +173,7 @@ class SumoRLTester:
         result = TestResult("Observation struktúra")
 
         try:
-            observations, _ = self.env.reset()
+            observations, _ = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             obs = observations[jid]
 
@@ -240,9 +241,23 @@ class SumoRLTester:
         result = TestResult("Azonos fázis = nincs átmenet")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             agent = self.env.agents[jid]
+
+            # Várjuk meg, hogy READY legyen (reset után lehet átmenetben a warmup miatt)
+            for _ in range(20):
+                if infos[jid]['ready']:
+                    break
+                # Ha még nem ready, üres lépés
+                next_obs, _, _, _, infos = self.env.step({})
+                observations = next_obs
+            
+            # Ha 20 lépés után sem ready, az baj (vagy túl hosszú az átmenet)
+            if not infos[jid]['ready']:
+                result.fail(f"Nem lett READY reset után 20 lépésben (Phase: {observations[jid]['phase']})")
+                self._add_result(result)
+                return
 
             current_phase = int(observations[jid]['phase'][0])
 
@@ -265,7 +280,7 @@ class SumoRLTester:
         result = TestResult("Fázisváltás minden irányba")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             agent = self.env.agents[jid]
 
@@ -282,7 +297,7 @@ class SumoRLTester:
 
             for from_phase, to_phase in test_pairs[:4]:  # Max 4 tesztelése
                 # Reset és várakozás READY állapotra
-                observations, infos = self.env.reset()
+                observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
                 # Várjuk meg, hogy READY legyen
                 for _ in range(20):
@@ -338,7 +353,7 @@ class SumoRLTester:
         result = TestResult("Átmeneti állapotok (sárga)")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             agent = self.env.agents[jid]
 
@@ -391,7 +406,7 @@ class SumoRLTester:
         result = TestResult("Min green timer")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             agent = self.env.agents[jid]
 
@@ -443,7 +458,7 @@ class SumoRLTester:
         result = TestResult("READY/BUSY állapotok")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
             agent = self.env.agents[jid]
 
@@ -482,7 +497,7 @@ class SumoRLTester:
         result = TestResult("Reward számítás")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
             jid = list(self.env.agents.keys())[0]
 
             rewards = []
@@ -508,7 +523,7 @@ class SumoRLTester:
         result = TestResult("Több ágens párhuzamos")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
             if len(self.env.agents) < 2:
                 result.success("Csak 1 ágens, teszt kihagyva")
@@ -549,7 +564,7 @@ class SumoRLTester:
         result = TestResult("Független párhuzamos átmenetek")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
             if len(self.env.agents) < 3:
                 result.success("Kevés ágens, teszt kihagyva")
@@ -564,7 +579,8 @@ class SumoRLTester:
                 all_ready = all(infos[jid]['ready'] for jid in agent_ids)
                 if all_ready:
                     break
-                _, _, _, _, infos = self.env.step({})
+                next_obs, _, _, _, infos = self.env.step({})
+                observations = next_obs # [FIX] Frissítsük az observations-t!
 
             # Mindegyiknek különböző célfázist adunk
             targets = {}
@@ -624,7 +640,7 @@ class SumoRLTester:
         result = TestResult("Különböző állapotok egyidőben")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
             if len(self.env.agents) < 2:
                 result.success("Kevés ágens, teszt kihagyva")
@@ -638,7 +654,8 @@ class SumoRLTester:
             for _ in range(20):
                 if all(infos[jid]['ready'] for jid in agent_ids):
                     break
-                _, _, _, _, infos = self.env.step({})
+                next_obs, _, _, _, infos = self.env.step({})
+                observations = next_obs # [FIX] Frissítsük az observations-t!
 
             # Csak az első ágensnek adunk akciót
             first_jid = agent_ids[0]
@@ -679,7 +696,7 @@ class SumoRLTester:
         result = TestResult("Nincs állapot-interferencia")
 
         try:
-            observations, infos = self.env.reset()
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
             if len(self.env.agents) < 2:
                 result.success("Kevés ágens, teszt kihagyva")
@@ -695,7 +712,8 @@ class SumoRLTester:
             for _ in range(20):
                 if infos[jid_a]['ready'] and infos[jid_b]['ready']:
                     break
-                _, _, _, _, infos = self.env.step({})
+                next_obs, _, _, _, infos = self.env.step({})
+                observations = next_obs # [FIX] Frissítsük az observations-t!
 
             # Jegyezzük meg B állapotát
             b_phase_before = int(observations[jid_b]['phase'][0])
@@ -752,7 +770,7 @@ class SumoRLTester:
             print(f"\n  {YELLOW}[...] Összes ágens tesztelése ({total_agents} db)...{RESET}")
 
             # Egyszer generálunk forgalmat, utána kikapcsoljuk
-            observations, infos = self.env.reset()  # Ez generál forgalmat
+            observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})  # Ez generál forgalmat
             self.env.random_traffic = False  # Többet ne generáljon
 
             for agent_idx, (jid, agent) in enumerate(self.env.agents.items()):
@@ -772,13 +790,14 @@ class SumoRLTester:
                     total_transitions_tested += 1
 
                     # Reset környezet (forgalom generálás nélkül)
-                    observations, infos = self.env.reset()
+                    observations, infos = self.env.reset(options={'warmup_seconds': WARMUP_SECONDS})
 
                     # 1. Várjuk meg READY-t
                     for _ in range(30):
                         if infos[jid]['ready']:
                             break
-                        _, _, _, _, infos = self.env.step({})
+                        next_obs, _, _, _, infos = self.env.step({})
+                        observations = next_obs # [FIX] Frissítsük az observations-t!
 
                     if not infos[jid]['ready']:
                         agent_failed.append(f"{from_phase}->{to_phase}: nem lett READY")
