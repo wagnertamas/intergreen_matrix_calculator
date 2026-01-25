@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-01-25T13:26:30.398076+01:00 by Eclipse SUMO libsumo v1_25_0+1091-1db12ecdcae
+<libsumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/libsumoConfiguration.xsd">
+
+    <input>
+        <net-file value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml"/>
+        <route-files value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/proc_1/random_traffic.rou.xml"/>
+        <additional-files value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/detectors.add.xml"/>
+    </input>
+
+    <output>
+        <statistic-output value="/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/proc_1/stats.xml"/>
+    </output>
+
+    <processing>
+        <ignore-route-errors value="true"/>
+        <waiting-time-memory value="10000"/>
+    </processing>
+
+    <report>
+        <xml-validation value="never"/>
+        <no-warnings value="true"/>
+        <duration-log.statistics value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+    <random_number>
+        <random value="true"/>
+    </random_number>
+
+</libsumoConfiguration>

@@ -1,0 +1,24 @@
+detector_file: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/detectors.add.xml
+env_kwargs:
+  delta_time: 5
+  warmup_seconds: 10
+  reward_weights:
+    co2: 1.0
+    time: 1.0
+hyperparams:
+  batch_size: 32
+  buffer_size: 10000
+  es_enabled: false
+  exploration_fraction: 0.1
+  gamma: 0.99
+  gradient_steps: 1
+  layer_size: 64
+  learning_rate: 0.0001
+  num_layers: 2
+  train_freq: 4
+logic_file: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/traffic_lights.json
+n_envs: 1
+net_file: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml
+project_name: test-run-headless
+total_timesteps: 500
+wandb_api_key: ''

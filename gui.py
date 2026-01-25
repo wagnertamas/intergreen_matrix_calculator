@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 
 from geometry_utils import calculate_junction_data
 from transition_planner import TransitionPlannerDialog
+from export_utils import export_to_colab_package
 
 class JunctionApp:
     """
@@ -91,6 +92,9 @@ class JunctionApp:
         ttk.Button(top_frame, text="CSV Export", command=self.export_csv).pack(side=tk.RIGHT,
                                                                                padx=2)
         ttk.Button(top_frame, text="SUMO Export (Összes)", command=self.export_all_to_sumo).pack(
+            side=tk.RIGHT, padx=10)
+
+        ttk.Button(top_frame, text="Colab Csomag", command=self.export_for_colab).pack(
             side=tk.RIGHT, padx=10)
 
         content_frame = tk.Frame(main_container)
@@ -1175,3 +1179,74 @@ class JunctionApp:
         else:
             if level and (not elem.tail or not elem.tail.strip()):
                 elem.tail = i
+
+    def export_for_colab(self):
+        """
+        Összeállítja a Colab csomagot a jelenlegi hálózatból.
+        Mivel ez a GUI nem tartalmaz RL beállításokat, alapértelmezetteket használ.
+        """
+        # 1. Fájl útvonalak összegyűjtése
+        base_name = self.parser.file_path # Pl: .../mega_catalogue_v2.net.xml
+        
+        # Feltételezzük a fájlstruktúrát a jelenlegi mappa alapján
+        base_dir = os.path.dirname(base_name)
+        
+        # JSON logika fájl (amit a parser használt)
+        # A parser.file_path a .net.xml, a logic file általában mellette van vagy a settings mondja meg
+        # De a GUI-ban van self.settings_file (.settings.json) és a self.parser tárolja az adatokat.
+        
+        # Egyszerűsítés: A jelenleg betöltött adatokat kimentjük frissen, hogy biztos a legújabb legyen
+        # Először mentsünk egy friss SUMO exportot, hogy szinkronban legyen minden
+        ans = messagebox.askyesno("Colab Export", "Először kimentem a jelenlegi lámpabeállításokat (JSON/XML). Mehet?")
+        if ans:
+            self.export_all_to_sumo() # Ez legenerálja a .add.xml és .json fájlokat
+        
+        # A fájlok nevei (az export_all_to_sumo a traffic_lights.add.xml-t használja alapból, ha nem írjuk át)
+        # De a felhasználó választott nevet.
+        # Itt most feltételezzük a standard neveket a mappában, vagy bekérjük őket.
+        
+        # Hogy egyszerű legyen: Használjuk a fix neveket, amikkel a rendszer dolgozik
+        net_file = self.parser.file_path
+        
+        # Keressük meg a logic fájlt (traffic_lights.json általában)
+        # A parser nem tárolja közvetlenül a json útvonalát, ha nem adtuk át, de feltételezhetjük:
+        logic_file = os.path.join(base_dir, "traffic_lights.json")
+        if not os.path.exists(logic_file):
+             # Ha nincs, kérjük be
+             logic_file = filedialog.askopenfilename(title="Válaszd ki a traffic_lights.json-t")
+             if not logic_file: return
+
+        # Detektor fájl
+        detector_file = os.path.join(base_dir, "detectors.add.xml")
+        if not os.path.exists(detector_file):
+             detector_file = filedialog.askopenfilename(title="Válaszd ki a detectors.add.xml-t")
+             if not detector_file: return
+
+        files = {
+            "net": net_file,
+            "logic": logic_file,
+            "detector": detector_file
+        }
+
+        # 2. Alapértelmezett RL Hyperparaméterek (Mivel ez a GUI nem kérdezi őket)
+        default_settings = {
+            "total_timesteps": 100000,
+            "wandb_project": "sumo-rl-headless",
+            "wandb_api_key": "", # Üres, majd a Colab bekéri
+            "learning_rate": 0.0001,
+            "batch_size": 32,
+            "buffer_size": 10000,
+            "gamma": 0.99,
+            "exploration_fraction": 0.85,
+            "w_time": 1.0,
+            "w_co2": 1.0,
+            "es_enabled": False,
+            "num_layers": 2,
+            "layer_size": 64
+        }
+        
+        # 3. Export hívása
+        try:
+            export_to_colab_package(default_settings, files)
+        except Exception as e:
+            messagebox.showerror("Hiba", f"Export hiba: {e}")

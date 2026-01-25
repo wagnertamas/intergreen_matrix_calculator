@@ -1,6 +1,7 @@
 # Core
 numpy
 pandas
+libsumo
 
 # GUI & Plotting
 matplotlib
@@ -14,6 +15,8 @@ stable-baselines3
 shimmy>=2.0.0
 tensorboard
 torch
+onnx
+onnxscript
 
 # Logging
 wandb

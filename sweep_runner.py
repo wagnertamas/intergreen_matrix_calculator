@@ -1,3 +1,4 @@
+%%writefile sweep_runner.py
 import os
 import sys
 import glob
@@ -55,13 +56,13 @@ def main():
         net_file, logic_file, detector_file = find_files()
         
         # Initialize Trainer
-        # Params will be overwritten by wandb.init() inside run() if called by sweep
+        # JAVÍTÁS: 'project_name' HELYETT 'wandb_project'
         trainer = IndependentDQNTrainer(
             net_file=net_file,
             logic_file=logic_file,
             detector_file=detector_file,
-            total_timesteps=50000, # Shorter runs for tuning, typically
-            project_name="sumo-rl-sweep"
+            total_timesteps=50000, 
+            wandb_project="sumo-rl-sweep"  # <--- ITT VOLT A HIBA
         )
         
         # Run

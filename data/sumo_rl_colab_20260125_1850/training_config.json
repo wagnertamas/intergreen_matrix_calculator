@@ -1,0 +1,22 @@
+{
+    "hyperparams": {
+        "total_timesteps": 100000,
+        "wandb_project": "sumo-rl-single",
+        "wandb_api_key": "",
+        "learning_rate": 0.0001,
+        "batch_size": 32,
+        "buffer_size": 50000,
+        "gamma": 0.99,
+        "exploration_fraction": 0.5,
+        "w_time": 1.0,
+        "w_co2": 1.0,
+        "num_layers": 2,
+        "layer_size": 64
+    },
+    "files": {
+        "net": "mega_catalogue_v2.net.xml",
+        "logic": "traffic_lights.json",
+        "detector": "detectors.add.xml",
+        "route": "random_traffic.rou.xml"
+    }
+}
