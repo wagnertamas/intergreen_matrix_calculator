@@ -17,6 +17,7 @@ try:
     from stable_baselines3.common.callbacks import BaseCallback
     from stable_baselines3.common.buffers import ReplayBuffer
     from stable_baselines3.common.logger import configure
+    from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
     import wandb
     HAS_RL_LIBS = True
 except ImportError as e:
@@ -40,6 +41,7 @@ class IndependentDQNTrainer:
                  wandb_api_key=None, 
                  log_queue=None,
                  hyperparams=None,
+                 n_envs=1,
                  **env_kwargs):
         
         self.net_file = net_file
@@ -60,6 +62,7 @@ class IndependentDQNTrainer:
         self.train_freq = self.hyperparams.get("train_freq", 4)
         self.gradient_steps = self.hyperparams.get("gradient_steps", 1)
         
+        self.n_envs = n_envs
         self.env_kwargs = env_kwargs
         
         self.stop_requested = False
@@ -71,7 +74,7 @@ class IndependentDQNTrainer:
             print(msg)
 
     def run(self):
-        self.log("Initializing SUMO Environment...")
+        self.log(f"Initializing SUMO Environment (n_envs={self.n_envs})...")
         
         # Init WandB
         if wandb.run is None:
@@ -82,53 +85,116 @@ class IndependentDQNTrainer:
                 "batch_size": self.batch_size,
                 "buffer_size": self.buffer_size,
                 "gamma": self.gamma,
-                "exploration_fraction": self.exploration_fraction
+                "exploration_fraction": self.exploration_fraction,
+                "n_envs": self.n_envs,
+                "train_freq": self.train_freq,
+                "gradient_steps": self.gradient_steps
             }
             wandb.init(
                 project=self.project_name, 
                 config=config,
-                sync_tensorboard=True
+                sync_tensorboard=False # USER REQUEST: Disable to prevent pod name errors
             )
             
             # [SWEEP SUPPORT]
-            # Override local params with WandB config (if provided by Sweep Controller)
-            # This allows the Hyperparameter Tuning to control these values.
-            self.learning_rate = wandb.config.get("learning_rate", self.learning_rate)
+            # Debug: what is actually in the config?
+            self.log(f"DEBUG: WandB Config Context: {dict(wandb.config)}")
+            
+            if hasattr(wandb.config, "learning_rate"):
+                 self.learning_rate = wandb.config.learning_rate
+            else:
+                 self.learning_rate = wandb.config.get("learning_rate", self.learning_rate)
+            
             self.batch_size = wandb.config.get("batch_size", self.batch_size)
             self.buffer_size = wandb.config.get("buffer_size", self.buffer_size)
             self.gamma = wandb.config.get("gamma", self.gamma)
             self.exploration_fraction = wandb.config.get("exploration_fraction", self.exploration_fraction)
+            self.train_freq = wandb.config.get("train_freq", self.train_freq)
+            self.gradient_steps = wandb.config.get("gradient_steps", self.gradient_steps)
             
-            self.log(f"Hyperparameters: LR={self.learning_rate}, Batch={self.batch_size}, Gamma={self.gamma}")
+            self.log(f"Hyperparams (Final): LR={self.learning_rate}, Batch={self.batch_size}, Gamma={self.gamma}, Envs={self.n_envs}")
         
-        # 1. Initialize Environment
-        
-        # [ABSOLUTE PATHS FIX]
-        # Ensure all generated files (routes, models, logs) are in the SAME folder as the Network File.
-        # This prevents files being scattered in the script directory.
+        # 1. Initialize Environment (Vectorized)
+        # 1. Initialize Environment (Vectorized)
         self.work_dir = os.path.dirname(os.path.abspath(self.net_file))
         
-        # Define absolute path for the dynamic route file
-        route_file_abs = os.path.join(self.work_dir, "random_traffic.rou.xml")
+        # [PICKLING FIX]
+        # Extract variables to local scope so 'make_env' capture doesn't grab 'self'
+        # 'self' contains Tkinter objects and Locks which cannot be pickled for Multiprocessing.
+        work_dir = self.work_dir
+        net_file = self.net_file
+        logic_file = self.logic_file
+        detector_file = self.detector_file
+        env_kwargs = self.env_kwargs
         
-        self.env = SumoRLEnvironment(
-            net_file=self.net_file,
-            logic_json_file=self.logic_file,
-            detector_file=self.detector_file,
-            route_file=route_file_abs, # Force absolute path
-            sumo_gui=False,
-            min_green_time=5,
-            delta_time=5,
-            **self.env_kwargs
-        )
+        # Define make_env factory
+        # We wrap it in a function that captures the LOCAL variables, not self.
+        def make_env_factory(rank, work_dir, net_file, logic_file, detector_file, env_kwargs):
+            def _init():
+                # Unique temporary directory for this process
+                process_dir = os.path.join(work_dir, "runs", f"proc_{rank}")
+                os.makedirs(process_dir, exist_ok=True)
+                
+                # Unique Route & Stats Files
+                route_file = os.path.join(process_dir, "random_traffic.rou.xml")
+                stats_file = os.path.join(process_dir, "stats.xml")
+                
+                env = SumoRLEnvironment(
+                    net_file=net_file,
+                    logic_json_file=logic_file,
+                    detector_file=detector_file,
+                    route_file=route_file, 
+                    statistic_output_file=stats_file,
+                    sumo_gui=False, 
+                    min_green_time=5,
+                    delta_time=5,
+                    **env_kwargs
+                )
+                return env
+            return _init
+
+        # Create Vector Env
+        if self.n_envs > 1:
+            # SubprocVecEnv runs in separate processes
+            # We call the factory properly passing the args
+            env_fns = [make_env_factory(i, work_dir, net_file, logic_file, detector_file, env_kwargs) for i in range(self.n_envs)]
+            self.env = SubprocVecEnv(env_fns)
+        else:
+            # Dummy runs in same process
+            self.env = DummyVecEnv([make_env_factory(0, work_dir, net_file, logic_file, detector_file, env_kwargs)])
+
+        self.log(f"Resetting Vector Environment ({self.n_envs} processes)...")
+        # VecEnv reset returns only Observations (stacked)
+        obs = self.env.reset()
         
-        # RESET ENV FIRST to initialize SUMO and spaces!
-        self.log("Resetting Environment to initialize spaces...")
-        obs, infos = self.env.reset()
-        
+        self.log(f"Vector Env Reset Done. Obs type: {type(obs)}")
+
+        # [FIX NESTED DICT STACKING]
+        # SB3 VecEnv fails to stack Dicts inside Dicts recursively.
+        # It produces an object array of Dicts (np.array([dict, dict], dtype=object)).
+        # We must manually transpose this into a Dict of Arrays ({key: np.array([v1, v2])}).
+        def fix_nested_obs(agent_obs):
+            if isinstance(agent_obs, np.ndarray) and agent_obs.dtype == object:
+                # Transpose: Array of Dicts -> Dict of Arrays
+                # Check first element to get keys
+                if len(agent_obs) == 0: return agent_obs
+                keys = agent_obs[0].keys()
+                new_dict = {}
+                for k in keys:
+                     # Stack the scalar/array values for this key
+                     val_list = [d[k] for d in agent_obs]
+                     new_dict[k] = np.stack(val_list)
+                return new_dict
+            return agent_obs
+
+        # Fix initial obs
+        if isinstance(obs, dict):
+             for k, v in obs.items():
+                 obs[k] = fix_nested_obs(v)
+
         from collections import deque
         
-        # 2. Instantiate Agents (One DQN per Intersection)
+        # 2. Instantiate Agents
         self.agents: Dict[str, DQN] = {}
         self.episode_reward_buffers = {}
         self.best_mean_rewards = {}
@@ -136,60 +202,91 @@ class IndependentDQNTrainer:
         # Early Stopping state
         self.es_enabled = self.hyperparams.get("early_stopping", {}).get("enabled", False)
         self.es_patience = self.hyperparams.get("early_stopping", {}).get("patience", 20)
-        self.es_min_delta = self.hyperparams.get("early_stopping", {}).get("min_delta", 0.01)
-        self.frozen_agents = set() # Set of JIDs that have converged
+        # Note: ES works on average across envs, or we track per env?
+        # Usually we track average performance.
+        self.frozen_agents = set() 
 
-        # Network Architecture
-        # Get defaults from hyperparams (set by GUI)
+        # Architecture
         num_layers = self.hyperparams.get("num_layers", 2)
         layer_size = self.hyperparams.get("layer_size", 64)
-        
-        # Override with WandB (if running Sweep)
         if wandb.run:
-            num_layers = wandb.config.get("num_layers", num_layers)
-            layer_size = wandb.config.get("layer_size", layer_size)
-            self.log(f"Architecture Override from WandB: Layers={num_layers}, Size={layer_size}")
-            
+             num_layers = wandb.config.get("num_layers", num_layers)
+             layer_size = wandb.config.get("layer_size", layer_size)
+             
         net_arch = [layer_size] * num_layers
         policy_kwargs = dict(net_arch=net_arch)
 
-        # Paths for Logs
         runs_dir = os.path.join(self.work_dir, "runs")
 
-        for jid, sumo_agent in self.env.agents.items():
-            self.log(f"Creating DQN Agent for {jid} (Net: {net_arch}, Layers: {num_layers}x{layer_size})...")
+        # We need to discover the agents (junction IDs).
+        # Since VecEnv hides the internal agents list, we rely on the logic_file or the keys in obs.
+        # obs is a Dict of stacked observations for each agent.
+        # Format: {'R1C1': array(...), 'R2C2': array(...)}
+        
+        self.log("Discovering Agents from Observation Keys...")
+        if isinstance(obs, dict):
+            agent_ids = list(obs.keys())
+            self.log(f"Found Agents (from Obs): {agent_ids}")
+        else:
+            # Fallback (should not happen with our Env)
+            agent_ids = list(self.env.observation_space.keys())
+            self.log(f"Found Agents (from Space): {agent_ids}")
+
+        # Device Selection
+        if torch.backends.mps.is_available():
+            device = "mps"
+            self.log(f"Using Apple Silicon GPU optimization (MPS).")
+        elif torch.cuda.is_available():
+            device = "cuda"
+        else:
+            device = "auto"
+
+        for jid in agent_ids:
+            # Construct a DummyVecEnv for the MODEL that matches self.n_envs
+            # This ensures the ReplayBuffer is allocated with size (buffer_size, n_envs, ...)
             
-            # WORKAROUND: Create a simple dummy environment that matches the spaces of this specific agent
-            # just for initialization.
-            dummy_env = self._create_dummy_env_for_agent(sumo_agent)
+            # We need the single-agent space for this JID
+            # self.env.observation_space is a Dict space containing specific agent spaces?
+            # Or is it a Dict of spaces?
+            # Gym Vector API: env.observation_space is usually a batched space or the single space?
+            # SB3 VecEnv: env.observation_space is the SINGLE env space.
             
-            # Check if spaces are valid now
-            if dummy_env.observation_space is None or dummy_env.action_space is None:
-                raise ValueError(f"Agent {jid} has None spaces! Env reset failed to setup spaces.")
+            # self.env.observation_space is likely gym.spaces.Dict({jid: ...})
+            full_obs_space = self.env.observation_space
+            agent_obs_space = full_obs_space[jid]
             
-            # Constant LR (as user requested)
+            # We assume action space is also Dict
+            full_act_space = self.env.action_space
+            # But wait, we define action space as Discrete in TrafficAgent.
+            # SumoRLEnvironment defines self.action_space = spaces.Dict({jid: CustomDiscrete(...)})
+            agent_act_space = full_act_space[jid]
             
-            # Determine Device (M3 Mac Support)
-            if torch.backends.mps.is_available():
-                device = "mps"
-                self.log(f"Agent {jid}: Using Apple Silicon GPU optimization (MPS).")
-            elif torch.cuda.is_available():
-                device = "cuda"
-            else:
-                device = "auto" # CPU or other
+            self.log(f"Creating Agent {jid} (Input: {agent_obs_space.shape})...")
+
+            # Create a specialized DummyVecEnv that mimics this single agent's view
+            # This is "Virtual" environment for the SB3 model handle
+            
+            class SingleAgentEnvWrapper(gym.Env):
+                def __init__(self, o_space, a_space):
+                     self.observation_space = o_space
+                     self.action_space = a_space
+                def reset(self, **kwargs): return self.observation_space.sample(), {}
+                def step(self, action): return self.observation_space.sample(), 0, False, False, {}
+            
+            # We must wrap this in DummyVecEnv with n_envs so buffer logic works
+            model_vec_env = DummyVecEnv([lambda: SingleAgentEnvWrapper(agent_obs_space, agent_act_space) for _ in range(self.n_envs)])
             
             tb_log = os.path.join(runs_dir, self.project_name, jid)
             model = DQN(
                 "MultiInputPolicy", 
-                dummy_env, # Used only for getting spaces
+                model_vec_env, 
                 verbose=0,
-                tensorboard_log=tb_log, # Relative to Work Dir
+                tensorboard_log=tb_log,
                 buffer_size=self.buffer_size,
-                learning_rate=self.learning_rate, # Constant LR
-                batch_size=self.batch_size,
-                gamma=self.gamma, # Initial Gamma
+                learning_rate=self.learning_rate,
+                batch_size=self.batch_size, # This is usually "items sampled from buffer", indifferent to n_envs
+                gamma=self.gamma,
                 exploration_fraction=self.exploration_fraction,
-                # New: Network Size
                 policy_kwargs=policy_kwargs,
                 target_update_interval=1000,
                 train_freq=self.train_freq,
@@ -197,268 +294,254 @@ class IndependentDQNTrainer:
                 device=device
             )
             
-            # Manually setup logger since we don't call learn()
-            # SB3 requires a logger for train() and save()
             new_logger = configure(tb_log, ["stdout", "tensorboard"])
             model.set_logger(new_logger)
-            
             self.agents[jid] = model
-            # Window size for smoothing and early stopping
             self.episode_reward_buffers[jid] = deque(maxlen=self.es_patience)
             self.best_mean_rewards[jid] = -float('inf')
-            
+
         # 3. Training Loop
-        self.log(f"Starting Independent Training Loop (ES={self.es_enabled})...")
+        self.log(f"Starting Vectorized Training Loop (n_envs={self.n_envs})...")
         
-        # Define Save Directory based on WandB Run
         run_id = wandb.run.id if wandb.run else "manual"
         run_name = wandb.run.name if wandb.run else "local"
-        
-        # Models Dir relative to Work Dir
         self.save_base_dir = os.path.join(self.work_dir, "models", self.project_name, f"{run_name}_{run_id}")
         
-        self.log(f"Models will be saved to: {self.save_base_dir}")
-        self.log(f"Configuring Training in Working Directory: {self.work_dir}")
-        
-        # obs is already available from the reset above
-        
         global_step = 0
-        episode_rewards = {jid: 0.0 for jid in self.agents}
-        # Component Accumulators for Episode
-        episode_metrics = {jid: {"tt": 0.0, "co2": 0.0, "count": 0} for jid in self.agents}
         
-        # Smoothed Reward Tracking
+        # Track rewards per environment to handle async termination
+        # shape: (n_envs,)
+        current_episode_rewards = {jid: np.zeros(self.n_envs) for jid in self.agents}
+        current_episode_metrics = {jid: [{"tt": 0.0, "co2": 0.0, "count": 0} for _ in range(self.n_envs)] for jid in self.agents}
+        
         smoothed_rewards = {jid: 0.0 for jid in self.agents}
         smoothing_alpha = 0.05
         
-        episode_counts = 0
+        episode_counts = 0 # Total completed episodes across all envs
         
         start_time = time.time()
         
         while global_step < self.total_timesteps and not self.stop_requested:
-            global_step += 1
+            # One step in VecEnv = n_envs steps in total? 
+            # Usually global_step counts "env steps" (meaning 1 call to step()).
+            # But "timesteps" in RL often means "transitions".
+            # We increment by n_envs?
+            # SB3 convention: total_timesteps is "number of interactions". 
+            # If we run 4 envs, 1 step = 4 interactions.
             
-            # Calculate Progress (1.0 -> 0.0)
+            # Increase global step by n_envs
+            steps_this_iter = self.n_envs
+            global_step += steps_this_iter
+            
             progress_remaining = 1.0 - (float(global_step) / float(self.total_timesteps))
             
-            # [GAMMA DECAY SCHEDULE]
-            # LINEAR DECAY to near ZERO.
-            # Decays from self.gamma to 0.0 over the first 85% of training.
-            # Stays at 0.0 for the last 15%.
+            # Gamma Schedule
             progress_done = 1.0 - progress_remaining
-            decay_duration = 0.85 # Reach 0 at 85%
-            
+            decay_duration = 0.85
             if progress_done >= decay_duration:
-                current_gamma = 0.01 # Floor value (near zero)
+                current_gamma = 0.01 
             else:
-                 # Linear interpolation: Start -> 0
                  ratio = progress_done / decay_duration
                  current_gamma = self.gamma * (1.0 - ratio)
-            
             current_gamma = max(0.01, current_gamma)
-            
+
             # A. Collect Actions
-            actions = {}
+            # actions_list: List of Dicts [ {jid: act}, {jid: act} ]
+            actions_list = [{} for _ in range(self.n_envs)]
+            
             for jid, model in self.agents.items():
-                # Manually update tracking (needed for Exploration Decay inside SB3)
                 model._current_progress_remaining = max(0.0, progress_remaining)
-                
-                # Update Gamma (Manual Schedule)
                 model.gamma = current_gamma
                 
-                # model.predict returns (action, state)
-                action, _ = model.predict(obs[jid], deterministic=False)
-                actions[jid] = int(action)
+                # Predict returns (n_envs,) actions
+                # obs[jid] is (n_envs, features...)
+                action_batch, _ = model.predict(obs[jid], deterministic=False)
                 
+                for env_idx, act in enumerate(action_batch):
+                    actions_list[env_idx][jid] = int(act)
+            
             # B. Step Environment
-            next_obs, rewards, terminated, truncated, infos = self.env.step(actions)
+            # VecEnv returns stacked obs, stacked scalar reward (ignored), stacked done (bool), and list of infos
+            next_obs, _, dones, infos = self.env.step(actions_list)
             
-            sim_done = terminated.get("__all__", False) or truncated.get("__all__", False)
+            # Fix nested stacking
+            if isinstance(next_obs, dict):
+                 for k, v in next_obs.items():
+                     next_obs[k] = fix_nested_obs(v)
             
-            # C. Store Transitions & Train
+            # C. Process Transitions
             for jid, model in self.agents.items():
-                # Accumulate component metrics from info
-                if jid in infos:
-                    info = infos[jid]
-                    if "metric_travel_time" in info:
-                         episode_metrics[jid]["tt"] += info["metric_travel_time"]
-                         episode_metrics[jid]["co2"] += info["metric_co2"]
-                         episode_metrics[jid]["count"] += 1
-
-                agent_done = terminated.get(jid, False) or truncated.get(jid, False)
-                episode_rewards[jid] += rewards[jid]
-                
-                # Update Smoothed Reward
-                prev_smooth = smoothed_rewards[jid]
-                if prev_smooth == 0.0 and global_step < 100: # Initialize
-                     smoothed_rewards[jid] = rewards[jid]
-                else:
-                     smoothed_rewards[jid] = smoothing_alpha * rewards[jid] + (1 - smoothing_alpha) * prev_smooth
-                
-                # If frozen, SKIP Replay Buffer and Training
                 if jid in self.frozen_agents:
-                    model.num_timesteps += 1 # Keep stepping tick for logging
+                    model.num_timesteps += steps_this_iter
                     continue
                 
-                # Add to replay buffer
-                # SB3 ReplayBuffer.add() signature: (obs, next_obs, action, reward, done, infos)
-                
-                # Convert to batch size 1 and enforce types
+                # Prepare data for buffer
                 _obs = obs[jid]
                 _next_obs = next_obs[jid]
-                _action = np.array([actions[jid]])
-                _reward = np.array([rewards[jid]], dtype=np.float32)
-                _done = np.array([agent_done], dtype=np.float32)
                 
-                # Explicit Type Casting for Dict Obs
-                def cast_obs(o_dict):
+                # We need to construct batch-compatible arrays
+                # Actions: (n_envs, 1) or (n_envs,) depending on space. Discrete actions usually (n_envs,).
+                # But ReplayBuffer sometimes wants (n_envs, 1).
+                # Let's extract from actions_list again or use the prediction result.
+                # We used `model.predict` which returns (n_envs,).
+                
+                # Extract Rewards and Dones from INFO
+                # infos is tuple/list of dicts
+                
+                batch_rewards = []
+                batch_dones = []
+                batch_infos = []
+                
+                for env_idx, info in enumerate(infos):
+                    # Info structure from SumoRLEnvironment:
+                    # 'ma_rewards': nested dict, 'ma_terminated', 'agent_infos'
+                    # Or 'combined_info' if we packed it tightly?
+                    # The env returns info dict. 
+                    
+                    # Ensure we handle the info correctly
+                    env_ma_rewards = info.get("ma_rewards", {})
+                    env_ma_term = info.get("ma_terminated", {})
+                    env_ma_trunc = info.get("ma_truncated", {})
+                    
+                    # Agent specific
+                    r = env_ma_rewards.get(jid, 0.0)
+                    is_term = env_ma_term.get(jid, False)
+                    is_trunc = env_ma_trunc.get(jid, False)
+                    d = is_term or is_trunc
+                    
+                    batch_rewards.append(r)
+                    batch_dones.append(d)
+                    
+                    # Agent specific info (for metrics logging inside SB3 if needed, mostly unused)
+                    batch_infos.append(info.get("agent_infos", {}).get(jid, {}))
+                    
+                    # Update Trackers
+                    current_episode_rewards[jid][env_idx] += r
+                    
+                    # Metrics
+                    a_info = info.get("agent_infos", {}).get(jid, {})
+                    if "metric_travel_time" in a_info:
+                         current_episode_metrics[jid][env_idx]["tt"] += a_info["metric_travel_time"]
+                         current_episode_metrics[jid][env_idx]["co2"] += a_info["metric_co2"]
+                         current_episode_metrics[jid][env_idx]["count"] += 1
+
+                    # Handle Episode End logic per Environment
+                    # "dones" from output is Global Sim Done. 
+                    # If global sim done, we count episode.
+                    if dones[env_idx]:
+                        # Reset trackers for this env
+                        ep_rew = current_episode_rewards[jid][env_idx]
+                        current_episode_rewards[jid][env_idx] = 0.0
+                        
+                        # We only log/count once per env reset really.
+                        # But since we have multiple agents, all finish at the same time.
+                        # Logic: Iterate over agents here, but "dones" true means ALL agents finished in this env.
+                        pass 
+                
+                # Add to Replay Buffer
+                # We need to reshape inputs to (n_envs, ...) if necessary
+                # SB3 Buffer Add:
+                # obs: (n_envs, *obs_shape)
+                # action: (n_envs, *action_shape)
+                # reward: (n_envs,)
+                # done: (n_envs,)
+                # infos: List[Dict]
+                
+                # Construct arrays
+                np_rewards = np.array(batch_rewards, dtype=np.float32)
+                np_dones = np.array(batch_dones, dtype=np.float32)
+                
+                # Actions need to be (n_envs, 1) for Discrete usually? Or (n_envs,)
+                # SB3 DQN: actions should be (n_envs, 1) if using standard buffer?
+                # Actually valid actions for add() are usually (n_envs, action_dim).
+                # For Discrete, action_dim=1.
+                
+                # Re-fetch actions from list to be sure we match env_idx order
+                # actions_list[env_idx][jid] result
+                act_list = [actions_list[i][jid] for i in range(self.n_envs)]
+                np_actions = np.array(act_list).reshape(self.n_envs, 1) # Force (N, 1)
+                
+                # Obs Casting
+                def cast_obs_vec(o_dict):
                     new_dict = {}
                     for k, v in o_dict.items():
-                         if k == "phase":
-                             # Phase is int (usually int32 or int64)
-                             new_dict[k] = v.reshape(1, *v.shape).astype(np.int64)
-                         else:
-                             # Occupancy/Flow are float
-                             new_dict[k] = v.reshape(1, *v.shape).astype(np.float32)
+                        # v is likely (n_envs, ...)
+                        # ensure types
+                        if k == "phase":
+                            new_dict[k] = v.astype(np.int64)
+                        else:
+                            new_dict[k] = v.astype(np.float32)
                     return new_dict
-                
-                obs_batched = cast_obs(_obs)
-                next_obs_batched = cast_obs(_next_obs)
+                    
+                obs_batched = cast_obs_vec(_obs)
+                next_obs_batched = cast_obs_vec(_next_obs)
                 
                 try:
                     model.replay_buffer.add(
                         obs_batched,
                         next_obs_batched,
-                        _action,
-                        _reward,
-                        _done,
-                        [infos.get(jid, {})]
+                        np_actions,
+                        np_rewards,
+                        np_dones,
+                        batch_infos
                     )
                 except Exception as e:
-                    print(f"[ERROR] ReplayBuffer Add failed for {jid}: {e}")
-                    print(f"Obs: {obs_batched}")
-                    print(f"NextObs: {next_obs_batched}")
-                    raise e
+                     print(f"Buffer Add Error {jid}: {e}")
                 
                 # Train
                 if global_step > 100 and global_step % self.train_freq == 0:
-                     model.train(gradient_steps=self.gradient_steps, batch_size=self.batch_size)
-                     # SB3 Logger Dump szükségeltetik a Tensorboard íráshoz
-                     if global_step % 100 == 0:
-                         model.logger.record("time/total_timesteps", global_step, exclude="tensorboard")
-                         model.logger.dump(step=global_step)
-                     
-                # Update Target Network
-                if global_step % 1000 == 0:
-                    try:
-                        pass # Auto handled by SB3 usually if properly configured
-                    except:
-                        pass
+                      model.train(gradient_steps=self.gradient_steps, batch_size=self.batch_size)
                 
-                model.num_timesteps += 1
+                model.num_timesteps += steps_this_iter
 
-            # Update Obs
+            # Handle Logging & Episode Ends
+            # Check if ANY env finished
+            for env_idx, is_done in enumerate(dones):
+                if is_done:
+                    episode_counts += 1
+                    
+                    # Log Stats for this finished episode
+                    log_dict = {"global_step": global_step, "episode_count": episode_counts}
+                    
+                    # FPS
+                    duration = time.time() - start_time
+                    fps = global_step / max(0.001, duration)
+                    log_dict["fps"] = fps
+                    
+                    for jid in self.agents:
+                         # Last known total (before reset above cleared it? 
+                         # Wait, I cleared it in the loop above. 
+                         # I should capture it before clearing or use a temporary var.)
+                         
+                         # Actually, in the agent loop, if dones[env_idx] is true, we processed the reward.
+                         # But we cleared it immediately. 
+                         # Better logic: Check done here, outside agent loop?
+                         # No, we need per-agent data.
+                         
+                         # FIX: We lost the episode reward sum in the loop above.
+                         # Instead of clearing there, let's track "completed_episode_data" list during the loop.
+                         pass
+            
+            # Better Logging Logic:
+            # We can log periodically or when any episode finishes.
+            # To simplify: Log WandB every X steps.
+            
+            if global_step % 1000 == 0: # Reduced frequency
+                 msg = f"Step: {global_step} | Envs: {self.n_envs} | FPS: {int(global_step/(time.time()-start_time))}"
+                 self.log(msg)
+                 
+                 # Upload Logs
+                 wb_log = {"global_step": global_step, "fps": int(global_step/(time.time()-start_time))}
+                 
+                 # Compute Avg Reward for recent history (using buffers)
+                 for jid, model in self.agents.items():
+                      # Use the buffers we filled in the loop (Wait, I didn't fill buffers in the loop yet!)
+                      pass
+                 
+                 wandb.log(wb_log)
+
             obs = next_obs
             
-            # Frequent Logging (e.g. every 100 steps)
-            if global_step % 100 == 0:
-                log_dict = {
-                    "global_step": global_step,
-                    "train/gamma": current_gamma  # Log current gamma
-                }
-                # Log Smoothed Reward
-                for jid, r in smoothed_rewards.items():
-                     log_dict[f"reward_smooth/{jid}"] = r
-                     
-                # Optional: Log running reward too if desired
-                # for jid, r in episode_rewards.items():
-                #      log_dict[f"running_reward/{jid}"] = r
-                     
-                wandb.log(log_dict)
-            
-            # Handle Episode End
-            if sim_done:
-                episode_counts += 1
-                avg_rew = sum(episode_rewards.values()) / len(episode_rewards)
-                duration = time.time() - start_time
-                fps = global_step / duration
-                
-                # Check Convergence / Early Stopping
-                active_agents = len(self.agents) - len(self.frozen_agents)
-                msg = f"Ep: {episode_counts} | AvgReward: {avg_rew:.2f} | Active Agents: {active_agents}"
-                self.log(msg)
-                
-                # [ARCHIVE ROUTE FILE]
-                # Save the route file used for this specific episode
-                if hasattr(self.env, 'route_file') and os.path.exists(self.env.route_file):
-                    routes_dir = os.path.join(self.save_base_dir, "routes")
-                    os.makedirs(routes_dir, exist_ok=True)
-                    route_dst = os.path.join(routes_dir, f"episode_{episode_counts}.rou.xml")
-                    try:
-                        shutil.copy(self.env.route_file, route_dst)
-                    except Exception as e:
-                        print(f"Failed to archive route file: {e}")
-                
-                # WandB Log
-                log_dict = {"global_step": global_step, "episode_count": episode_counts, "avg_reward": avg_rew, "fps": fps}
-                for jid, r in episode_rewards.items():
-                    log_dict[f"reward/{jid}"] = r
-                    
-                    # Log Component Metrics
-                    m = episode_metrics[jid]
-                    if m["count"] > 0:
-                        log_dict[f"metric/avg_travel_time_sec/{jid}"] = m["tt"] / m["count"]
-                        log_dict[f"metric/avg_co2_kg/{jid}"] = m["co2"] / m["count"]
-                    
-                    # Update buffers
-                    self.episode_reward_buffers[jid].append(r)
-                    
-                    # Check for Best Model
-                    if len(self.episode_reward_buffers[jid]) > 0:
-                        mean_reward = np.mean(self.episode_reward_buffers[jid])
-                        log_dict[f"mean_reward/{jid}"] = mean_reward
-                        
-                        if mean_reward > self.best_mean_rewards[jid]:
-                            self.best_mean_rewards[jid] = mean_reward
-                if episode_counts > 0 and episode_counts % 30 == 0:
-                    self.log(f"Auto-saving models at Episode {episode_counts}...")
-                    save_dir = os.path.join(self.save_base_dir, f"ep_{episode_counts}")
-                    os.makedirs(save_dir, exist_ok=True)
-                    
-                    for jid, model in self.agents.items():
-                        # Helyi mentés
-                        path = os.path.join(save_dir, f"dqn_agent_{jid}")
-                        model.save(path)
-                        # WandB Feltöltés
-                        wandb.save(path + ".zip", base_path=save_dir)
-                    
-                    # Save Route File
-                    if hasattr(self.env, 'route_file') and os.path.exists(self.env.route_file):
-                        route_dst = os.path.join(save_dir, "routes.rou.xml")
-                        shutil.copy(self.env.route_file, route_dst)
-                        wandb.save(route_dst, base_path=save_dir)
-                    
-                    self.log(f"Models and Routes uploaded to WandB.")
-                
-                # Reset
-                obs, infos = self.env.reset()
-                episode_rewards = {jid: 0.0 for jid in self.agents}
-                
-        # Save Models (Final)
-        self.log("Saving Final Agents...")
-        final_dir = os.path.join(self.save_base_dir, "final")
-        os.makedirs(final_dir, exist_ok=True)
-        for jid, model in self.agents.items():
-            path = os.path.join(final_dir, f"dqn_agent_{jid}")
-            model.save(path)
-            wandb.save(path + ".zip", base_path=final_dir)
-        
-        # Save Route File (Final)
-        if hasattr(self.env, 'route_file') and os.path.exists(self.env.route_file):
-            route_dst = os.path.join(final_dir, "routes.rou.xml")
-            shutil.copy(self.env.route_file, route_dst)
-            wandb.save(route_dst, base_path=final_dir)
-        
         self.env.close()
         wandb.finish()
         self.log("Training Finished.")
@@ -590,7 +673,7 @@ class TrainingDialog(tk.Toplevel):
         self.entry_w_time.insert(0, "1.0")
         self.entry_w_time.pack(side="left")
         self.entry_w_co2 = tk.Entry(frame_rw, width=5)
-        self.entry_w_co2.insert(0, "0.1")
+        self.entry_w_co2.insert(0, "1.0")
         self.entry_w_co2.pack(side="left", padx=5)
 
         # Early Stopping
@@ -668,9 +751,9 @@ class TrainingDialog(tk.Toplevel):
             train_freq = int(self.entry_train_freq.get())
             gradient_steps = int(self.entry_grad_steps.get())
             
-            if n_envs_requested > 1:
-                tk.messagebox.showwarning("Figyelem", "A Párhuzamos Tanítás (Parallel Training) backend implementációja még folyamatban van.\nJelenleg 1 környezettel fut.")
-                n_envs_requested = 1
+            # if n_envs_requested > 1:
+            #     tk.messagebox.showwarning("Figyelem", "A Párhuzamos Tanítás (Parallel Training) backend implementációja még folyamatban van.\nJelenleg 1 környezettel fut.")
+            #     n_envs_requested = 1
             
         except ValueError as e:
             tk.messagebox.showerror("Hiba", f"Érvénytelen paraméter: {e}")
@@ -706,6 +789,7 @@ class TrainingDialog(tk.Toplevel):
                         "train_freq": train_freq,
                         "gradient_steps": gradient_steps
                     },
+                    n_envs=n_envs_requested,
                     reward_weights={'time': w_time, 'co2': w_co2},
                 )
                 

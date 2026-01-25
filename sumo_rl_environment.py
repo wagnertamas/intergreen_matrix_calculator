@@ -28,7 +28,7 @@ class SumoRLEnvironment(gym.Env):
                  logic_json_file,
                  detector_file,
                  route_file="random_traffic.rou.xml",
-                 reward_weights={'time': 1.0, 'co2': 0.1},
+                 reward_weights={'time': 1.0, 'co2': 1.0},
                  min_green_time=5,
                  delta_time=1,
                  measure_during_transition=False,
@@ -63,8 +63,60 @@ class SumoRLEnvironment(gym.Env):
             jid: TrafficAgent(jid, self.logic_data[jid], min_green_time, measure_during_transition)
             for jid in self.junction_ids
         }
+        
+        # [VEC ENV COMPATIBILITY]
+        # VecEnv (Subproc/Dummy) requires 'observation_space' and 'action_space' to be defined in __init__.
+        # Often we need SUMO running to know the exact spaces (number of detectors).
+        # We will ESTIMATE them by parsing the detector file manually here.
+        self._estimate_spaces_from_xml()
 
         self.is_running = False
+
+    def _estimate_spaces_from_xml(self):
+        """
+        [FIX] Instead of guessing from XML (which causes mismatch errors),
+        we perform a 'Dry Run' simulation to measure exact spaces.
+        This ensures SubprocVecEnv receives the CORRECT observation_space.
+        """
+        print("[Env Init] Measuring Observation Spaces via short boot...")
+        
+        # 1. Setup Boot Command
+        # Use dummy route file if original doesn't exist yet (in parallel it might not)
+        temp_route = self.route_file
+        if not os.path.exists(temp_route):
+             # Create empty route file just for boot
+             with open(temp_route, 'w') as f:
+                 f.write('<routes></routes>')
+        
+        sumo_cmd = [
+            "-n", self.net_file,
+            "-r", temp_route,
+            "-a", self.detector_file,
+            "--no-step-log", "true",
+            "--no-warnings", "true",
+            "--random", "true" # Avoid seed conflicts
+        ]
+        
+        try:
+             # 2. Start Simulation
+             traci.start(sumo_cmd)
+             
+             # 3. Use normal map logic
+             self._map_network_elements()
+             
+             # 4. Spaces are now set in self.agents
+             # Build Global Spaces
+             self.observation_space = spaces.Dict({jid: agent.observation_space for jid in self.agents.keys()})
+             self.action_space = spaces.Dict({jid: agent.action_space for jid in self.agents.keys()})
+             
+             # 5. Close
+             traci.close()
+             print(f"[Env Init] Spaces measured: {self.observation_space}")
+             
+        except Exception as e:
+             print(f"[Critical] Failed to measure spaces: {e}")
+             # Raise error because training WILL fail if mismatch occurs
+             raise e
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -85,9 +137,7 @@ class SumoRLEnvironment(gym.Env):
             else:
                 # Randomize traffic desnity (period) to expose agent to sparse and dense traffic.
                 # Range: 0.001 (Max) to 0.005 (Min).
-                # User specified range: 0.001 - 0.005.
-                dynamic_period = random.uniform(0.001, 0.005)
-            
+                dynamic_period = round(random.uniform(0.001, 0.005), 4)
             self.generate_random_traffic(period=dynamic_period)
 
         # SUMO parancs összeállítása (libsumo nem támogatja a GUI-t!)
@@ -98,7 +148,7 @@ class SumoRLEnvironment(gym.Env):
             "-n", self.net_file,
             "-r", self.route_file,
             "-a", self.detector_file,
-            "--threads", "4",
+            # "--threads", "4", # REMOVED: Unsafe/Warning in SUMO 1.25
             "--no-step-log", "true",
             "--waiting-time-memory", "10000",
             "--ignore-route-errors", "true",
@@ -239,10 +289,16 @@ class SumoRLEnvironment(gym.Env):
                 agent.collect_measurements()
 
         observations = {}
-        rewards = {}
-        terminated = {jid: False for jid in self.junction_ids}
-        truncated = {jid: False for jid in self.junction_ids}
+        # Multi-Agent Rewards/Dones will be stored in info
+        ma_rewards = {}
+        ma_terminated = {}
+        ma_truncated = {}
+        
         infos = {}
+        
+        # Determine global done (if simulation ends)
+        sim_terminated = not self.is_running
+        sim_truncated = False
 
         w_time = self.reward_weights.get('time', 1.0)
         w_co2 = self.reward_weights.get('co2', 0.1)
@@ -253,14 +309,7 @@ class SumoRLEnvironment(gym.Env):
             avg_travel_time = agent.get_avg_travel_time_metric()
             total_co2 = agent.get_total_co2_metric()
             
-            # Store raw metrics in info for logging
-            infos[jid] = {
-                "ready": agent.is_ready_for_action(),
-                "metric_travel_time": avg_travel_time,
-                "metric_co2": total_co2,
-                "metric_veh_count": agent.accumulated_veh_count / max(1, agent.steps_measured) # Average vehicles seen per step
-            }
-
+            
             # [REWARD TRANSFORMATION] Log-Sigmoid (Log-Distance)
             # Based on PCA analysis constants provided by user:
             # MU_TIME = 11.211313, STD_TIME = 1.129861
@@ -296,12 +345,38 @@ class SumoRLEnvironment(gym.Env):
             r_co2  = 1.0 - score_co2
             
             reward = w_time * r_time + w_co2 * r_co2
-            rewards[jid] = reward
+            ma_rewards[jid] = reward
+            
+            # Store raw metrics in info for logging
+            infos[jid] = {
+                "ready": agent.is_ready_for_action(),
+                "metric_travel_time": avg_travel_time,
+                "metric_co2": total_co2,
+                "metric_veh_count": agent.accumulated_veh_count / max(1, agent.steps_measured) # Average vehicles seen per step
+            }
+            
+            ma_terminated[jid] = False
+            ma_truncated[jid] = False
 
-        terminated["__all__"] = (traci.simulation.getMinExpectedNumber() <= 0)
-        truncated["__all__"] = (traci.simulation.getTime() >= self.traffic_duration)
+        # [PARALLEL COMPATIBILITY]
+        # VecEnv expects scalar Reward and scalar Done.
+        global_reward = sum(ma_rewards.values()) # Just for VecEnv interface compliance
         
-        return observations, rewards, terminated, truncated, infos
+        # Check global termination
+        if traci.simulation.getMinExpectedNumber() <= 0:
+             sim_terminated = True
+        if traci.simulation.getTime() >= self.traffic_duration:
+             sim_truncated = True
+             
+        # Pack MA data into info for the Trainer to unpack
+        combined_info = {
+            "ma_rewards": ma_rewards,
+            "ma_terminated": ma_terminated,
+            "ma_truncated": ma_truncated,
+            "agent_infos": infos
+        }
+        
+        return observations, global_reward, sim_terminated, sim_truncated, combined_info
 
     def close(self):
         if self.is_running:
