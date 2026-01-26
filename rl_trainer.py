@@ -1,4 +1,76 @@
-def run(self):
+import gymnasium as gym
+import numpy as np
+import threading
+import queue
+import time
+import os
+import sys
+
+# --- JAVÍTÁS: Feltételes GUI import ---
+try:
+    import tkinter as tk
+    from tkinter import ttk, messagebox
+    HAS_GUI = True
+except ImportError:
+    HAS_GUI = False
+    # Headless módban (pl. Docker) ez ne okozzon hibát,
+    # amíg nem próbáljuk megnyitni az ablakot.
+# ---------------------------------------
+
+# Opcionális importok ellenőrzése
+try:
+    from stable_baselines3 import DQN
+    from stable_baselines3.common.logger import configure
+    from stable_baselines3.common.vec_env import DummyVecEnv
+    import wandb
+    import torch
+    HAS_RL_LIBS = True
+except ImportError:
+    HAS_RL_LIBS = False
+    print("Figyelem: RL könyvtárak (stable-baselines3, wandb, torch) hiányoznak.")
+
+from sumo_rl_environment import SumoRLEnvironment
+
+# Export modul importálása (ha létezik)
+try:
+    from export_utils import export_to_colab_package
+    HAS_EXPORT = True
+except ImportError:
+    HAS_EXPORT = False
+
+# =============================================================================
+# 1. TRÉNER LOGIKA (IndependentDQNTrainer)
+# =============================================================================
+
+class IndependentDQNTrainer:
+    def __init__(self, 
+                 net_file, logic_file, detector_file, 
+                 total_timesteps=100000, 
+                 wandb_project="sumo-rl",
+                 log_queue=None,
+                 hyperparams=None,
+                 reward_weights=None,
+                 n_envs=1):
+        
+        self.net_file = net_file
+        self.logic_file = logic_file
+        self.detector_file = detector_file
+        self.total_timesteps = total_timesteps
+        self.project_name = wandb_project
+        self.log_queue = log_queue
+        self.hyperparams = hyperparams or {}
+        self.reward_weights = reward_weights or {'time': 1.0, 'co2': 1.0}
+        
+        self.stop_requested = False
+        self.agents = {}
+        self.env = None
+        self.reward_smoothing = {} # Futó átlag tárolása
+
+    def log(self, msg):
+        if self.log_queue: self.log_queue.put(msg)
+        else: print(msg)
+
+    def run(self):
         self.log("Initializing Environment...")
         
         # 1. WandB init és SWEEP Támogatás
@@ -188,3 +260,206 @@ def run(self):
                 wandb.finish()
             
             self.log("Cleanup done.")
+
+
+# =============================================================================
+# 2. GUI DIALOG
+# =============================================================================
+
+class TrainingDialog:
+    def __init__(self, parent, net_file, logic_file, detector_file):
+        # Ha nincs GUI könyvtár, dobjon hibát az osztály példányosítása
+        if not HAS_GUI:
+            print("Hiba: Tkinter nincs telepítve, GUI nem indítható.")
+            return
+
+        self.top = tk.Toplevel(parent)
+        self.top.title("Reinforcement Learning Trainer")
+        self.top.geometry("600x750")
+        
+        self.net_file = net_file
+        self.logic_file = logic_file
+        self.detector_file = detector_file
+        
+        self.log_queue = queue.Queue()
+        self.trainer_thread = None
+        self.trainer_instance = None
+        
+        self.setup_ui()
+        self.check_files()
+        self.top.after(100, self.process_logs)
+
+    # A további GUI metódusok csak akkor hívódnak meg, ha a HAS_GUI igaz,
+    # mert a __init__ visszatér, ha hamis. 
+    # De a biztonság kedvéért a definíciók maradhatnak változatlanul,
+    # mert a headless mód sosem példányosítja a TrainingDialog-ot.
+    
+    def check_files(self):
+        missing = []
+        if not self.logic_file or not os.path.exists(self.logic_file): 
+            missing.append("traffic_lights.json")
+        if not self.detector_file or not os.path.exists(self.detector_file): 
+            missing.append("detectors.add.xml")
+        
+        if missing:
+            self.log(f"HIBA: Hiányzó fájlok: {', '.join(missing)}")
+            self.log("Kérlek először exportáld a SUMO fájlokat a főablakban (SUMO Export)!")
+            self.btn_start.config(state="disabled")
+
+    def setup_ui(self):
+        frame_wandb = tk.LabelFrame(self.top, text="WandB Logging", padx=10, pady=5)
+        frame_wandb.pack(fill="x", padx=10, pady=5)
+        
+        tk.Label(frame_wandb, text="Project Name:").grid(row=0, column=0, sticky="w")
+        self.entry_project = tk.Entry(frame_wandb)
+        self.entry_project.insert(0, "sumo-rl-single")
+        self.entry_project.grid(row=0, column=1, padx=5, sticky="ew")
+
+        tk.Label(frame_wandb, text="API Key (Optional):").grid(row=1, column=0, sticky="w")
+        self.entry_apikey = tk.Entry(frame_wandb, show="*")
+        self.entry_apikey.grid(row=1, column=1, padx=5, sticky="ew")
+
+        frame_hyper = tk.LabelFrame(self.top, text="Hyperparameters", padx=10, pady=5)
+        frame_hyper.pack(fill="x", padx=10, pady=5)
+
+        params = [
+            ("Total Timesteps:", "100000", "entry_steps"),
+            ("Learning Rate:", "0.0001", "entry_lr"),
+            ("Batch Size:", "32", "entry_batch"),
+            ("Buffer Size:", "50000", "entry_buffer"),
+            ("Gamma:", "0.99", "entry_gamma"),
+            ("Exploration Fraction:", "0.5", "entry_expl"),
+            ("Network Layers:", "2", "entry_num_layers"),
+            ("Layer Size:", "64", "entry_layer_size"),
+        ]
+
+        for i, (label, default, attr_name) in enumerate(params):
+            tk.Label(frame_hyper, text=label).grid(row=i, column=0, sticky="w")
+            entry = tk.Entry(frame_hyper)
+            entry.insert(0, default)
+            entry.grid(row=i, column=1, padx=5, sticky="ew")
+            setattr(self, attr_name, entry)
+
+        frame_reward = tk.LabelFrame(self.top, text="Reward Weights", padx=10, pady=5)
+        frame_reward.pack(fill="x", padx=10, pady=5)
+
+        tk.Label(frame_reward, text="Time Weight:").grid(row=0, column=0)
+        self.entry_w_time = tk.Entry(frame_reward, width=10)
+        self.entry_w_time.insert(0, "1.0")
+        self.entry_w_time.grid(row=0, column=1)
+
+        tk.Label(frame_reward, text="CO2 Weight:").grid(row=0, column=2)
+        self.entry_w_co2 = tk.Entry(frame_reward, width=10)
+        self.entry_w_co2.insert(0, "1.0")
+        self.entry_w_co2.grid(row=0, column=3)
+
+        frame_btns = tk.Frame(self.top, pady=10)
+        frame_btns.pack(fill="x")
+
+        self.btn_start = tk.Button(frame_btns, text="Start Training", command=self.start_training, 
+                                   bg="green", fg="white", font=("Arial", 10, "bold"))
+        self.btn_start.pack(side="left", padx=20)
+
+        self.btn_stop = tk.Button(frame_btns, text="Stop", command=self.stop_training, state="disabled",
+                                  bg="red", fg="white")
+        self.btn_stop.pack(side="left", padx=5)
+
+        if HAS_EXPORT:
+            self.btn_export = tk.Button(frame_btns, text="Export for Colab", command=self.export_config,
+                                        bg="blue", fg="white")
+            self.btn_export.pack(side="right", padx=20)
+
+        self.txt_log = tk.Text(self.top, height=15, state="disabled", bg="#f0f0f0")
+        self.txt_log.pack(fill="both", expand=True, padx=10, pady=10)
+
+    def log(self, msg):
+        self.log_queue.put(msg)
+
+    def process_logs(self):
+        while not self.log_queue.empty():
+            msg = self.log_queue.get()
+            self.txt_log.config(state="normal")
+            self.txt_log.insert("end", str(msg) + "\n")
+            self.txt_log.see("end")
+            self.txt_log.config(state="disabled")
+        self.top.after(100, self.process_logs)
+
+    def get_settings(self):
+        return {
+            "total_timesteps": int(self.entry_steps.get()),
+            "wandb_project": self.entry_project.get(),
+            "wandb_api_key": self.entry_apikey.get(),
+            "learning_rate": float(self.entry_lr.get()),
+            "batch_size": int(self.entry_batch.get()),
+            "buffer_size": int(self.entry_buffer.get()),
+            "gamma": float(self.entry_gamma.get()),
+            "exploration_fraction": float(self.entry_expl.get()),
+            "w_time": float(self.entry_w_time.get()),
+            "w_co2": float(self.entry_w_co2.get()),
+            "num_layers": int(self.entry_num_layers.get()),
+            "layer_size": int(self.entry_layer_size.get()),
+        }
+
+    def start_training(self):
+        if not HAS_RL_LIBS:
+            messagebox.showerror("Hiba", "RL könyvtárak (SB3, WandB) hiányoznak!")
+            return
+
+        try:
+            settings = self.get_settings()
+            if settings["wandb_api_key"]:
+                os.environ["WANDB_API_KEY"] = settings["wandb_api_key"]
+
+            self.trainer_instance = IndependentDQNTrainer(
+                net_file=self.net_file,
+                logic_file=self.logic_file,
+                detector_file=self.detector_file,
+                total_timesteps=settings["total_timesteps"],
+                wandb_project=settings["wandb_project"],
+                log_queue=self.log_queue,
+                hyperparams=settings,
+                reward_weights={'time': settings["w_time"], 'co2': settings["w_co2"]}
+            )
+
+            self.trainer_thread = threading.Thread(target=self.run_trainer_thread)
+            self.trainer_thread.daemon = True
+            self.trainer_thread.start()
+
+            self.btn_start.config(state="disabled")
+            self.btn_stop.config(state="normal")
+            
+        except ValueError as e:
+            messagebox.showerror("Input Error", f"Hibás paraméter: {e}")
+
+    def run_trainer_thread(self):
+        try:
+            self.trainer_instance.run()
+        except Exception as e:
+            self.log(f"Thread Error: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            self.top.after(0, self.on_training_finished)
+
+    def stop_training(self):
+        if self.trainer_instance:
+            self.log("Stopping requested...")
+            self.trainer_instance.stop_requested = True
+
+    def on_training_finished(self):
+        self.log("Training thread exited.")
+        self.btn_start.config(state="normal")
+        self.btn_stop.config(state="disabled")
+
+    def export_config(self):
+        if not HAS_EXPORT: return
+        try:
+            settings = self.get_settings()
+            files = {
+                "net": self.net_file,
+                "logic": self.logic_file,
+                "detector": self.detector_file
+            }
+            export_to_colab_package(settings, files)
+        except Exception as e:
+            messagebox.showerror("Export Hiba", str(e))
