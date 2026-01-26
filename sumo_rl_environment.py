@@ -12,7 +12,12 @@ try:
     import libsumo as traci
     USE_LIBSUMO = True
 except ImportError:
-    raise ImportError("Hiba: A 'libsumo' modul nem található! Ellenőrizd a PYTHONPATH-t vagy a SUMO_HOME-ot.")
+    # Ha nincs libsumo, próbáljuk meg a traci-t (fallback)
+    try:
+        import traci
+        USE_LIBSUMO = False
+    except ImportError:
+        raise ImportError("Hiba: Sem a 'libsumo', sem a 'traci' modul nem található!")
 
 
 class SumoRLEnvironment(gym.Env):
@@ -67,13 +72,13 @@ class SumoRLEnvironment(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # 1. Random forgalom generálás (USER REQUEST: SŰRŰ FORGALOM VISSZAÁLLÍTÁSA)
+        # 1. Random forgalom generálás
         if self.random_traffic:
-            # Visszaállítva a kért extrém sűrűségre
             dynamic_period = round(random.uniform(0.001, 0.005), 4)
             self.generate_random_traffic(period=dynamic_period)
 
         # 2. SUMO parancs összeállítása
+        sumo_bin = "sumo-gui" if self.sumo_gui else "sumo"
         sumo_args = [
             "-n", self.net_file,
             "-r", self.route_file,
@@ -92,13 +97,23 @@ class SumoRLEnvironment(gym.Env):
                 "--duration-log.statistics", "true"
             ])
 
-        # 3. SUMO indítása (libsumo start vs load trükk)
+        # 3. SUMO indítása
         if self.is_running:
-            traci.load(sumo_args)
+            try:
+                traci.load(sumo_args)
+            except Exception as e:
+                # Ha a load nem sikerül (pl. connection closed), próbáljuk újraindítani
+                print(f"Hiba a traci.load hívásakor: {e}. Újraindítás...")
+                try:
+                    traci.close()
+                except:
+                    pass
+                traci.start([sumo_bin] + sumo_args)
         else:
-            traci.start(["sumo"] + sumo_args)
+            traci.start([sumo_bin] + sumo_args)
             self.is_running = True
 
+        # Hálózat elemeinek feltérképezése és FÁZIS HOSSZ JAVÍTÁSA
         self._map_network_elements()
         
         # 4. Terek beállítása
@@ -132,7 +147,8 @@ class SumoRLEnvironment(gym.Env):
         return observations, infos
 
     def generate_random_traffic(self, period):
-        print(f"Forgalom generálása (Period={period})...")
+        print(f"\n[DEBUG] 🚗 Random Forgalom Generálása | Period: {period} (s/jármű) | Becsült sűrűség: {int(1/period)} jármű/mp")
+        
         if 'SUMO_HOME' in os.environ:
             tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
             sys.path.append(tools)
@@ -157,14 +173,37 @@ class SumoRLEnvironment(gym.Env):
             "--duarouter-routing-threads", "4",
         ]
         try:
-            # subprocess.PIPE helyett DEVNULL, hogy ne szemetelje tele a logot
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print(f"HIBA a randomTrips-nél: {e}")
 
     def _map_network_elements(self):
         all_loops = traci.inductionloop.getIDList()
+        
         for jid, agent in self.agents.items():
+            # --- JAVÍTÁS KEZDETE: Fázis string hossz ellenőrzése és javítása ---
+            try:
+                # Lekérjük a SUMO-tól az aktuális fázist, hogy lássuk a helyes hosszt
+                current_state_sumo = traci.trafficlight.getRedYellowGreenState(jid)
+                correct_len = len(current_state_sumo)
+                
+                # Végigmegyünk az ágens tárolt fázisain
+                for p_idx, p_data in agent.phase_registry.items():
+                    current_len = len(p_data['state'])
+                    if current_len != correct_len:
+                        print(f"WARNING: Phase size mismatch for {jid} (Phase {p_idx}). "
+                              f"JSON: {current_len}, SUMO: {correct_len}. Auto-fixing...")
+                        
+                        if current_len > correct_len:
+                            # Ha túl hosszú a JSON string, levágjuk a végét
+                            p_data['state'] = p_data['state'][:correct_len]
+                        else:
+                            # Ha túl rövid, kiegészítjük 'r' (piros) karakterekkel
+                            p_data['state'] = p_data['state'].ljust(correct_len, 'r')
+            except Exception as e:
+                print(f"Error checking TLS state for {jid}: {e}")
+            # --- JAVÍTÁS VÉGE ---
+
             agent.reset_step_metrics()
             agent.reset_logic()
 
@@ -255,9 +294,6 @@ class SumoRLEnvironment(gym.Env):
 
 
 class TrafficAgent:
-    """
-    TrafficAgent változatlan.
-    """
     def __init__(self, jid, logic_data, min_green_time, measure_during_transition):
         self.jid = jid
         self.min_green_const = min_green_time
@@ -293,6 +329,10 @@ class TrafficAgent:
 
     def setup_spaces(self):
         num_detectors = len(self.detectors)
+        # Ha valamiért 0 detektor lenne, kezeljük le
+        if num_detectors == 0:
+            num_detectors = 1 # Dummy dimenzió, hogy ne crasheljen a Box space
+            
         self.action_space = spaces.Discrete(self.num_phases)
         self.observation_space = spaces.Dict({
             "phase": spaces.Box(low=0, high=self.num_phases-1, shape=(1,), dtype=np.int32),
@@ -325,7 +365,11 @@ class TrafficAgent:
                     if sumo_idx in self.phase_registry:
                         p = self.phase_registry[sumo_idx]
                         self.current_sumo_state = p['state']
-                        traci.trafficlight.setRedYellowGreenState(self.jid, p['state'])
+                        try:
+                            traci.trafficlight.setRedYellowGreenState(self.jid, p['state'])
+                        except Exception as e:
+                            # Ha itt hiba van, az valószínűleg fázis mismatch, de a reset-nél már javítottuk.
+                            print(f"Error setting TLS state for {self.jid}: {e}")
                         self.transition_step_timer = max(0, int(p['duration']) - 1)
                     self.transition_cursor += 1
                 else:
@@ -349,7 +393,10 @@ class TrafficAgent:
             if sumo_idx in self.phase_registry:
                 state = self.phase_registry[sumo_idx]['state']
                 self.current_sumo_state = state
-                traci.trafficlight.setRedYellowGreenState(self.jid, state)
+                try:
+                    traci.trafficlight.setRedYellowGreenState(self.jid, state)
+                except Exception as e:
+                    print(f"Error setting TLS state for {self.jid}: {e}")
 
     def _start_transition(self, next_idx):
         key = f"{self.current_logic_idx}->{next_idx}"
@@ -376,7 +423,12 @@ class TrafficAgent:
     def get_observation(self):
         num_dets = len(self.detectors)
         if num_dets == 0:
-             return {}
+             # Fallback ha nincs detektor
+             return {
+                "phase": np.array([self.current_logic_idx], dtype=np.int32),
+                "occupancy": np.zeros(1, dtype=np.float32),
+                "flow": np.zeros(1, dtype=np.float32)
+             }
              
         occ = np.zeros(num_dets, dtype=np.float32)
         flow = np.zeros(num_dets, dtype=np.float32)

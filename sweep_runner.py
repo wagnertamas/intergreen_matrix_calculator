@@ -1,4 +1,3 @@
-%%writefile sweep_runner.py
 import os
 import sys
 import glob
@@ -61,7 +60,7 @@ def main():
             net_file=net_file,
             logic_file=logic_file,
             detector_file=detector_file,
-            total_timesteps=50000, 
+            total_timesteps=100000, 
             wandb_project="sumo-rl-sweep"  # <--- ITT VOLT A HIBA
         )
         

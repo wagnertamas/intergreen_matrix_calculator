@@ -49,6 +49,9 @@ def main():
         trainer.run()
     except KeyboardInterrupt:
         print("Interrupted.")
+    finally:
+        if wandb.run:
+            wandb.finish()
 
 if __name__ == "__main__":
     main()

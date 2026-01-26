@@ -1,5 +1,3 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import gymnasium as gym
 import numpy as np
 import threading
@@ -7,6 +5,17 @@ import queue
 import time
 import os
 import sys
+
+# --- JAVÍTÁS: Feltételes GUI import ---
+try:
+    import tkinter as tk
+    from tkinter import ttk, messagebox
+    HAS_GUI = True
+except ImportError:
+    HAS_GUI = False
+    # Headless módban (pl. Docker) ez ne okozzon hibát,
+    # amíg nem próbáljuk megnyitni az ablakot.
+# ---------------------------------------
 
 # Opcionális importok ellenőrzése
 try:
@@ -115,10 +124,7 @@ class IndependentDQNTrainer:
         buf = int(current_config.get("buffer_size", 10000))
         
         # PARAMÉTEREK:
-        # Gamma: Mostantól konstans (WandB/GUI vezérelt), nem csökken.
         gamma = float(current_config.get("gamma", 0.99))
-        
-        # Epsilon (Exploration): Ezt az SB3 kezeli, de mi logoljuk majd.
         expl_fraction = float(current_config.get("exploration_fraction", 0.5))
         
         # Architektúra
@@ -150,8 +156,8 @@ class IndependentDQNTrainer:
                 learning_rate=lr,
                 buffer_size=buf,
                 batch_size=bs,
-                gamma=gamma, # Fix Gamma
-                exploration_fraction=expl_fraction, # SB3 ebből építi az Epsilon ütemezést
+                gamma=gamma, 
+                exploration_fraction=expl_fraction, 
                 policy_kwargs=dict(net_arch=net_arch),
                 verbose=0,
                 tensorboard_log=tb_log,
@@ -166,7 +172,6 @@ class IndependentDQNTrainer:
         
         while global_step < self.total_timesteps and not self.stop_requested:
             
-            # Progress update az SB3-nak (ez elengedhetetlen az Epsilon csökkentéshez!)
             progress = global_step / self.total_timesteps
             remaining_progress = 1.0 - progress
             
@@ -213,22 +218,18 @@ class IndependentDQNTrainer:
                     log_dict = {
                         "global_step": global_step, 
                         "fps": fps,
-                        "train/gamma": gamma, # Konstans Gamma logolása
+                        "train/gamma": gamma, 
                     }
                     
                     for jid, model in self.agents.items():
-                        # Metrikák kinyerése
                         curr_lr = model.policy.optimizer.param_groups[0]["lr"]
                         curr_loss = model.logger.name_to_value.get("train/loss", 0.0)
-                        
-                        # EPSILON (Exploration Rate) kinyerése
-                        # Az SB3 exploration_schedule függvénye adja vissza az aktuális értéket
                         curr_epsilon = model.exploration_schedule(remaining_progress)
                         
                         log_dict[f"{jid}/global_step"] = global_step
                         log_dict[f"{jid}/train/learning_rate"] = curr_lr
                         log_dict[f"{jid}/train/loss"] = curr_loss
-                        log_dict[f"{jid}/train/epsilon"] = curr_epsilon # ITT AZ ÚJ EPSILON LOG
+                        log_dict[f"{jid}/train/epsilon"] = curr_epsilon
                         log_dict[f"reward_smooth/{jid}"] = self.reward_smoothing[jid]
 
                     wandb.log(log_dict, commit=True)
@@ -253,7 +254,6 @@ class IndependentDQNTrainer:
 
         for jid, model in self.agents.items():
             try:
-                # Egyszerű wrapper az exportáláshoz
                 class OnnxablePolicy(torch.nn.Module):
                     def __init__(self, policy):
                         super().__init__()
@@ -300,6 +300,11 @@ class IndependentDQNTrainer:
 
 class TrainingDialog:
     def __init__(self, parent, net_file, logic_file, detector_file):
+        # Ha nincs GUI könyvtár, dobjon hibát az osztály példányosítása
+        if not HAS_GUI:
+            print("Hiba: Tkinter nincs telepítve, GUI nem indítható.")
+            return
+
         self.top = tk.Toplevel(parent)
         self.top.title("Reinforcement Learning Trainer")
         self.top.geometry("600x750")
@@ -316,6 +321,11 @@ class TrainingDialog:
         self.check_files()
         self.top.after(100, self.process_logs)
 
+    # A további GUI metódusok csak akkor hívódnak meg, ha a HAS_GUI igaz,
+    # mert a __init__ visszatér, ha hamis. 
+    # De a biztonság kedvéért a definíciók maradhatnak változatlanul,
+    # mert a headless mód sosem példányosítja a TrainingDialog-ot.
+    
     def check_files(self):
         missing = []
         if not self.logic_file or not os.path.exists(self.logic_file): 

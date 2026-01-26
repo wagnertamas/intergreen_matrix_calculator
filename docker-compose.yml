@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  sumo-trainer:
+    build: .
+    image: sumo-rl-agent
+    # Ha van WandB kulcsod, itt add át, vagy egy .env fájlból
+    environment:
+      - WANDB_API_KEY=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
+      - SUMO_HOME=/usr/share/sumo
+    volumes:
+      # A data mappát csatoljuk be, hogy az eredmények (modellek, logok)
+      # a gazdagépen is megjelenjenek, ne vesszenek el a konténer leállásakor.
+      - ./data:/app/data
+      # Ha a gyökérben is vannak kimenetek (pl. runs), azokat is érdemes:
+      - ./runs:/app/runs
+    # Erőforrás korlátok (opcionális, de jó, ha a gépedet nem akarod megölni)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0' # Konténerenként max 1 CPU (mivel a SUMO egyszálú)
+          memory: 2G
+    # Alapértelmezett parancs (Sweephez ezt írd át lentebb)
+    command: wandb agent wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-single/ffzeumw0
