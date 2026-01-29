@@ -48,6 +48,7 @@ def find_files():
     
     return net_file, logic_file, detector_file
 
+def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--gui", action="store_true", help="Enable SUMO GUI (uses standard traci)")
@@ -79,7 +80,7 @@ def find_files():
             net_file=net_file,
             logic_file=logic_file,
             detector_file=detector_file,
-            total_timesteps=100000, 
+            total_timesteps=50000, 
             wandb_project="sumo-rl-sweep",
             sumo_gui=args.gui
         )
