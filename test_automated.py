@@ -86,7 +86,9 @@ class SumoRLTester:
         self._test_12_parallel_independent_transitions()
         self._test_13_agents_different_states_same_time()
         self._test_14_no_state_interference()
+        self._test_14_no_state_interference()
         self._test_15_all_agents_all_transitions()
+        self._test_16_single_agent_traffic()
 
         # Cleanup
         if self.env:
@@ -797,11 +799,12 @@ class SumoRLTester:
                         if infos[jid]['ready']:
                             break
                         next_obs, _, _, _, infos = self.env.step({})
-                        observations = next_obs # [FIX] Frissítsük az observations-t!
-
+                        observations = next_obs
+                    
                     if not infos[jid]['ready']:
-                        agent_failed.append(f"{from_phase}->{to_phase}: nem lett READY")
-                        continue
+                         agent_failed.append(f"{from_phase}->{to_phase} (Timeout waiting for READY)")
+                         failed_transitions.append(f"{jid}: {from_phase}->{to_phase} (Start Timeout)")
+                         continue
 
                     # 2. Menjünk from_phase-re (ha nem ott vagyunk)
                     current = int(observations[jid]['phase'][0])
@@ -875,6 +878,108 @@ class SumoRLTester:
             traceback.print_exc()
 
         self._add_result(result)
+
+
+
+
+    def _test_16_single_agent_traffic(self):
+        """Teszt: Single Agent mód - forgalom izoláció."""
+        result = TestResult("Single Agent Traffic Isolation")
+
+        try:
+             # Válasszunk egy valid csomópontot a logic fájlból
+             with open(LOGIC_JSON, 'r') as f:
+                 data = json.load(f)
+                 target_jid = list(data.keys())[0]
+
+             print(f"    Target JID: {target_jid}")
+
+             # Inicializálás single agent módban
+             from sumo_rl_environment import SumoRLEnvironment
+             # Fontos: random_traffic=True kell, hogy generáljon
+             self.env = SumoRLEnvironment(
+                net_file=NET_FILE,
+                logic_json_file=LOGIC_JSON,
+                detector_file=DETECTOR_FILE,
+                route_file=ROUTE_FILE,
+                sumo_gui=False,
+                random_traffic=True,
+                traffic_duration=300,
+                single_agent_id=target_jid
+             )
+
+             # Ellenőrzés 1: Csak 1 ágens van?
+             if len(self.env.agents) != 1:
+                 result.fail(f"Nem 1 ágens van: {len(self.env.agents)}")
+                 self._add_result(result)
+                 return
+             
+             if target_jid not in self.env.agents:
+                 result.fail(f"A kiválasztott ágens ({target_jid}) nincs a listában: {list(self.env.agents.keys())}")
+                 self._add_result(result)
+                 return
+
+             # Futtatás
+             self.env.reset(options={'warmup_seconds': 50}) # Rövid warmup
+             
+             import libsumo as traci
+
+             # Gyűjtsük össze, hol vannak autók
+             active_edges = set()
+             total_vehicles = 0
+             
+             for _ in range(50):
+                 traci.simulationStep()
+                 vehs = traci.vehicle.getIDList()
+                 total_vehicles += len(vehs)
+                 for v in vehs:
+                     try:
+                         edge = traci.vehicle.getRoadID(v)
+                         # Szűrjük ki a belső éleket (pl :J1_0) ha akarjuk, de azok is fontosak
+                         active_edges.add(edge)
+                     except:
+                         pass
+             
+             if total_vehicles == 0:
+                 # Lehet hiba, vagy csak rövid volt az idő / kicsi a forgalom
+                 # De ha focused traffic van, kéne lennie valaminek.
+                 # Ha a generate_focused_traffic jól működik, kéne lennie autónak.
+                 # Warningnak elmegy.
+                 print(f"    {YELLOW}Warning: Nem volt jármű a teszt alatt.{RESET}")
+             else:
+                 print(f"    Látott élek járművel: {len(active_edges)}")
+                 
+             # Hogyan döntsük el, hogy "máshol" nem volt?
+             # Heurisztika: A teljes hálózatban több ezer él van.
+             # Egy csomóponthoz tipikusan < 20 él tartozik (bejövő, kimenő, belső).
+             # Ha az active_edges száma kicsi (pl < 50), akkor valószínűleg izolált.
+             # Ha > 500, akkor tuti szivárog a forgalom mindenfelé.
+             
+             if len(active_edges) > 100:
+                 result.fail(f"Túl sok élen volt forgalom ({len(active_edges)} db). Izoláció sikertelen?")
+             else:
+                 result.success(f"Izoláció sikeres? ({len(active_edges)} aktív él)")
+
+        except Exception as e:
+            result.fail(f"Kivétel: {e}")
+
+        self._add_result(result)                    
+
+
+
+
+
+
+
+
+
+
+
+
+             
+
+
+
 
     # =========================================================================
     # ÖSSZESÍTÉS

@@ -8,16 +8,8 @@ import subprocess
 import random
 
 # libsumo használata
-try:
-    import libsumo as traci
-    USE_LIBSUMO = True
-except ImportError:
-    # Ha nincs libsumo, próbáljuk meg a traci-t (fallback)
-    try:
-        import traci
-        USE_LIBSUMO = False
-    except ImportError:
-        raise ImportError("Hiba: Sem a 'libsumo', sem a 'traci' modul nem található!")
+import libsumo as traci
+USE_LIBSUMO = True
 
 
 class SumoRLEnvironment(gym.Env):
@@ -37,12 +29,22 @@ class SumoRLEnvironment(gym.Env):
                  random_traffic=True,
                  traffic_period=1.0,
                  traffic_duration=3600,
-                 statistic_output_file=None):
+                 statistic_output_file=None,
+                 single_agent_id=None,
+                 run_id=None):
 
         self.net_file = net_file
         self.logic_json_file = logic_json_file
         self.detector_file = detector_file
-        self.route_file = route_file
+        
+        # Unique route file handling
+        self.run_id = run_id
+        if self.run_id:
+            base, ext = os.path.splitext(route_file)
+            self.route_file = f"{base}_{self.run_id}{ext}"
+        else:
+            self.route_file = route_file
+            
         self.statistic_output_file = statistic_output_file
 
         self.reward_weights = reward_weights
@@ -53,6 +55,7 @@ class SumoRLEnvironment(gym.Env):
         self.random_traffic = random_traffic
         self.traffic_period = traffic_period
         self.traffic_duration = traffic_duration
+        self.single_agent_id = single_agent_id
 
         with open(self.logic_json_file, 'r') as f:
             self.logic_data = json.load(f)
@@ -60,6 +63,13 @@ class SumoRLEnvironment(gym.Env):
         self.junction_ids = list(self.logic_data.keys())
 
         # Ágensek létrehozása
+        if self.single_agent_id:
+             if self.single_agent_id in self.junction_ids:
+                 self.junction_ids = [self.single_agent_id]
+             else:
+                 print(f"[WARNING] Single agent ID {self.single_agent_id} not found in logic file.")
+                 print(f"WARNING: Single agent ID {self.single_agent_id} not found in logic file. Using all agents.")
+        
         self.agents = {
             jid: TrafficAgent(jid, self.logic_data[jid], min_green_time, measure_during_transition)
             for jid in self.junction_ids
@@ -74,8 +84,15 @@ class SumoRLEnvironment(gym.Env):
 
         # 1. Random forgalom generálás
         if self.random_traffic:
-            dynamic_period = round(random.uniform(0.001, 0.005), 4)
-            self.generate_random_traffic(period=dynamic_period)
+            if options and 'traffic_period' in options:
+                dynamic_period = options['traffic_period']
+            else:
+                dynamic_period = round(random.uniform(0.001, 0.01), 4)
+
+            if self.single_agent_id:
+                self.generate_focused_traffic(period=dynamic_period)
+            else:
+                self.generate_random_traffic(period=dynamic_period)
 
         # 2. SUMO parancs összeállítása
         sumo_bin = "sumo-gui" if self.sumo_gui else "sumo"
@@ -126,7 +143,7 @@ class SumoRLEnvironment(gym.Env):
              })
 
         # 5. Warm-up
-        warmup_seconds = random.randint(100, 300)
+        warmup_seconds = random.randint(50, 300)
         if options and 'warmup_seconds' in options:
             warmup_seconds = options['warmup_seconds']
 
@@ -176,6 +193,81 @@ class SumoRLEnvironment(gym.Env):
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print(f"HIBA a randomTrips-nél: {e}")
+
+    def generate_focused_traffic(self, period):
+        print(f"\n[DEBUG] 🎯 Célzott Forgalom Generálása ({self.single_agent_id}) | Period: {period}")
+        
+        if 'SUMO_HOME' in os.environ:
+             tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
+             sys.path.append(tools)
+        else:
+             try:
+                 import sumolib
+                 tools = os.path.join(os.path.dirname(sumolib.__file__), '..', '..', 'tools')
+                 sys.path.append(tools)
+             except:
+                 print("Sumolib not found cannot generate focused traffic.")
+                 return
+
+        try:
+             import sumolib
+             net = sumolib.net.readNet(self.net_file)
+        except Exception as e:
+             print(f"Failed to load net with sumolib: {e}")
+             return
+
+        node = net.getNode(self.single_agent_id)
+        if not node:
+             print(f"Node {self.single_agent_id} not found in network.")
+             return
+
+        valid_routes = []
+        incoming_edges = node.getIncoming()
+        for inc_edge in incoming_edges:
+             outgoing_connections = inc_edge.getOutgoing()
+             for conn in outgoing_connections:
+                 # Filter connections that actually go through our node logic
+                 # Usually connections from incoming edges of a node go through that node.
+                 # Check if the connection 'via' or 'to' makes sense.
+                 if hasattr(conn, 'getTo'):
+                     out_edge = conn.getTo()
+                 else:
+                     # It's already an edge
+                     out_edge = conn
+                 
+                 valid_routes.append((inc_edge.getID(), out_edge.getID()))
+
+        if not valid_routes:
+             print("No valid routes found for focused traffic.")
+             self.generate_random_traffic(period)
+             return
+
+        print(f"Found {len(valid_routes)} valid OD pairs for {self.single_agent_id}")
+
+        with open(self.route_file, 'w') as f:
+             f.write('<routes>\n')
+             f.write('    <vType id="car" accel="0.8" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="16.67" guiShape="passenger"/>\n')
+             
+             # Direct usage of period as requested by user for high density
+             if period <= 1e-6: period = 0.0001
+             print(f"Generating focused traffic: Period {period:.4f}s")
+             
+             vehicle_count = int(self.traffic_duration / period)
+             trips = []
+             for i in range(vehicle_count):
+                 depart = i * period + random.uniform(0, period * 0.1)
+                 # Avoid generating beyond duration
+                 if depart > self.traffic_duration: break
+                 
+                 route = random.choice(valid_routes)
+                 trips.append((depart, route))
+             
+             trips.sort(key=lambda x: x[0])
+             
+             for depart, route in trips:
+                 f.write(f'    <trip id="veh_single_{depart:.2f}" type="car" depart="{depart:.2f}" from="{route[0]}" to="{route[1]}" />\n')
+             
+             f.write('</routes>\n')
 
     def _map_network_elements(self):
         all_loops = traci.inductionloop.getIDList()

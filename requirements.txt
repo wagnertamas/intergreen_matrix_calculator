@@ -12,6 +12,7 @@ networkx
 # Reinforcement Learning
 gymnasium
 stable-baselines3
+sb3-contrib
 shimmy>=2.0.0
 tensorboard
 torch

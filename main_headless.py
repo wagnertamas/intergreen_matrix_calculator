@@ -8,6 +8,7 @@ from rl_trainer import IndependentDQNTrainer
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="training_config.json")
+    parser.add_argument("--single-agent", type=str, default=None, help="Train only this specific agent ID (e.g. R2C2_C)")
     args = parser.parse_args()
 
     if not os.path.exists(args.config):
@@ -42,7 +43,8 @@ def main():
         wandb_project=hp["wandb_project"],
         hyperparams=hp,
         reward_weights={'time': float(hp.get("w_time", 1.0)), 'co2': float(hp.get("w_co2", 1.0))},
-        log_queue=None
+        log_queue=None,
+        single_agent_id=args.single_agent
     )
 
     try:

@@ -5,6 +5,7 @@ import queue
 import time
 import os
 import sys
+import json
 
 # --- JAVÍTÁS: Feltételes GUI import ---
 try:
@@ -20,6 +21,7 @@ except ImportError:
 # Opcionális importok ellenőrzése
 try:
     from stable_baselines3 import DQN
+    from sb3_contrib import QRDQN
     from stable_baselines3.common.logger import configure
     from stable_baselines3.common.vec_env import DummyVecEnv
     import wandb
@@ -50,7 +52,9 @@ class IndependentDQNTrainer:
                  log_queue=None,
                  hyperparams=None,
                  reward_weights=None,
-                 n_envs=1):
+                 n_envs=1,
+                 single_agent_id=None,
+                 **env_kwargs):
         
         self.net_file = net_file
         self.logic_file = logic_file
@@ -60,6 +64,8 @@ class IndependentDQNTrainer:
         self.log_queue = log_queue
         self.hyperparams = hyperparams or {}
         self.reward_weights = reward_weights or {'time': 1.0, 'co2': 1.0}
+        self.single_agent_id = single_agent_id
+        self.env_kwargs = env_kwargs
         
         self.stop_requested = False
         self.agents = {}
@@ -97,7 +103,10 @@ class IndependentDQNTrainer:
             sumo_gui=False,
             min_green_time=5,
             delta_time=5,
-            random_traffic=True
+            random_traffic=True,
+            single_agent_id=self.single_agent_id,
+            run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
+            **self.env_kwargs
         )
 
         # 3. KÖRNYEZET INDÍTÁSA
@@ -146,7 +155,7 @@ class IndependentDQNTrainer:
             model_env = DummyVecEnv([make_dummy_wrapper])
             tb_log = os.path.join(runs_dir, self.project_name, jid)
             
-            self.agents[jid] = DQN(
+            self.agents[jid] = QRDQN(
                 "MultiInputPolicy",
                 model_env,
                 learning_rate=lr,
@@ -261,6 +270,192 @@ class IndependentDQNTrainer:
             
             self.log("Cleanup done.")
 
+    def export_onnx_models(self, runs_dir):
+        """Export models to ONNX format."""
+        if not HAS_RL_LIBS: return
+
+        import torch
+        export_dir = os.path.join(runs_dir, "onnx_models")
+        os.makedirs(export_dir, exist_ok=True)
+        self.log(f"Exporting ONNX models to {export_dir}...")
+
+        for jid, model in self.agents.items():
+            try:
+                # 1. Create dummy observation
+                obs_space = self.env.observation_space[jid]
+                dummy_obs = {}
+                for key, space in obs_space.spaces.items():
+                    # Create dummy tensor with batch size 1
+                    shape = (1,) + space.shape
+                    dummy_obs[key] = torch.zeros(shape).to(model.device)
+
+                # 2. Get the policy
+                policy = model.policy
+                policy.set_training_mode(False) # Ensure eval mode for export
+
+                # 3. Export
+                onnx_path = os.path.join(export_dir, f"{jid}_model.onnx")
+                
+                # QRDQN policy forward pass expects 'obs'
+                # We trace the 'predict' method or the policy forward
+                # SB3 policies usually take 'obs' as input. 
+                # For Dict observation, forward expects a dict of tensors.
+                
+                # Note: Tracing dictionary inputs with torch.onnx can be tricky.
+                # simpler approach: Export the feature extractor + q-net head logic?
+                # Or just try standard export on policy.
+                
+                # Wrapper for dictionary handling
+                class OnnxWrapper(torch.nn.Module):
+                    def __init__(self, policy):
+                        super().__init__()
+                        self.policy = policy
+                    
+                    def forward(self, flow, occupancy, phase):
+                        # Reconstruct dict
+                        obs = {
+                            "flow": flow,
+                            "occupancy": occupancy,
+                            "phase": phase
+                        }
+                        return self.policy(obs)
+
+                # Prepare inputs as tuple for the wrapper
+                # Check keys in observation space
+                # Default keys: 'phase', 'occupancy', 'flow'
+                
+                if isinstance(model.policy.observation_space, gym.spaces.Dict):
+                    # We need to decompose the dict
+                    wrapper = OnnxWrapper(policy)
+                    inputs = (
+                        dummy_obs["flow"],
+                        dummy_obs["occupancy"], 
+                        dummy_obs["phase"]
+                    )
+                    
+                    torch.onnx.export(
+                        wrapper,
+                        inputs,
+                        onnx_path,
+                        opset_version=18,
+                        input_names=["flow", "occupancy", "phase"],
+                        output_names=["action_logits"],
+                        dynamic_axes={
+                            "flow": {0: "batch_size"},
+                            "occupancy": {0: "batch_size"},
+                            "phase": {0: "batch_size"},
+                            "action_logits": {0: "batch_size"}
+                        }
+                    )
+                else:
+                    # Flat observation
+                    dummy_input = torch.zeros((1,) + obs_space.shape).to(model.device)
+                    torch.onnx.export(
+                        policy,
+                        dummy_input,
+                        onnx_path,
+                        opset_version=18,
+                        input_names=["input"],
+                        output_names=["output"]
+                    )
+                
+                self.log(f"Exported {jid} to {onnx_path}")
+                
+                # Upload to WandB
+                if wandb.run:
+                    wandb.save(onnx_path, base_path=runs_dir)
+                    self.log(f"Uploaded {jid} ONNX to WandB")
+
+                # --- FUSED EXPORT (Optimized for Inference) ---
+                if isinstance(model, QRDQN):
+                    try:
+                        fused_onnx_path = os.path.join(export_dir, f"{jid}_model_fused.onnx")
+                        n_quantiles = model.policy.n_quantiles
+                        self.log(f"Creating FUSED model for {jid} (collapsing {n_quantiles} quantiles)...")
+
+                        # 1. Get the Quantile Network (final layer)
+                        
+                        class FusedQRDQNPolicy(torch.nn.Module):
+                            def __init__(self, original_policy):
+                                super().__init__()
+                                # QRDQN stores features_extractor inside quantile_net
+                                self.features_extractor = original_policy.quantile_net.features_extractor
+                                
+                                # Access the internal sequential network
+                                # 'quantile_net' attribute contains the full MLP (body + head)
+                                q_net_seq = original_policy.quantile_net.quantile_net
+                                
+                                # The last layer is the one expanding to n_actions * n_quantiles
+                                last_layer = q_net_seq[-1]
+                                
+                                # The rest of the network (feature -> latent body)
+                                # We take all layers EXCEPT the last one
+                                self.body = torch.nn.Sequential(*list(q_net_seq.children())[:-1])
+                                
+                                n_quantiles = original_policy.n_quantiles
+                                n_actions = model.action_space.n
+                                
+                                # Weights: [out_features, in_features] -> [n_actions * n_quantiles, hidden]
+                                W = last_layer.weight.data 
+                                B = last_layer.bias.data
+                                
+                                # Reshape and Average
+                                # W: [n_actions, n_quantiles, hidden] -> mean -> [n_actions, hidden]
+                                W_fused = W.view(n_actions, n_quantiles, -1).mean(dim=1)
+                                B_fused = B.view(n_actions, n_quantiles).mean(dim=1)
+                                
+                                self.fused_head = torch.nn.Linear(W_fused.shape[1], n_actions)
+                                self.fused_head.weight.data = W_fused
+                                self.fused_head.bias.data = B_fused
+                                
+                            def forward(self, flow, occupancy, phase):
+                                obs = {
+                                    "flow": flow,
+                                    "occupancy": occupancy,
+                                    "phase": phase
+                                }
+                                features = self.features_extractor(obs)
+                                latent = self.body(features)
+                                return self.fused_head(latent)
+
+                        
+                        # Reuse the wrapper logic for inputs
+                        fused_model = FusedQRDQNPolicy(model.policy)
+                        
+                        # Prepare inputs (same as before)
+                        inputs = (
+                            dummy_obs["flow"],
+                            dummy_obs["occupancy"], 
+                            dummy_obs["phase"]
+                        )
+                        
+                        torch.onnx.export(
+                            fused_model,
+                            inputs,
+                            fused_onnx_path,
+                            opset_version=18,
+                            input_names=["flow", "occupancy", "phase"],
+                            output_names=["action_logits"], # Same output name, but now it is size [Batch, Actions] directly!
+                            dynamic_axes={
+                                "flow": {0: "batch_size"},
+                                "occupancy": {0: "batch_size"},
+                                "phase": {0: "batch_size"},
+                                "action_logits": {0: "batch_size"}
+                            }
+                        )
+                        
+                        self.log(f"Exported FUSED {jid} to {fused_onnx_path}")
+                        
+                        if wandb.run:
+                            wandb.save(fused_onnx_path, base_path=runs_dir)
+                            self.log(f"Uploaded {jid} FUSED ONNX to WandB")
+
+                    except Exception as e:
+                        self.log(f"Failed to export FUSED model for {jid}: {e}")
+
+            except Exception as e:
+                self.log(f"Failed to export {jid}: {e}")
+
 
 # =============================================================================
 # 2. GUI DIALOG
@@ -284,6 +479,16 @@ class TrainingDialog:
         self.log_queue = queue.Queue()
         self.trainer_thread = None
         self.trainer_instance = None
+        
+        # Load available junctions for the dropdown
+        self.available_junctions = []
+        if self.logic_file and os.path.exists(self.logic_file):
+            try:
+                with open(self.logic_file, 'r') as f:
+                    data = json.load(f)
+                    self.available_junctions = list(data.keys())
+            except Exception as e:
+                print(f"Error loading logic file for dropdown: {e}")
         
         self.setup_ui()
         self.check_files()
@@ -353,6 +558,18 @@ class TrainingDialog:
         self.entry_w_co2.insert(0, "1.0")
         self.entry_w_co2.grid(row=0, column=3)
 
+        # --- SINGLE AGENT SELECTION ---
+        frame_single = tk.LabelFrame(self.top, text="Single Intersection Mode", padx=10, pady=5)
+        frame_single.pack(fill="x", padx=10, pady=5)
+        
+        self.var_single_enabled = tk.BooleanVar(value=False)
+        chk_single = tk.Checkbutton(frame_single, text="Train ONLY one intersection", variable=self.var_single_enabled, command=self.toggle_single_agent_ui)
+        chk_single.grid(row=0, column=0, sticky="w")
+        
+        tk.Label(frame_single, text="Select Junction ID:").grid(row=0, column=1, padx=10)
+        self.combo_agent = ttk.Combobox(frame_single, values=getattr(self, 'available_junctions', []), state="disabled")
+        self.combo_agent.grid(row=0, column=2, sticky="ew")
+
         frame_btns = tk.Frame(self.top, pady=10)
         frame_btns.pack(fill="x")
 
@@ -398,7 +615,17 @@ class TrainingDialog:
             "w_co2": float(self.entry_w_co2.get()),
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
+            "single_agent_id": self.combo_agent.get() if self.var_single_enabled.get() else None
         }
+
+    def toggle_single_agent_ui(self):
+        if self.var_single_enabled.get():
+            self.combo_agent.config(state="readonly")
+            if self.available_junctions:
+                self.combo_agent.current(0)
+        else:
+            self.combo_agent.config(state="disabled")
+            self.combo_agent.set("")
 
     def start_training(self):
         if not HAS_RL_LIBS:
@@ -418,7 +645,8 @@ class TrainingDialog:
                 wandb_project=settings["wandb_project"],
                 log_queue=self.log_queue,
                 hyperparams=settings,
-                reward_weights={'time': settings["w_time"], 'co2': settings["w_co2"]}
+                reward_weights={'time': settings["w_time"], 'co2': settings["w_co2"]},
+                single_agent_id=settings["single_agent_id"]
             )
 
             self.trainer_thread = threading.Thread(target=self.run_trainer_thread)
