@@ -187,6 +187,8 @@ class IndependentDQNTrainer:
                 
                 for model in self.agents.values():
                     model._current_progress_remaining = remaining_progress
+                    # CRITICAL FIX: Manually update exploration_rate because we are not using model.learn()
+                    model.exploration_rate = model.exploration_schedule(remaining_progress)
 
                 # --- AKCIÓVÁLASZTÁS ---
                 actions = {}
