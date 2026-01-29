@@ -81,9 +81,28 @@ class SumoRLEnvironment(gym.Env):
                  print(f"WARNING: Single agent ID {self.single_agent_id} not found in logic file. Using all agents.")
         
         self.agents = {
-            jid: TrafficAgent(jid, self.logic_data[jid], min_green_time, measure_during_transition)
+            jid: TrafficAgent(
+                jid, 
+                self.logic_data[jid], 
+                min_green_time=self.min_green_time,
+                measure_during_transition=self.measure_during_transition
+            )
             for jid in self.junction_ids
         }
+
+        # --- Action Logging Setup (Only in GUI mode) ---
+        if self.sumo_gui:
+            self.log_dir = "temp_action_logs"
+            if os.path.exists(self.log_dir):
+                import shutil
+                shutil.rmtree(self.log_dir)
+            os.makedirs(self.log_dir, exist_ok=True)
+            
+            # Init files with headers
+            for jid in self.agents.keys():
+                with open(os.path.join(self.log_dir, f"{jid}.csv"), "w") as f:
+                    f.write("Step,Action\n")
+            print(f"[INFO] Action logging enabled in {self.log_dir}")
         
         self.observation_space = None
         self.action_space = None
@@ -332,6 +351,21 @@ class SumoRLEnvironment(gym.Env):
 
         for jid, action in actions.items():
             self.agents[jid].set_target_phase(int(action))
+            
+            # --- Log Action (Only in GUI mode) ---
+            if self.sumo_gui:
+                try:
+                    step_num = 0
+                    if traci:
+                        try:
+                            step_num = traci.simulation.getTime()
+                        except:
+                            pass
+                            
+                    with open(os.path.join(self.log_dir, f"{jid}.csv"), "a") as f:
+                        f.write(f"{step_num},{int(action)}\n")
+                except Exception as e:
+                    print(f"[WARNING] Failed to log action for {jid}: {e}")
 
         for agent in self.agents.values():
             agent.reset_step_metrics()

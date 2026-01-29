@@ -572,6 +572,11 @@ class TrainingDialog:
         self.combo_agent = ttk.Combobox(frame_single, values=getattr(self, 'available_junctions', []), state="disabled")
         self.combo_agent.grid(row=0, column=2, sticky="ew")
 
+        # --- SUMO GUI CHECKBOX ---
+        self.var_gui_enabled = tk.BooleanVar(value=False)
+        chk_gui = tk.Checkbutton(frame_single, text="Enable SUMO GUI", variable=self.var_gui_enabled)
+        chk_gui.grid(row=1, column=0, sticky="w", pady=5)
+
         frame_btns = tk.Frame(self.top, pady=10)
         frame_btns.pack(fill="x")
 
@@ -617,7 +622,8 @@ class TrainingDialog:
             "w_co2": float(self.entry_w_co2.get()),
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
-            "single_agent_id": self.combo_agent.get() if self.var_single_enabled.get() else None
+            "single_agent_id": self.combo_agent.get() if self.var_single_enabled.get() else None,
+            "sumo_gui": self.var_gui_enabled.get()
         }
 
     def toggle_single_agent_ui(self):
@@ -648,7 +654,8 @@ class TrainingDialog:
                 log_queue=self.log_queue,
                 hyperparams=settings,
                 reward_weights={'time': settings["w_time"], 'co2': settings["w_co2"]},
-                single_agent_id=settings["single_agent_id"]
+                single_agent_id=settings["single_agent_id"],
+                sumo_gui=settings["sumo_gui"]
             )
 
             self.trainer_thread = threading.Thread(target=self.run_trainer_thread)
