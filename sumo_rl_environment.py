@@ -7,10 +7,8 @@ import sys
 import subprocess
 import random
 
-# libsumo használata
-import libsumo as traci
-USE_LIBSUMO = True
-
+# Global traci placeholder
+traci = None
 
 class SumoRLEnvironment(gym.Env):
     """
@@ -56,6 +54,18 @@ class SumoRLEnvironment(gym.Env):
         self.traffic_period = traffic_period
         self.traffic_duration = traffic_duration
         self.single_agent_id = single_agent_id
+
+        # --- Import Logic for GUI vs Headless ---
+        global traci
+        if self.sumo_gui:
+            print("[INFO] GUI mode requested. Importing standard 'traci'.")
+            import traci as t
+            traci = t
+        else:
+            if traci is None or traci.__name__ != 'libsumo':
+                print("[INFO] Headless mode. Importing 'libsumo'.")
+                import libsumo as t
+                traci = t
 
         with open(self.logic_json_file, 'r') as f:
             self.logic_data = json.load(f)

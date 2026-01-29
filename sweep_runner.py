@@ -48,20 +48,40 @@ def find_files():
     
     return net_file, logic_file, detector_file
 
-def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gui", action="store_true", help="Enable SUMO GUI (uses standard traci)")
+    # Allow unknown args to pass through if wandb sends extra stuff, though typically wandb agent calls specific args defined in sweep config.
+    # But here we are just adding a flag.
+    # Note: sweep_runner.py is called with args like --learning_rate=... 
+    # so we should use parse_known_args or add all arguments.
+    # However, standard sweep passes args as command line flags if we use ${args}
+    # For now, let's just use sys.argv check or proper argparse.
+    
+    # Let's inspect how arguments are passed. They are passed as flags like --learning_rate=0.01
+    
+    # We should allow flexible args.
+    parser.add_argument("--learning_rate", type=float, required=False)
+    parser.add_argument("--batch_size", type=int, required=False)
+    # ... add others if we want to be strict, or use parse_known_args
+    
+    args, unknown = parser.parse_known_args()
+    
     print("Starting Sweep Agent...")
+    if args.gui:
+        print("GUI ENABLED")
     
     try:
         net_file, logic_file, detector_file = find_files()
         
         # Initialize Trainer
-        # JAVÍTÁS: 'project_name' HELYETT 'wandb_project'
         trainer = IndependentDQNTrainer(
             net_file=net_file,
             logic_file=logic_file,
             detector_file=detector_file,
             total_timesteps=100000, 
-            wandb_project="sumo-rl-sweep"  # <--- ITT VOLT A HIBA
+            wandb_project="sumo-rl-sweep",
+            sumo_gui=args.gui
         )
         
         # Run

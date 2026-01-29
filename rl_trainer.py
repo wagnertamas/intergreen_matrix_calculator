@@ -54,11 +54,13 @@ class IndependentDQNTrainer:
                  reward_weights=None,
                  n_envs=1,
                  single_agent_id=None,
+                 sumo_gui=False,
                  **env_kwargs):
         
         self.net_file = net_file
         self.logic_file = logic_file
         self.detector_file = detector_file
+        self.sumo_gui = sumo_gui
         self.total_timesteps = total_timesteps
         self.project_name = wandb_project
         self.log_queue = log_queue
@@ -100,7 +102,7 @@ class IndependentDQNTrainer:
             logic_json_file=self.logic_file,
             detector_file=self.detector_file,
             reward_weights=self.reward_weights,
-            sumo_gui=False,
+            sumo_gui=self.sumo_gui,
             min_green_time=5,
             delta_time=5,
             random_traffic=True,
