@@ -242,6 +242,11 @@ class IndependentDQNTrainer:
                             log_dict[f"{jid}/train/epsilon"] = curr_epsilon
                             log_dict[f"reward_smooth/{jid}"] = self.reward_smoothing[jid]
 
+                        # Calculate global average reward for Sweep optimization
+                        if self.reward_smoothing:
+                            avg_reward = sum(self.reward_smoothing.values()) / len(self.reward_smoothing)
+                            log_dict["avg_reward"] = avg_reward
+
                         wandb.log(log_dict, commit=True)
 
                 if global_done:

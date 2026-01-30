@@ -21,4 +21,4 @@ services:
           cpus: '2.0' # Konténerenként max 1 CPU (mivel a SUMO egyszálú)
           memory: 2G
     # Alapértelmezett parancs (Sweephez ezt írd át lentebb)
-    command: wandb agent wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-single-QR/cncxfrbb
+    command: wandb agent wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-single-QR2/tcnx2jqd
