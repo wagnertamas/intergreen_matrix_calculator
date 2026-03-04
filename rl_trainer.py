@@ -55,7 +55,9 @@ class IndependentDQNTrainer:
                  n_envs=1,
                  single_agent_id=None,
                  sumo_gui=False,
+                 load_model_path=None,  # [NEW] Path to pre-trained model .zip
                  **env_kwargs):
+
         
         self.net_file = net_file
         self.logic_file = logic_file
@@ -67,6 +69,8 @@ class IndependentDQNTrainer:
         self.hyperparams = hyperparams or {}
         self.reward_weights = reward_weights or {'time': 1.0, 'co2': 1.0}
         self.single_agent_id = single_agent_id
+        self.single_agent_id = single_agent_id
+        self.load_model_path = load_model_path
         self.env_kwargs = env_kwargs
         
         self.stop_requested = False
@@ -117,6 +121,8 @@ class IndependentDQNTrainer:
             obs, infos = self.env.reset()
         except Exception as e:
             self.log(f"CRITICAL ERROR during env.reset(): {e}")
+            import traceback
+            traceback.print_exc()
             return
 
         agent_ids = list(self.env.agents.keys())
@@ -157,19 +163,105 @@ class IndependentDQNTrainer:
             model_env = DummyVecEnv([make_dummy_wrapper])
             tb_log = os.path.join(runs_dir, self.project_name, jid)
             
-            self.agents[jid] = QRDQN(
-                "MultiInputPolicy",
-                model_env,
-                learning_rate=lr,
-                buffer_size=buf,
-                batch_size=bs,
-                gamma=gamma,
-                exploration_fraction=expl_fraction,
-                policy_kwargs=dict(net_arch=net_arch),
-                verbose=0,
-                tensorboard_log=tb_log,
-                device="auto"
-            )
+            # [NEW] Transfer Learning Logic
+            if self.load_model_path and os.path.exists(self.load_model_path):
+                self.log(f"Loading pre-trained model from {self.load_model_path} for agent {jid}...")
+                try:
+                    # SB3 load method. Note: .zip usually contains the whole model.
+                    # If we have a single model file for ALL agents (unlikely for independent DQN unless shared),
+                    # we assume the zip file is the model for THIS agent or the user passes a specific file.
+                    # However, typical SB3 export is one zip per model.
+                    # If the user provides a single zip, we try to load it. 
+                    
+                    # Custom_objects needed if python versions differ slightly or custom classes used
+                    self.agents[jid] = QRDQN.load(
+                        self.load_model_path,
+                        env=model_env,
+                        print_system_info=True,
+                        force_reset=False, # Don't reset replay buffer if we were continuing (but here we are starting new env)
+                        custom_objects=None,
+                        device="auto"
+                    )
+                    
+                    # Update parameters that might want to be overridden for fine-tuning
+                    self.agents[jid].learning_rate = lr
+                    self.agents[jid].buffer_size = buf
+                    self.agents[jid].batch_size = bs
+                    self.agents[jid].gamma = gamma
+                    self.agents[jid].exploration_fraction = expl_fraction
+                    self.agents[jid].verbose = 0
+                    self.agents[jid].tensorboard_log = tb_log
+                    
+                    self.log(f"Model loaded successfully for {jid}.")
+                    
+                except Exception as e:
+                    self.log(f"FAILED to load model for {jid}: {e}. Falling back to clean initialization.")
+                    # Fallback to copy-paste of initialization below
+                    self.agents[jid] = QRDQN(
+                        "MultiInputPolicy",
+                        model_env,
+                        learning_rate=lr,
+                        buffer_size=buf,
+                        batch_size=bs,
+                        gamma=gamma,
+                        exploration_fraction=expl_fraction,
+                        policy_kwargs=dict(net_arch=net_arch),
+                        verbose=0,
+                        tensorboard_log=tb_log,
+                        device="auto"
+                    )
+            elif self.load_model_path and self.load_model_path.endswith(".onnx"):
+                # [NEW] ONNX Loading Strategy
+                self.log(f"Detected ONNX model: {self.load_model_path}")
+                
+                # 1. Auto-detect architecture from ONNX
+                detected_arch = self.detect_architecture_from_onnx(self.load_model_path)
+                if detected_arch:
+                    self.log(f"Auto-detected architecture from ONNX: {detected_arch}")
+                    net_arch = detected_arch
+                else:
+                    self.log(f"Could not detect architecture. using default/GUI settings: {net_arch}")
+
+                # 2. Initialize fresh agent with correct architecture
+                self.agents[jid] = QRDQN(
+                    "MultiInputPolicy",
+                    model_env,
+                    learning_rate=lr,
+                    buffer_size=buf,
+                    batch_size=bs,
+                    gamma=gamma,
+                    exploration_fraction=expl_fraction,
+                    policy_kwargs=dict(net_arch=net_arch),
+                    verbose=0,
+                    tensorboard_log=tb_log,
+                    device="auto"
+                )
+                
+                # 3. Load weights
+                try:
+                    self._load_from_onnx(self.agents[jid], self.load_model_path)
+                    self.log(f"Successfully loaded ONNX weights for {jid}!")
+                except Exception as e:
+                    self.log(f"FAILED to load ONNX weights: {e}")
+                    # Agent remains initialized with random weights
+            else:
+                if self.load_model_path:
+                    self.log(f"Warning: Model file {self.load_model_path} not found or unknown format. Initializing new model.")
+
+                self.agents[jid] = QRDQN(
+                    "MultiInputPolicy",
+                    model_env,
+                    learning_rate=lr,
+                    buffer_size=buf,
+                    batch_size=bs,
+                    gamma=gamma,
+                    exploration_fraction=expl_fraction,
+                    policy_kwargs=dict(net_arch=net_arch),
+                    verbose=0,
+                    tensorboard_log=tb_log,
+                    device="auto"
+                )
+            
             self.agents[jid].set_logger(configure(tb_log, ["stdout", "tensorboard"]))
 
         # =========================================================================
@@ -375,6 +467,8 @@ class IndependentDQNTrainer:
                     wandb.save(onnx_path, base_path=runs_dir)
                     self.log(f"Uploaded {jid} ONNX to WandB")
 
+
+
                 # --- FUSED EXPORT (Optimized for Inference) ---
                 if isinstance(model, QRDQN):
                     try:
@@ -464,6 +558,117 @@ class IndependentDQNTrainer:
 
             except Exception as e:
                 self.log(f"Failed to export {jid}: {e}")
+
+    def _load_from_onnx(self, agent, onnx_path):
+        """
+        Attempts to load weights from an ONNX file into the SB3 agent.
+        Uses a Greedy Shape Matching strategy because names often differ.
+        """
+        import onnx
+        from onnx import numpy_helper
+        
+        self.log(f"Parsing ONNX model from {onnx_path}...")
+        model_proto = onnx.load(onnx_path)
+        
+        # 1. Extract Initializers (Weights/Biases) from ONNX Graph
+        # We store them as a list of numpy arrays
+        onnx_weights = []
+        for initializer in model_proto.graph.initializer:
+            w = numpy_helper.to_array(initializer)
+            onnx_weights.append({'name': initializer.name, 'data': w})
+            
+        self.log(f"Found {len(onnx_weights)} parameters in ONNX file.")
+        
+        # 2. Get PyTorch State Dict
+        target_sd = agent.policy.state_dict()
+        loaded_count = 0
+        
+        # 3. Greedy Match
+        onnx_idx = 0
+        used_onnx_indices = set()
+        
+        # Filter target keys to strictly those we expect to change (weights/biases)
+        target_keys = [k for k in target_sd.keys() if "weight" in k or "bias" in k]
+        
+        for k in target_keys:
+            target_param = target_sd[k]
+            target_shape = tuple(target_param.shape)
+            
+            # Start search from last used index to preserve order
+            match_found = False
+            for i in range(len(onnx_weights)):
+                if i in used_onnx_indices: continue
+                
+                onnx_w = onnx_weights[i]['data']
+                onnx_shape = tuple(onnx_w.shape)
+                
+                # Direct Match
+                if onnx_shape == target_shape:
+                    with torch.no_grad():
+                        target_param.copy_(torch.from_numpy(onnx_w).to(agent.device))
+                    used_onnx_indices.add(i)
+                    loaded_count += 1
+                    match_found = True
+                    break
+                    
+                # Transpose Match
+                if len(onnx_shape) == 2 and len(target_shape) == 2:
+                    if onnx_shape[::-1] == target_shape:
+                        with torch.no_grad():
+                            target_param.copy_(torch.from_numpy(onnx_w.T).to(agent.device))
+                        used_onnx_indices.add(i)
+                        loaded_count += 1
+                        match_found = True
+                        self.log(f"Matched {k} (TRANSPOSED) with ONNX param {i}")
+                        break
+            
+            if not match_found:
+                self.log(f"Warning: No matching ONNX weight found for {k} {target_shape}")
+
+        self.log(f"Loaded {loaded_count} / {len(target_keys)} layers from ONNX.")
+        
+        # Copy to target network as well to start synced
+        agent.policy.quantile_net_target.load_state_dict(agent.policy.quantile_net.state_dict())
+        self.log("Synced target network.")
+
+    def detect_architecture_from_onnx(self, onnx_path):
+        """
+        Analyzes the ONNX file to deduce the hidden layer sizes (net_arch).
+        Assumes a standard MLP structure where weights are (Out, In).
+        Returns a list of integers (e.g., [64, 64]) or None if detection fails.
+        """
+        import onnx
+        from onnx import numpy_helper
+        
+        try:
+            model_proto = onnx.load(onnx_path)
+            # Filter for weights (excluding biases)
+            weights = []
+            for init in model_proto.graph.initializer:
+                if init.name.endswith("weight"):
+                    w = numpy_helper.to_array(init)
+                    if len(w.shape) == 2:
+                        weights.append({'name': init.name, 'shape': w.shape, 'index': int(init.name.split('.')[-2]) if init.name.split('.')[-2].isdigit() else 999})
+            
+            # Sort by index
+            weights.sort(key=lambda x: x['index'])
+            
+            hidden_sizes = []
+            
+            # We assume the last weight is the HEAD, so we exclude it.
+            if len(weights) > 1:
+                # Iterate through all but the last one
+                for i in range(len(weights) - 1):
+                    shape = weights[i]['shape']
+                    hidden_sizes.append(shape[0])
+                    
+                return hidden_sizes
+            
+        except Exception as e:
+            self.log(f"Arch detection failed: {e}")
+            
+        return None
+
 
 
 # =============================================================================

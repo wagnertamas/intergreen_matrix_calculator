@@ -9,6 +9,7 @@ import os
 from sumo_parser import SumoInternalParser
 from gui import JunctionApp  # A meglévő mátrix kalkulátor
 from detector_editor import DetectorEditor  # Ezt hozzuk létre lejjebb
+from transfer_learning import TransferLearningDialog # [NEW] Transfer Learning
 
 class MainLauncher:
     def __init__(self, root):
@@ -49,6 +50,10 @@ class MainLauncher:
         # Gomb: Detektor Elhelyező (ÚJ)
         self.btn_detectors = ttk.Button(tools_frame, text="Detektorok Elhelyezése (RL Input)", command=self.open_detector_tool, state="disabled")
         self.btn_detectors.pack(fill="x", pady=5)
+
+        # Gomb: Transfer Learning (ÚJ)
+        self.btn_transfer = ttk.Button(tools_frame, text="Transfer Learning (Fine-Tuning)", command=self.open_transfer_tool, state="disabled")
+        self.btn_transfer.pack(fill="x", pady=5)
         
         # Gomb: Tanítás (Későbbi fejlesztés)
         self.btn_train = ttk.Button(tools_frame, text="RL Ágens Tanítás Indítása", command=self.open_training_tool, state="disabled")
@@ -69,6 +74,7 @@ class MainLauncher:
                 self.btn_matrix.config(state="normal")
                 self.btn_detectors.config(state="normal")
                 self.btn_train.config(state="normal")
+                self.btn_transfer.config(state="normal")
             except Exception as e:
                 messagebox.showerror("Hiba", f"Nem sikerült betölteni a hálózatot:\n{e}")
 
@@ -113,6 +119,58 @@ class MainLauncher:
 
         from rl_trainer import TrainingDialog
         TrainingDialog(self.root, self.network_file, logic_file, detector_file)
+
+    def open_transfer_tool(self):
+        """Opens the Transfer Learning Dialog."""
+        if not self.network_file: return
+        
+        # Reuse logic to find config files
+        base_dir = os.path.dirname(self.network_file)
+        # Note: logic_file and detector_file paths logic is duplicated here, 
+        # could be refactored into a helper if we wanted to be cleaner.
+        logic_file = os.path.join(base_dir, "traffic_lights.json")
+        detector_file = os.path.join(base_dir, "detectors.add.xml")
+        
+        # Fallback logic same as above
+        if not os.path.exists(logic_file):
+            logic_file = "traffic_lights.json"
+            if not os.path.exists(logic_file):
+                 logic_file = os.path.join("data", "traffic_lights.json")
+                 
+        if not os.path.exists(detector_file):
+            detector_file = "detectors.add.xml"
+            if not os.path.exists(detector_file):
+                detector_file = os.path.join("data", "detectors.add.xml")
+
+        if not os.path.exists(logic_file) or not os.path.exists(detector_file):
+             messagebox.showerror("Hiba", f"Nem találhatók a konfigurációs fájlok (Exportálj először!):\n{logic_file}\n{detector_file}")
+             return
+
+        # [NEW] Validate Logic File IDs against Network
+        try:
+            import json
+            with open(logic_file, 'r') as f:
+                logic_data = json.load(f)
+            
+            logic_ids = set(logic_data.keys())
+            network_ids = set(j['id'] for j in self.parser.junctions)
+            
+            # Check if there is ANY overlap
+            common = logic_ids.intersection(network_ids)
+            if not common:
+                 messagebox.showerror("Konfigurációs Hiba", 
+                                      f"A 'traffic_lights.json' fájlban lévő csomópontok ({list(logic_ids)[:3]}...) "
+                                      f"NEM találhatóak a betöltött hálózatban!\n\n"
+                                      "Valószínűleg egy korábbi hálózathoz tartozik.\n"
+                                      "Kérlek használd az 'Intergreen Mátrix' eszközt az új fájlok generálásához!")
+                 return
+                 
+        except Exception as e:
+            print(f"Validation error: {e}")
+            # Non-blocking warning
+            pass
+
+        TransferLearningDialog(self.root, self.network_file, logic_file, detector_file)
 
     def open_detector_tool(self):
         if not self.parser: return

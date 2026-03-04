@@ -57,15 +57,27 @@ class SumoRLEnvironment(gym.Env):
 
         # --- Import Logic for GUI vs Headless ---
         global traci
-        if self.sumo_gui:
-            print("[INFO] GUI mode requested. Importing standard 'traci'.")
+        # --- Import Logic for GUI vs Headless ---
+        global traci
+        
+        # JAVÍTÁS: MacOS-en a libsumo gyakran segfault-ot okoz.
+        # Ezért ott mindig a 'traci'-t használjuk (lassabb, de stabil).
+        force_traci = self.sumo_gui or (sys.platform == 'darwin')
+        
+        if force_traci:
+            print(f"[INFO] Using standard 'traci' (GUI={self.sumo_gui}, OS={sys.platform}).")
             import traci as t
             traci = t
         else:
             if traci is None or traci.__name__ != 'libsumo':
-                print("[INFO] Headless mode. Importing 'libsumo'.")
-                import libsumo as t
-                traci = t
+                print("[INFO] Headless mode. Attempting to import 'libsumo'.")
+                try:
+                    import libsumo as t
+                    traci = t
+                except ImportError:
+                    print("[INFO] 'libsumo' not found. Falling back to 'traci'.")
+                    import traci as t
+                    traci = t
 
         with open(self.logic_json_file, 'r') as f:
             self.logic_data = json.load(f)
@@ -116,7 +128,9 @@ class SumoRLEnvironment(gym.Env):
             if options and 'traffic_period' in options:
                 dynamic_period = options['traffic_period']
             else:
-                dynamic_period = round(random.uniform(0.001, 0.01), 4)
+                # JAVÍTÁS: A 0.001-0.01 nagyon sűrű (100-1000 jármű/mp)!
+                # Életszerűbb tartomány: 0.8 - 3.0 (kb. 1200 - 4500 jármű/óra)
+                dynamic_period = round(random.uniform(0.8, 3.0), 4)
 
             if self.single_agent_id:
                 self.generate_focused_traffic(period=dynamic_period)
