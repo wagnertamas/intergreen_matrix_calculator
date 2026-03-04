@@ -170,6 +170,10 @@ class SumoRLEnvironment(gym.Env):
                     pass
                 traci.start([sumo_bin] + sumo_args)
         else:
+            try:
+                traci.close()
+            except Exception:
+                pass
             traci.start([sumo_bin] + sumo_args)
             self.is_running = True
 

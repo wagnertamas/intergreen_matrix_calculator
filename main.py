@@ -96,22 +96,31 @@ class MainLauncher:
         # az aktuális munkakönyvtárban, vagy a hálózat mellett.
         
         base_dir = os.path.dirname(self.network_file)
-        logic_file = os.path.join(base_dir, "traffic_lights.json")
-        detector_file = os.path.join(base_dir, "detectors.add.xml")
+        net_basename = os.path.basename(self.network_file)
+        if net_basename.endswith(".net.xml"):
+            net_prefix = net_basename[:-8] # remove .net.xml
+        elif net_basename.endswith(".xml"):
+            net_prefix = net_basename[:-4] # remove .xml
+        else:
+            net_prefix = net_basename
+
+        possible_logic_files = [
+            os.path.join(base_dir, f"{net_prefix}.traffic_lights.json"),
+            os.path.join(base_dir, "traffic_lights.add.json"),
+            os.path.join(base_dir, "traffic_lights.json"),
+            "traffic_lights.json",
+            os.path.join("data", "traffic_lights.json")
+        ]
         
-        if not os.path.exists(logic_file):
-            # Fallback 1: Current Dir
-            logic_file = "traffic_lights.json"
-            if not os.path.exists(logic_file):
-                # Fallback 2: data/ Dir
-                logic_file = os.path.join("data", "traffic_lights.json")
-            
-        if not os.path.exists(detector_file):
-            # Fallback 1: Current Dir
-            detector_file = "detectors.add.xml"
-            if not os.path.exists(detector_file):
-                # Fallback 2: data/ Dir
-                detector_file = os.path.join("data", "detectors.add.xml")
+        possible_detector_files = [
+            os.path.join(base_dir, f"{net_prefix}.detectors.add.xml"),
+            os.path.join(base_dir, "detectors.add.xml"),
+            "detectors.add.xml",
+            os.path.join("data", "detectors.add.xml")
+        ]
+
+        logic_file = next((f for f in possible_logic_files if os.path.exists(f)), possible_logic_files[2])
+        detector_file = next((f for f in possible_detector_files if os.path.exists(f)), possible_detector_files[1])
             
         if not os.path.exists(logic_file) or not os.path.exists(detector_file):
             messagebox.showerror("Hiba", f"Nem találhatók a konfigurációs fájlok:\n{logic_file}\n{detector_file}")
@@ -126,21 +135,32 @@ class MainLauncher:
         
         # Reuse logic to find config files
         base_dir = os.path.dirname(self.network_file)
-        # Note: logic_file and detector_file paths logic is duplicated here, 
-        # could be refactored into a helper if we wanted to be cleaner.
-        logic_file = os.path.join(base_dir, "traffic_lights.json")
-        detector_file = os.path.join(base_dir, "detectors.add.xml")
+        net_basename = os.path.basename(self.network_file)
+        if net_basename.endswith(".net.xml"):
+            net_prefix = net_basename[:-8] # remove .net.xml
+        elif net_basename.endswith(".xml"):
+            net_prefix = net_basename[:-4] # remove .xml
+        else:
+            net_prefix = net_basename
+
+        # Try specific names first, then generic fallbacks
+        possible_logic_files = [
+            os.path.join(base_dir, f"{net_prefix}.traffic_lights.json"),
+            os.path.join(base_dir, "traffic_lights.add.json"), # common alternative
+            os.path.join(base_dir, "traffic_lights.json"),
+            "traffic_lights.json",
+            os.path.join("data", "traffic_lights.json")
+        ]
         
-        # Fallback logic same as above
-        if not os.path.exists(logic_file):
-            logic_file = "traffic_lights.json"
-            if not os.path.exists(logic_file):
-                 logic_file = os.path.join("data", "traffic_lights.json")
-                 
-        if not os.path.exists(detector_file):
-            detector_file = "detectors.add.xml"
-            if not os.path.exists(detector_file):
-                detector_file = os.path.join("data", "detectors.add.xml")
+        possible_detector_files = [
+            os.path.join(base_dir, f"{net_prefix}.detectors.add.xml"),
+            os.path.join(base_dir, "detectors.add.xml"),
+            "detectors.add.xml",
+            os.path.join("data", "detectors.add.xml")
+        ]
+
+        logic_file = next((f for f in possible_logic_files if os.path.exists(f)), possible_logic_files[2])
+        detector_file = next((f for f in possible_detector_files if os.path.exists(f)), possible_detector_files[1])
 
         if not os.path.exists(logic_file) or not os.path.exists(detector_file):
              messagebox.showerror("Hiba", f"Nem találhatók a konfigurációs fájlok (Exportálj először!):\n{logic_file}\n{detector_file}")
@@ -166,8 +186,35 @@ class MainLauncher:
                  return
                  
         except Exception as e:
-            print(f"Validation error: {e}")
-            # Non-blocking warning
+            print(f"Validation error (logic): {e}")
+            pass
+
+        # [NEW] Validate Detector File against Network
+        try:
+            import xml.etree.ElementTree as ET
+            tree = ET.parse(detector_file)
+            root = tree.getroot()
+            
+            det_lanes = set()
+            for det in root.findall("e1Detector"):
+                lane = det.get("lane")
+                if lane:
+                    det_lanes.add(lane)
+            
+            # Use normal_lanes and internal_lanes from parser
+            network_lanes = set(self.parser.normal_lanes.keys()).union(set(self.parser.internal_lanes.keys()))
+            
+            missing_lanes = det_lanes - network_lanes
+            if missing_lanes:
+                 messagebox.showerror("Konfigurációs Hiba", 
+                                      f"A '{os.path.basename(detector_file)}' fájlban lévő detektorok olyan sávokra (pl. {list(missing_lanes)[:1][0]}) hivatkoznak, "
+                                      f"amik NEM találhatóak a betöltött hálózatban!\n\n"
+                                      "Valószínűleg ez egy régi detektorfájl.\n"
+                                      "Kérlek használd a 'Detektorok Elhelyezése' eszközt az újra-generáláshoz!")
+                 return
+                 
+        except Exception as e:
+            print(f"Validation error (detector): {e}")
             pass
 
         TransferLearningDialog(self.root, self.network_file, logic_file, detector_file)
