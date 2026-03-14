@@ -140,7 +140,9 @@ def run_simulation(flow_max, episode_idx, output_dir):
     for _ in range(WARMUP):
         traci.simulationStep()
 
-    # --- Fő ciklus (random jelzőlámpa akciók) ---
+    # --- Fő ciklus (AZ RL TANÍTÁS LOGIKÁJÁT KÖVETI) ---
+    # Az RL env-ben: delta_time lépésen keresztül akkumulál, majd átlagol.
+    # Itt is pontosan így gyűjtünk, hogy a PCA paraméterek konzisztensek legyenek.
     step = 0
     total_steps = (DURATION - WARMUP) // DELTA_TIME
 
@@ -155,88 +157,100 @@ def run_simulation(flow_max, episode_idx, output_dir):
             junction_phases[jid] = 1
 
     for step_i in range(total_steps):
-        # Random jelzőlámpa akció
+        # Random jelzőlámpa akció (mint az RL env step() elején)
         for jid in junction_ids:
             phase = random.randint(0, junction_phases[jid] - 1)
             traci.trafficlight.setPhase(jid, phase)
 
-        # Delta time lépések
-        for _ in range(DELTA_TIME):
+        # --- Akkumulálás delta_time lépésen keresztül (= RL env collect_measurements) ---
+        # Junction-önkénti akkumulátorok a delta_time-ra
+        acc = {jid: {
+            'tt': 0.0, 'tt_raw': 0.0, 'waiting': 0.0, 'co2': 0.0,
+            'veh': 0, 'speed': 0.0, 'halted': 0, 'occ': 0.0,
+            'valid_tt': 0, 'valid_tt_raw': 0, 'valid_speed': 0,
+            'steps': 0
+        } for jid in junction_ids}
+
+        for dt_step in range(DELTA_TIME):
             traci.simulationStep()
 
-        # Metrika gyűjtés junction-önként
+            # Minden substep-ben mérünk (pontosan mint TrafficAgent.collect_measurements)
+            for jid in junction_ids:
+                lanes = junction_lanes[jid]
+                dets = junction_dets[jid]
+                acc[jid]['steps'] += 1
+
+                for lane in lanes:
+                    # Travel time - limitált
+                    tt = traci.lane.getTraveltime(lane)
+                    if 0 < tt < MAX_REALISTIC_TT:
+                        acc[jid]['tt'] += tt
+                        acc[jid]['valid_tt'] += 1
+                    # Travel time - raw (sentinel-ekkel együtt)
+                    if tt > 0:
+                        acc[jid]['tt_raw'] += tt
+                        acc[jid]['valid_tt_raw'] += 1
+
+                    # Waiting time (sec)
+                    acc[jid]['waiting'] += traci.lane.getWaitingTime(lane)
+
+                    # CO2 (mg/s)
+                    acc[jid]['co2'] += traci.lane.getCO2Emission(lane)
+
+                    # Vehicle count
+                    acc[jid]['veh'] += traci.lane.getLastStepVehicleNumber(lane)
+
+                    # Speed
+                    speed = traci.lane.getLastStepMeanSpeed(lane)
+                    if speed >= 0:
+                        acc[jid]['speed'] += speed
+                        acc[jid]['valid_speed'] += 1
+
+                    # Halted (queue)
+                    acc[jid]['halted'] += traci.lane.getLastStepHaltingNumber(lane)
+
+                # Detektor occupancy
+                for det in dets:
+                    acc[jid]['occ'] += traci.inductionloop.getLastStepOccupancy(det)
+
+        # --- Átlagolás (= RL env get_*_metric() hívások) ---
         for jid in junction_ids:
-            lanes = junction_lanes[jid]
-            dets = junction_dets[jid]
+            a = acc[jid]
+            s = a['steps']
+            if s == 0:
+                continue
 
-            total_tt = 0.0          # Limitált (< MAX_REALISTIC_TT)
-            total_tt_raw = 0.0      # Nem limitált (minden SUMO érték)
-            total_waiting = 0.0
-            total_co2 = 0.0
-            total_veh = 0
-            total_speed = 0.0
-            total_halted = 0
-            valid_tt_lanes = 0
-            valid_tt_raw_lanes = 0
-            valid_speed_lanes = 0
+            # Az RL env logikája:
+            #   avg_waiting = accumulated_waiting_time / steps_measured
+            #   avg_co2_raw = accumulated_co2 / steps_measured
+            #   avg_travel_time = accumulated_travel_time / steps_measured
+            avg_waiting_total = a['waiting'] / s     # TotalWaitingTime átlag (Σ lanes / step)
+            avg_co2_total = a['co2'] / s             # TotalCO2 átlag (mg/s Σ lanes / step)
+            avg_tt_total = a['tt'] / s if a['valid_tt'] > 0 else 0.0
+            avg_tt_raw_total = a['tt_raw'] / s if a['valid_tt_raw'] > 0 else 0.0
 
-            for lane in lanes:
-                # Travel time - limitált
-                tt = traci.lane.getTraveltime(lane)
-                if 0 < tt < MAX_REALISTIC_TT:
-                    total_tt += tt
-                    valid_tt_lanes += 1
-                # Travel time - raw (minden pozitív érték, sentinel-ekkel együtt)
-                if tt > 0:
-                    total_tt_raw += tt
-                    valid_tt_raw_lanes += 1
-
-                # Waiting time
-                total_waiting += traci.lane.getWaitingTime(lane)
-
-                # CO2
-                total_co2 += traci.lane.getCO2Emission(lane)
-
-                # Vehicle count
-                veh_count = traci.lane.getLastStepVehicleNumber(lane)
-                total_veh += veh_count
-
-                # Speed
-                speed = traci.lane.getLastStepMeanSpeed(lane)
-                if speed >= 0:
-                    total_speed += speed
-                    valid_speed_lanes += 1
-
-                # Halted (queue)
-                total_halted += traci.lane.getLastStepHaltingNumber(lane)
-
-            # Detektor occupancy
-            total_occ = 0.0
-            for det in dets:
-                total_occ += traci.inductionloop.getLastStepOccupancy(det)
-            avg_occ = total_occ / len(dets) if dets else 0.0
-
-            # Derived metrics
-            avg_tt = total_tt / valid_tt_lanes if valid_tt_lanes > 0 else 0.0
-            avg_tt_raw = total_tt_raw / valid_tt_raw_lanes if valid_tt_raw_lanes > 0 else 0.0
-            avg_waiting = total_waiting / total_veh if total_veh > 0 else 0.0
-            avg_co2 = total_co2 / total_veh if total_veh > 0 else 0.0
-            avg_speed = total_speed / valid_speed_lanes if valid_speed_lanes > 0 else 0.0
+            # Per-vehicle átlagok (kiegészítő metrikák)
+            avg_veh = a['veh'] / s
+            avg_waiting_per_veh = a['waiting'] / a['veh'] if a['veh'] > 0 else 0.0
+            avg_co2_per_veh = a['co2'] / a['veh'] if a['veh'] > 0 else 0.0
+            avg_speed = a['speed'] / a['valid_speed'] if a['valid_speed'] > 0 else 0.0
+            avg_halted = a['halted'] / s
+            avg_occ = (a['occ'] / s) / max(len(junction_dets[jid]), 1)
 
             metrics[jid].append({
                 'step': step_i,
-                'TotalTravelTime': total_tt,
-                'AvgTravelTime': avg_tt,
-                'TotalTravelTime_Raw': total_tt_raw,
-                'AvgTravelTime_Raw': avg_tt_raw,
-                'TotalWaitingTime': total_waiting,
-                'AvgWaitingTime': avg_waiting,
-                'TotalCO2': total_co2,
-                'AvgCO2': avg_co2,
-                'VehCount': total_veh,
+                'TotalTravelTime': avg_tt_total,
+                'AvgTravelTime': avg_tt_total / max(a['valid_tt']/s, 1) if a['valid_tt'] > 0 else 0.0,
+                'TotalTravelTime_Raw': avg_tt_raw_total,
+                'AvgTravelTime_Raw': avg_tt_raw_total / max(a['valid_tt_raw']/s, 1) if a['valid_tt_raw'] > 0 else 0.0,
+                'TotalWaitingTime': avg_waiting_total,
+                'AvgWaitingTime': avg_waiting_per_veh,
+                'TotalCO2': avg_co2_total,
+                'AvgCO2': avg_co2_per_veh,
+                'VehCount': avg_veh,
                 'AvgSpeed': avg_speed,
                 'AvgOccupancy': avg_occ,
-                'QueueLength': total_halted,
+                'QueueLength': avg_halted,
             })
 
         if (step_i + 1) % 50 == 0:
@@ -321,21 +335,34 @@ def run_pca_analysis(output_dir):
     cmap_flows = plt.cm.viridis(np.linspace(0, 1, len(unique_flows)))
     flow_color_map = {fl: cmap_flows[i] for i, fl in enumerate(unique_flows)}
 
-    # Ritkítás scatter-hez
-    max_points = 50000
-    if len(pca_result) > max_points:
-        idx = np.random.choice(len(pca_result), max_points, replace=False)
-    else:
-        idx = np.arange(len(pca_result))
-
     # --- Helper: biplot rajzoló ---
     def draw_biplot(ax, show_legend=True, fontsize_labels=7, fontsize_legend=7):
+        # Flow szintenkénti 2σ konfidencia-ellipszis (scatter felhő helyett!)
+        from matplotlib.patches import Ellipse
         for fl in unique_flows:
-            fl_mask = flow_levels[idx] == fl
-            ax.scatter(pca_result[idx[fl_mask], 0], pca_result[idx[fl_mask], 1],
-                       alpha=0.12, s=6, color=flow_color_map[fl], label=f'{fl}/h')
+            fl_mask = flow_levels == fl
+            pc1_fl = pca_result[fl_mask, 0]
+            pc2_fl = pca_result[fl_mask, 1]
+            if len(pc1_fl) < 10:
+                continue
+            mean_x, mean_y = np.mean(pc1_fl), np.mean(pc2_fl)
+            cov = np.cov(pc1_fl, pc2_fl)
+            eigenvalues, eigenvectors = np.linalg.eigh(cov)
+            angle = np.degrees(np.arctan2(eigenvectors[1, 1], eigenvectors[0, 1]))
+            width, height = 2 * 2.0 * np.sqrt(eigenvalues)  # 2σ ellipszis
+            ell = Ellipse(xy=(mean_x, mean_y), width=width, height=height, angle=angle,
+                          facecolor=flow_color_map[fl], edgecolor=flow_color_map[fl],
+                          alpha=0.15, lw=1.5, linestyle='-', zorder=1)
+            ax.add_patch(ell)
+            # Ellipszis szegély (láthatóbb)
+            ell_border = Ellipse(xy=(mean_x, mean_y), width=width, height=height, angle=angle,
+                                 facecolor='none', edgecolor=flow_color_map[fl],
+                                 alpha=0.6, lw=1.2, linestyle='-', zorder=2)
+            ax.add_patch(ell_border)
+            ax.plot(mean_x, mean_y, 'o', color=flow_color_map[fl], ms=5,
+                    markeredgecolor='white', markeredgewidth=0.5, zorder=3, label=f'{fl}/h')
 
-        scaling = np.max(np.abs(pca_result[idx])) * 0.65
+        scaling = np.max(np.abs(pca_result[:, :2])) * 0.65
 
         # Kézi label offset-ek a sűrű területekhez (feat_name → (dx, dy) relatív eltolás)
         label_offsets = {
@@ -373,6 +400,11 @@ def run_pca_analysis(output_dir):
         ax.set_ylabel(f'PC2 ({explained_var[1]:.1f}%) — Travel Time', fontsize=10)
         ax.axhline(0, color='black', lw=0.4, ls='--', alpha=0.5)
         ax.axvline(0, color='black', lw=0.4, ls='--', alpha=0.5)
+        # Auto-range az adatok alapján
+        margin = 1.2
+        max_range = np.max(np.abs(pca_result[:, :2])) * margin
+        ax.set_xlim(-max_range, max_range)
+        ax.set_ylim(-max_range, max_range)
         if show_legend:
             ax.legend(fontsize=fontsize_legend, loc='upper right', markerscale=2.5,
                       framealpha=0.95, title='Flow max', title_fontsize=fontsize_legend)

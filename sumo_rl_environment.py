@@ -460,20 +460,22 @@ class SumoRLEnvironment(gym.Env):
         w_co2  = self.reward_weights.get('co2', 1.0)
 
         # Log-Sigmoid normalizálási paraméterek
-        # Forrás: PCA elemzés 527,746 mintából, 12 flow szint (100-1200 veh/h/lane),
-        #         3 epizód × 21 junction. Lásd: metric_pca_test_v2/normalization_stats.csv
+        # Forrás: PCA elemzés 527,747 mintából, 10 flow szint (300-1200 veh/h/lane),
+        #         3 epizód × 21 junction, RL-kompatibilis akkumulált átlagok
+        #         (delta_time substepeken gyűjtve, steps_measured-del osztva)
+        #         Lásd: metric_pca_test_v2/
         #
-        # Metrika: TotalWaitingTime = Σ traci.lane.getWaitingTime(lane) [sec]
-        #   PCA PC1 loading: 0.4001 (domináns torlódási dimenzió)
-        #   medián: 131 sec, p5: 4 sec, p95: 2015 sec
-        MU_WAIT = 4.772001   # E[log(TotalWaitingTime)]
-        STD_WAIT = 1.873088  # Std[log(TotalWaitingTime)]
+        # Metrika: TotalWaitingTime = Σ lane.getWaitingTime / steps [sec/step]
+        #   PCA PC1 loading: -0.3797 (domináns torlódási dimenzió, 48.5%)
+        #   medián: 120.20 sec, p5: 3.20 sec, p95: 1340.40 sec
+        MU_WAIT = 4.584800   # E[log(TotalWaitingTime)]
+        STD_WAIT = 1.824900  # Std[log(TotalWaitingTime)]
         #
-        # Metrika: TotalCO2 = Σ traci.lane.getCO2Emission(lane) [mg/s]
-        #   PCA PC1 loading: 0.3346 (korrelál torlódással, de önálló környezeti szempont)
-        #   medián: 70,663 mg/s, p5: 8,236 mg/s, p95: 180,047 mg/s
-        MU_CO2 = 10.902006   # E[log(TotalCO2)]
-        STD_CO2 = 0.965732   # Std[log(TotalCO2)]
+        # Metrika: TotalCO2 = Σ lane.getCO2Emission / steps [mg/s átlag]
+        #   PCA PC1 loading: -0.3409 (korrelál torlódással, önálló környezeti dimenzió)
+        #   medián: 70,129 mg/s, p5: 8,383 mg/s, p95: 173,545 mg/s
+        MU_CO2 = 10.870600   # E[log(TotalCO2)]
+        STD_CO2 = 0.962900   # Std[log(TotalCO2)]
 
         for jid, agent in self.agents.items():
             observations[jid] = agent.get_observation()
