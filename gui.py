@@ -1238,7 +1238,7 @@ class JunctionApp:
             "buffer_size": 10000,
             "gamma": 0.99,
             "exploration_fraction": 0.85,
-            "w_time": 1.0,
+            "w_waiting": 1.0,
             "w_co2": 1.0,
             "es_enabled": False,
             "num_layers": 2,

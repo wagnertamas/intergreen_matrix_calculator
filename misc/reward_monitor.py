@@ -76,13 +76,13 @@ class RewardMonitor:
 
             self.junction_ids.add(junction_id)
 
-            # CO2 mentése (súlyozatlan, nyers érték)
-            co2_value = info.get('metric_co2', 0.0)
+            # CO2 mentése (súlyozatlan, nyers érték mg/s)
+            co2_value = info.get('metric_co2_raw', info.get('metric_co2', 0.0))
             self.data[junction_id]['co2'].append((step, co2_value))
 
-            # Travel time mentése (súlyozatlan, nyers érték)
-            travel_time_value = info.get('metric_travel_time', 0.0)
-            self.data[junction_id]['travel_time'].append((step, travel_time_value))
+            # Waiting time mentése (súlyozatlan, nyers érték sec)
+            waiting_time_value = info.get('metric_waiting_time', info.get('metric_travel_time', 0.0))
+            self.data[junction_id]['travel_time'].append((step, waiting_time_value))
 
             # [NEW] Vehicle Count mentése
             veh_count_value = info.get('metric_veh_count', 0.0)

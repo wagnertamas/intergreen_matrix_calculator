@@ -75,7 +75,7 @@ def run_random_baseline(
         net_file=net_file,
         logic_json_file=logic_json,
         detector_file=detector_file,
-        reward_weights={'time': 1.0, 'co2': 1.0},  # Nem számít, mert nyers értékeket mentünk
+        reward_weights={'waiting': 1.0, 'co2': 1.0},  # Nem számít, mert nyers értékeket mentünk
         min_green_time=min_green_time,
         delta_time=1,
         sumo_gui=False,

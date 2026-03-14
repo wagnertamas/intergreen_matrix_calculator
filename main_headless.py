@@ -42,7 +42,7 @@ def main():
         total_timesteps=int(hp["total_timesteps"]),
         wandb_project=hp["wandb_project"],
         hyperparams=hp,
-        reward_weights={'time': float(hp.get("w_time", 1.0)), 'co2': float(hp.get("w_co2", 1.0))},
+        reward_weights={'waiting': float(hp.get("w_waiting", 1.0)), 'co2': float(hp.get("w_co2", 1.0))},
         log_queue=None,
         single_agent_id=args.single_agent
     )

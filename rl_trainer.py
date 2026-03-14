@@ -67,7 +67,7 @@ class IndependentDQNTrainer:
         self.project_name = wandb_project
         self.log_queue = log_queue
         self.hyperparams = hyperparams or {}
-        self.reward_weights = reward_weights or {'time': 1.0, 'co2': 1.0}
+        self.reward_weights = reward_weights or {'waiting': 1.0, 'co2': 1.0}
         self.single_agent_id = single_agent_id
         self.single_agent_id = single_agent_id
         self.load_model_path = load_model_path
@@ -869,10 +869,10 @@ class TrainingDialog:
         frame_reward = tk.LabelFrame(self.top, text="Reward Weights", padx=10, pady=5)
         frame_reward.pack(fill="x", padx=10, pady=5)
 
-        tk.Label(frame_reward, text="Time Weight:").grid(row=0, column=0)
-        self.entry_w_time = tk.Entry(frame_reward, width=10)
-        self.entry_w_time.insert(0, "1.0")
-        self.entry_w_time.grid(row=0, column=1)
+        tk.Label(frame_reward, text="Waiting Weight:").grid(row=0, column=0)
+        self.entry_w_waiting = tk.Entry(frame_reward, width=10)
+        self.entry_w_waiting.insert(0, "1.0")
+        self.entry_w_waiting.grid(row=0, column=1)
 
         tk.Label(frame_reward, text="CO2 Weight:").grid(row=0, column=2)
         self.entry_w_co2 = tk.Entry(frame_reward, width=10)
@@ -937,7 +937,7 @@ class TrainingDialog:
             "buffer_size": int(self.entry_buffer.get()),
             "gamma": float(self.entry_gamma.get()),
             "exploration_fraction": float(self.entry_expl.get()),
-            "w_time": float(self.entry_w_time.get()),
+            "w_waiting": float(self.entry_w_waiting.get()),
             "w_co2": float(self.entry_w_co2.get()),
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
@@ -972,7 +972,7 @@ class TrainingDialog:
                 wandb_project=settings["wandb_project"],
                 log_queue=self.log_queue,
                 hyperparams=settings,
-                reward_weights={'time': settings["w_time"], 'co2': settings["w_co2"]},
+                reward_weights={'waiting': settings["w_waiting"], 'co2': settings["w_co2"]},
                 single_agent_id=settings["single_agent_id"],
                 sumo_gui=settings["sumo_gui"]
             )

@@ -121,7 +121,7 @@ def main():
         logic_json_file=LOGIC_JSON,
         detector_file=DETECTOR_FILE,
         route_file=ROUTE_FILE,
-        reward_weights={'time': 1.0, 'co2': 0.05},
+        reward_weights={'waiting': 1.0, 'co2': 0.05},
         min_green_time=5,
         delta_time=1,
         measure_during_transition=False,

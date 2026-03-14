@@ -19,7 +19,7 @@ class SumoRLEnvironment(gym.Env):
                  logic_json_file,
                  detector_file,
                  route_file="random_traffic.rou.xml",
-                 reward_weights={'time': 1.0, 'co2': 1.0},
+                 reward_weights={'waiting': 1.0, 'co2': 1.0},
                  min_green_time=5,
                  delta_time=5,
                  measure_during_transition=False,
@@ -456,47 +456,52 @@ class SumoRLEnvironment(gym.Env):
         sim_truncated = (traci.simulation.getTime() >= self.traffic_duration)
         global_done = sim_terminated or sim_truncated
 
-        w_time = self.reward_weights.get('time', 1.0)
-        w_co2 = self.reward_weights.get('co2', 1.0)
+        w_wait = self.reward_weights.get('waiting', 1.0)
+        w_co2  = self.reward_weights.get('co2', 1.0)
 
-        MU_TIME  = 11.211313
-        STD_TIME = 1.129861
-        MU_CO2   = 0.483506
-        STD_CO2  = 0.121195
+        # Log-Sigmoid normalizálási paraméterek
+        # Forrás: PCA elemzés 527,746 mintából, 12 flow szint (100-1200 veh/h/lane),
+        #         3 epizód × 21 junction. Lásd: metric_pca_test_v2/normalization_stats.csv
+        #
+        # Metrika: TotalWaitingTime = Σ traci.lane.getWaitingTime(lane) [sec]
+        #   PCA PC1 loading: 0.4001 (domináns torlódási dimenzió)
+        #   medián: 131 sec, p5: 4 sec, p95: 2015 sec
+        MU_WAIT = 4.772001   # E[log(TotalWaitingTime)]
+        STD_WAIT = 1.873088  # Std[log(TotalWaitingTime)]
+        #
+        # Metrika: TotalCO2 = Σ traci.lane.getCO2Emission(lane) [mg/s]
+        #   PCA PC1 loading: 0.3346 (korrelál torlódással, de önálló környezeti szempont)
+        #   medián: 70,663 mg/s, p5: 8,236 mg/s, p95: 180,047 mg/s
+        MU_CO2 = 10.902006   # E[log(TotalCO2)]
+        STD_CO2 = 0.965732   # Std[log(TotalCO2)]
 
         for jid, agent in self.agents.items():
             observations[jid] = agent.get_observation()
-            
-            avg_travel_time = agent.get_avg_travel_time_metric()
-            total_co2 = agent.get_total_co2_metric()
 
-            if avg_travel_time == 0.0 and total_co2 == 0.0:
-                # Üres kereszteződés: sem mért forgalom, sem CO2 → semleges reward (0.0)
-                # Ne adj max (2.0) score-t, mert az ágens nem csinált semmi jót/rosszat
+            # WaitingTime: Σ lane waiting time / steps → átlag sec/step (= pillanatérték skála)
+            avg_waiting = agent.get_avg_waiting_time_metric()
+            # CO2: nyers mg/s skálán (NEM /1000!), hogy a PCA paraméterek konzisztensek legyenek
+            avg_co2_raw = (agent.accumulated_co2 / agent.steps_measured) if agent.steps_measured > 0 else 0.0
+
+            if avg_waiting == 0.0 and avg_co2_raw == 0.0:
+                # Üres kereszteződés: sem várakozás, sem CO2 → semleges reward (0.0)
                 rewards[jid] = 0.0
-                z_time = float('nan')  # nincs értelmes z_time
             else:
-                z_time = (np.log(avg_travel_time + 1e-5) - MU_TIME) / (STD_TIME + 1e-9)
-                z_co2  = (np.log(total_co2 + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
-                
-                score_time = 1 / (1 + np.exp(-z_time))
-                score_co2  = 1 / (1 + np.exp(-z_co2))
-                
-                r_time = 1.0 - score_time
-                r_co2  = 1.0 - score_co2
-                
-                rewards[jid] = w_time * r_time + w_co2 * r_co2
-            
-            # [DEBUG LOG] Csak egy agenthez nyomtatunk, hogy ne spammeljük tele a terminált
-            # Mivel nincs env_step, a traci.simulation.getTime() modulosával írunk ki
-            if jid == 'R1C1_C' and int(traci.simulation.getTime()) % 10 == 0:
-                print(f"[REWARD DEBUG {jid}] step avg_tts: {avg_travel_time:.2f} | z_time: {z_time:.2f} | score_time: {score_time:.4f} | Final R: {rewards[jid]:.4f}")
+                z_wait = (np.log(avg_waiting + 1e-5) - MU_WAIT) / (STD_WAIT + 1e-9)
+                z_co2  = (np.log(avg_co2_raw + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
 
-            
+                score_wait = 1 / (1 + np.exp(-z_wait))
+                score_co2  = 1 / (1 + np.exp(-z_co2))
+
+                r_wait = 1.0 - score_wait  # alacsony waiting → magas reward
+                r_co2  = 1.0 - score_co2   # alacsony CO2 → magas reward
+
+                rewards[jid] = w_wait * r_wait + w_co2 * r_co2
+
             infos[jid] = {
                 "ready": agent.is_ready_for_action(),
-                "metric_travel_time": avg_travel_time,
-                "metric_co2": total_co2,
+                "metric_waiting_time": avg_waiting,
+                "metric_co2_raw": avg_co2_raw,
             }
             dones[jid] = global_done
 
@@ -565,6 +570,7 @@ class TrafficAgent:
         self.det_accumulated_flow = {d: 0 for d in self.detectors}
         self.det_accumulated_occ = {d: 0.0 for d in self.detectors}
         self.accumulated_travel_time = 0.0
+        self.accumulated_waiting_time = 0.0
         self.accumulated_co2 = 0.0
         self.accumulated_veh_count = 0
 
@@ -636,6 +642,7 @@ class TrafficAgent:
             self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
             
         step_tt = 0.0
+        step_waiting = 0.0
         step_co2 = 0.0
         step_veh_count = 0
         valid_tt_lanes = 0
@@ -645,11 +652,13 @@ class TrafficAgent:
             if 0 < tt < MAX_REALISTIC_TT:  # Csak valodi, mert ertekeket akkumulalunk
                 step_tt += tt
                 valid_tt_lanes += 1
-            step_co2 += traci.lane.getCO2Emission(lane)
+            step_waiting += traci.lane.getWaitingTime(lane)  # sec, pillanatnyi összes várakozás
+            step_co2 += traci.lane.getCO2Emission(lane)      # mg/s, pillanatnyi kibocsátás
             step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
         # Ha csak sentinel értékek jöttek, ne adjunk hozzá semmit
         if valid_tt_lanes > 0:
             self.accumulated_travel_time += step_tt
+        self.accumulated_waiting_time += step_waiting
         self.accumulated_co2 += step_co2
         self.accumulated_veh_count += step_veh_count
 
@@ -685,5 +694,14 @@ class TrafficAgent:
     def get_avg_travel_time_metric(self):
         return (self.accumulated_travel_time / self.steps_measured) if self.steps_measured > 0 else 0.0
 
+    def get_avg_waiting_time_metric(self):
+        """Átlagos várakozási idő a delta_time alatt [sec].
+        traci.lane.getWaitingTime() → pillanatnyi összes várakozás (sec) a lane-en.
+        Akkumulálva steps_measured lépésen, elosztva → átlag sec/step."""
+        return (self.accumulated_waiting_time / self.steps_measured) if self.steps_measured > 0 else 0.0
+
     def get_total_co2_metric(self):
+        """Átlagos CO2 kibocsátási ráta a delta_time alatt [g/s].
+        traci.lane.getCO2Emission() → mg/s pillanatnyi.
+        Akkumulálva, /1000 → g/s, /steps → átlag."""
         return ((self.accumulated_co2 / 1000.0) / self.steps_measured) if self.steps_measured > 0 else 0.0

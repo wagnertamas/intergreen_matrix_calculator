@@ -36,7 +36,7 @@ def test_metrics():
         net_file=net_file,
         logic_json_file=logic_file,
         detector_file=detector_file,
-        reward_weights={'time': 1.0, 'co2': 1.0},
+        reward_weights={'waiting': 1.0, 'co2': 1.0},
         min_green_time=5,
         delta_time=1,
         sumo_gui=False,
