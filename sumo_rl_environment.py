@@ -27,6 +27,7 @@ class SumoRLEnvironment(gym.Env):
                  random_traffic=True,
                  traffic_period=1.0,
                  traffic_duration=3600,
+                 flow_range=(100, 900),
                  statistic_output_file=None,
                  single_agent_id=None,
                  run_id=None):
@@ -34,7 +35,7 @@ class SumoRLEnvironment(gym.Env):
         self.net_file = net_file
         self.logic_json_file = logic_json_file
         self.detector_file = detector_file
-        
+
         # Unique route file handling
         self.run_id = run_id
         if self.run_id:
@@ -42,7 +43,7 @@ class SumoRLEnvironment(gym.Env):
             self.route_file = f"{base}_{self.run_id}{ext}"
         else:
             self.route_file = route_file
-            
+
         self.statistic_output_file = statistic_output_file
 
         self.reward_weights = reward_weights
@@ -53,29 +54,41 @@ class SumoRLEnvironment(gym.Env):
         self.random_traffic = random_traffic
         self.traffic_period = traffic_period
         self.traffic_duration = traffic_duration
+        self.flow_range = tuple(flow_range)
         self.single_agent_id = single_agent_id
 
         # --- Import Logic for GUI vs Headless ---
         global traci
-        # --- Import Logic for GUI vs Headless ---
-        global traci
-        
-        # JAVÍTÁS: MacOS-en a libsumo gyakran segfault-ot okoz.
-        # Ezért ott mindig a 'traci'-t használjuk (lassabb, de stabil).
-        force_traci = self.sumo_gui or (sys.platform == 'darwin')
-        
-        if force_traci:
-            print(f"[INFO] Using standard 'traci' (GUI={self.sumo_gui}, OS={sys.platform}).")
+
+        # Döntési logika:
+        #   GUI mód         → mindig traci (libsumo nem támogat GUI-t)
+        #   USE_LIBSUMO=1   → libsumo (env var-ral kényszeríthető)
+        #   USE_LIBSUMO=0   → traci  (env var-ral tiltható, pl. parallel 2+ futásnál)
+        #   default (nincs env var) → libsumo próba, fallback traci
+        #
+        # Párhuzamos futásnál a libsumo singleton → csak 1 process használhatja.
+        # A start.sh az első futásnak USE_LIBSUMO=1-et ad, a többinek USE_LIBSUMO=0-t.
+        env_libsumo = os.environ.get('USE_LIBSUMO', None)
+
+        if self.sumo_gui:
+            # GUI → kizárólag traci
+            print(f"[INFO] Using 'traci' (GUI mode).")
+            import traci as t
+            traci = t
+        elif env_libsumo == '0':
+            # Explicit tiltás (parallel 2+ futás)
+            print(f"[INFO] Using 'traci' (USE_LIBSUMO=0, parallel slave).")
             import traci as t
             traci = t
         else:
+            # Default: libsumo próba (USE_LIBSUMO=1 vagy nincs beállítva)
             if traci is None or traci.__name__ != 'libsumo':
-                print("[INFO] Headless mode. Attempting to import 'libsumo'.")
                 try:
                     import libsumo as t
                     traci = t
+                    print(f"[INFO] Using 'libsumo' (fast headless mode, OS={sys.platform}).")
                 except ImportError:
-                    print("[INFO] 'libsumo' not found. Falling back to 'traci'.")
+                    print(f"[INFO] 'libsumo' not available, falling back to 'traci'.")
                     import traci as t
                     traci = t
 
@@ -123,10 +136,21 @@ class SumoRLEnvironment(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
+        # 0. Szimuláció hossz rotáció — minden epizódban más időtartam
+        #    Reális forgalmi időszakok: 15 perc → 2 óra
+        #    Rövid epizódok: gyorsabb feedback, de zajosabb metrikák
+        #    Hosszú epizódok: stabilabb átlagok, lassabb tanulás
+        DURATION_OPTIONS = [900, 1800, 2700, 3600, 5400, 7200]  # 15min, 30min, 45min, 1h, 1.5h, 2h
+        if options and 'traffic_duration' in options:
+            self.traffic_duration = int(options['traffic_duration'])
+        else:
+            self.traffic_duration = random.choice(DURATION_OPTIONS)
+        print(f"[INFO] Episode duration: {self.traffic_duration}s ({self.traffic_duration/60:.0f} min)")
+
         # 1. Random forgalom generálás
         if self.random_traffic:
-            # flow_range opcionálisan felülírható az options-ből
-            flow_range = (100, 900)
+            # flow_range: constructor default, felülírható options-ből
+            flow_range = self.flow_range
             if options and 'flow_range' in options:
                 flow_range = options['flow_range']
 
@@ -498,7 +522,9 @@ class SumoRLEnvironment(gym.Env):
                 r_wait = 1.0 - score_wait  # alacsony waiting → magas reward
                 r_co2  = 1.0 - score_co2   # alacsony CO2 → magas reward
 
-                rewards[jid] = w_wait * r_wait + w_co2 * r_co2
+                # Súlyozott átlag → reward mindig [0, 1] tartományban
+                w_sum = w_wait + w_co2
+                rewards[jid] = (w_wait * r_wait + w_co2 * r_co2) / w_sum
 
             infos[jid] = {
                 "ready": agent.is_ready_for_action(),

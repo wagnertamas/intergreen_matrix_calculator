@@ -1,25 +1,46 @@
-detector_file: /app/data/detectors.add.xml
+# =============================================================================
+# SUMO RL Training Configuration
+# =============================================================================
+# Két módban használható:
+#   1. Lokális:  python main_headless.py --config training_config.yaml
+#   2. Docker:   docker-compose up (az /app/data/ útvonalakat használja)
+#
+# A fájl útvonalakat a futási környezet dönti el:
+#   - Lokálisan: a relatív "data/" prefix működik
+#   - Dockerben: az /app/data/ abszolút útvonalak kellenek
+# =============================================================================
+
+# --- Hálózati fájlok ---
+net_file: data/mega_catalogue_v2.net.xml
+logic_file: data/traffic_lights.json
+detector_file: data/detectors.add.xml
+
+# --- WandB ---
+project_name: sumo-rl-single
+wandb_api_key: ""   # Használd a WANDB_API_KEY env változót inkább!
+
+# --- Tanítási paraméterek ---
+total_timesteps: 100000
+
+# --- Környezeti beállítások ---
 env_kwargs:
   delta_time: 5
   reward_weights:
+    waiting: 1.0
     co2: 1.0
-    time: 1.0
+
+# --- Hiperparaméterek ---
 hyperparams:
+  learning_rate: 0.0001
   batch_size: 32
   buffer_size: 10000
-  es_enabled: true
-  es_min_delta: 0.01
-  es_patience: 20
-  exploration_fraction: 0.85
   gamma: 0.99
-  gradient_steps: 1
-  layer_size: 64
-  learning_rate: 0.0001
+  exploration_fraction: 0.85
   num_layers: 2
+  layer_size: 64
   train_freq: 4
-logic_file: /app/data/traffic_lights.json
-n_envs: 1
-net_file: /app/data/mega_catalogue_v2.net.xml
-project_name: sumo-rl-single
-total_timesteps: 100000
-wandb_api_key: ''
+  gradient_steps: 1
+  # Early stopping
+  es_enabled: true
+  es_patience: 20
+  es_min_delta: 0.01

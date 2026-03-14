@@ -1,22 +1,67 @@
+# =============================================================================
+# WandB Bayesian Sweep Configuration
+# =============================================================================
+# Használat:
+#   wandb sweep data/sweep_config.yaml --project <projekt>
+#   wandb agent <entity>/<project>/<sweep_id>
+#
+# A sweep_runner.py automatikusan betölti a training_config.yaml-t
+# a fájl útvonalakhoz és a default hiperparaméterekhez.
+# A sweep paraméterek FELÜLÍRJÁK a config default értékeit.
+# =============================================================================
+
 program: sweep_runner.py
 method: bayes
+
 metric:
   name: avg_reward
   goal: maximize
+
 parameters:
+  # --- Tanulási ráta ---
   learning_rate:
-    min: 0.0001
+    distribution: log_uniform_values
+    min: 0.00005
     max: 0.005
+
+  # --- Batch méret ---
   batch_size:
     values: [32, 64, 128, 256]
+
+  # --- Diszkont faktor ---
   gamma:
+    distribution: uniform
     min: 0.90
     max: 0.999
+
+  # --- Felfedezési arány ---
+  # Az exploration_fraction azt mondja meg, hogy a total_timesteps hány %-ánál
+  # éri el az epsilon a minimum értéket. 0.1 = gyorsan exploitál, 0.5 = sokat felfedez.
   exploration_fraction:
+    distribution: uniform
     min: 0.1
     max: 0.5
+
+  # --- NEURÁLIS HÁLÓ MÉRET ---
+  # Az ágens policy hálójának mérete: num_layers × layer_size fully connected réteg.
+  # Pl. num_layers=3, layer_size=128 → [128, 128, 128]
   num_layers:
     min: 1
     max: 6
+
   layer_size:
-    values: [16, 32,64, 128, 256]
+    values: [32, 64, 128, 256]
+
+  # --- Replay buffer méret ---
+  buffer_size:
+    values: [5000, 10000, 25000, 50000]
+
+  # --- Forgalmi tartomány (jármű/óra/sáv) ---
+  # flow_min és flow_max: a generate_random_traffic() lane-szintű forgalmát szabályozza
+  # Alacsonyabb tartomány: könnyebb feladat, gyorsabb tanulás
+  # Magasabb tartomány: nehezebb, torlódásos szituációk
+  flow_min:
+    values: [50, 100, 150, 200]
+
+  flow_max:
+    values: [600, 800, 1000, 1200]

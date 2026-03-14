@@ -18,18 +18,38 @@ except ImportError:
     # amíg nem próbáljuk megnyitni az ablakot.
 # ---------------------------------------
 
-# Opcionális importok ellenőrzése
+# Opcionális importok ellenőrzése — egyenként, hogy lássuk melyik hiányzik
+HAS_RL_LIBS = True
+_missing_libs = []
 try:
     from stable_baselines3 import DQN
-    from sb3_contrib import QRDQN
     from stable_baselines3.common.logger import configure
     from stable_baselines3.common.vec_env import DummyVecEnv
-    import wandb
-    import torch
-    HAS_RL_LIBS = True
-except ImportError:
+except ImportError as e:
     HAS_RL_LIBS = False
-    print("Figyelem: RL könyvtárak (stable-baselines3, wandb, torch) hiányoznak.")
+    _missing_libs.append(f"stable-baselines3: {e}")
+try:
+    from sb3_contrib import QRDQN
+except ImportError as e:
+    HAS_RL_LIBS = False
+    _missing_libs.append(f"sb3-contrib: {e}")
+try:
+    import wandb
+except ImportError as e:
+    HAS_RL_LIBS = False
+    _missing_libs.append(f"wandb: {e}")
+try:
+    import torch
+except ImportError as e:
+    HAS_RL_LIBS = False
+    _missing_libs.append(f"torch: {e}")
+
+if not HAS_RL_LIBS:
+    print(f"[ERROR] RL könyvtárak hiányoznak! Python: {sys.executable}")
+    for m in _missing_libs:
+        print(f"  - {m}")
+    print(f"  Tipp: aktiváld a megfelelő conda/venv környezetet, vagy futtasd:")
+    print(f"  pip install stable-baselines3 sb3-contrib wandb torch")
 
 from sumo_rl_environment import SumoRLEnvironment
 
@@ -101,6 +121,11 @@ class IndependentDQNTrainer:
             self.log("WandB config applied (Sweep compatible).")
 
         # 2. Környezet létrehozása
+        # Forgalmi tartomány: sweep-ből jöhet flow_min/flow_max
+        flow_min = int(current_config.get("flow_min", 100))
+        flow_max = int(current_config.get("flow_max", 900))
+        self.log(f"Flow range: {flow_min}-{flow_max} veh/h/lane")
+
         self.env = SumoRLEnvironment(
             net_file=self.net_file,
             logic_json_file=self.logic_file,
@@ -110,6 +135,7 @@ class IndependentDQNTrainer:
             min_green_time=5,
             delta_time=5,
             random_traffic=True,
+            flow_range=(flow_min, flow_max),
             single_agent_id=self.single_agent_id,
             run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
             **self.env_kwargs

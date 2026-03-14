@@ -14,3 +14,4 @@ data/runs/
 random_traffic.rou*.xml
 *.out.xml
 training_config.json
+.env

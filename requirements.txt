@@ -21,5 +21,8 @@ onnx
 onnxscript
 torchvision
 
+# Config
+pyyaml
+
 # Logging
 wandb

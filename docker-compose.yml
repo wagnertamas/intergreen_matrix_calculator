@@ -1,24 +1,40 @@
+# =============================================================================
+# Docker Compose — SUMO RL Training
+# =============================================================================
+# Használat:
+#   1. Hozd létre a .env fájlt:  echo "WANDB_API_KEY=your_key" > .env
+#   2. Indítás:                   docker-compose up
+#   3. Sweep (N párhuzamos):      docker-compose up --scale sumo-trainer=N
+#
+# A start.sh script interaktívan kezeli mindezt.
+# =============================================================================
+
 version: '3.8'
 
 services:
   sumo-trainer:
     build: .
     image: sumo-rl-agent
-    # Ha van WandB kulcsod, itt add át, vagy egy .env fájlból
+
+    env_file:
+      - .env   # WANDB_API_KEY itt legyen, NE a docker-compose-ban!
+
     environment:
-      - WANDB_API_KEY=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
       - SUMO_HOME=/usr/share/sumo
+      - SWEEP_PROJECT=${SWEEP_PROJECT:-sumo-rl-sweep}
+      - SWEEP_TIMESTEPS=${SWEEP_TIMESTEPS:-100000}
+      - USE_LIBSUMO=1   # Docker: minden konténer külön process → mindig libsumo
+
     volumes:
-      # A data mappát csatoljuk be, hogy az eredmények (modellek, logok)
-      # a gazdagépen is megjelenjenek, ne vesszenek el a konténer leállásakor.
       - ./data:/app/data
-      # Ha a gyökérben is vannak kimenetek (pl. runs), azokat is érdemes:
       - ./runs:/app/runs
-    # Erőforrás korlátok (opcionális, de jó, ha a gépedet nem akarod megölni)
+
     deploy:
       resources:
         limits:
-          cpus: '2.0' # Konténerenként max 1 CPU (mivel a SUMO egyszálú)
+          cpus: '2.0'
           memory: 2G
-    # Alapértelmezett parancs (Sweephez ezt írd át lentebb)
-    command: wandb agent wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-single-QR2/tcnx2jqd
+
+    # Default: headless training
+    # Sweep mode-ban a start.sh felülírja a command-ot
+    command: python main_headless.py --config training_config.yaml

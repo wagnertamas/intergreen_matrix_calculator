@@ -1,96 +1,124 @@
+"""
+WandB Sweep runner — a sweep agent ezt hívja minden egyes futásnál.
+
+A hiperparamétereket a wandb.config-ból veszi (sweep_config.yaml definiálja),
+a fájl útvonalakat a training_config.yaml-ból (vagy .json-ból).
+"""
 import os
 import sys
-import glob
+import yaml
+import json
+import wandb
 from rl_trainer import IndependentDQNTrainer
 
-def find_files():
-    # Helper to find files automatically like in main.py
-    # Check current dir AND data/ dir
-    net_files = glob.glob("*.net.xml") + glob.glob("data/*.net.xml")
-    
-    if not net_files:
-        raise FileNotFoundError("No .net.xml found in root or data/!")
-        
-    net_file = os.path.abspath(net_files[0])
-    base_name_full = os.path.basename(net_file)
-    base_name = base_name_full.replace('.net.xml', '')
-    dir_name = os.path.dirname(net_file)
-    
-    # Try generic names first (traffic_lights.json), then specific names
-    possible_logics = [
-        os.path.join(dir_name, "traffic_lights.json"),
-        os.path.join(dir_name, f"{base_name}.json"),
-        os.path.join("data", "traffic_lights.json"),
-        "traffic_lights.json"
-    ]
-    
-    logic_file = None
-    for f in possible_logics:
-        if os.path.exists(f):
-            logic_file = os.path.abspath(f)
-            break
-            
-    possible_detectors = [
-        os.path.join(dir_name, "detectors.add.xml"),
-        os.path.join(dir_name, f"{base_name}.add.xml"),
-        os.path.join("data", "detectors.add.xml"),
-        "detectors.add.xml"
-    ]
-    
-    detector_file = None
-    for f in possible_detectors:
-         if os.path.exists(f):
-             detector_file = os.path.abspath(f)
-             break
 
-    if not logic_file or not detector_file:
-         raise FileNotFoundError("Could not find logic or detector files!")
-    
-    return net_file, logic_file, detector_file
+def load_config():
+    """YAML vagy JSON training config betöltése."""
+    for candidate in ["training_config.yaml", "training_config.json",
+                       "data/training_config.yaml", "data/training_config.json"]:
+        if os.path.exists(candidate):
+            with open(candidate, 'r') as f:
+                if candidate.endswith('.yaml') or candidate.endswith('.yml'):
+                    return yaml.safe_load(f), candidate
+                else:
+                    return json.load(f), candidate
+    return None, None
+
+
+def find_file(candidates):
+    """Az első létező fájlt adja vissza a jelöltek közül."""
+    for f in candidates:
+        if os.path.exists(f):
+            return os.path.abspath(f)
+    return None
+
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--gui", action="store_true", help="Enable SUMO GUI (uses standard traci)")
-    # Allow unknown args to pass through if wandb sends extra stuff, though typically wandb agent calls specific args defined in sweep config.
-    # But here we are just adding a flag.
-    # Note: sweep_runner.py is called with args like --learning_rate=... 
-    # so we should use parse_known_args or add all arguments.
-    # However, standard sweep passes args as command line flags if we use ${args}
-    # For now, let's just use sys.argv check or proper argparse.
-    
-    # Let's inspect how arguments are passed. They are passed as flags like --learning_rate=0.01
-    
-    # We should allow flexible args.
-    parser.add_argument("--learning_rate", type=float, required=False)
-    parser.add_argument("--batch_size", type=int, required=False)
-    # ... add others if we want to be strict, or use parse_known_args
-    
-    args, unknown = parser.parse_known_args()
-    
-    print("Starting Sweep Agent...")
-    if args.gui:
-        print("GUI ENABLED")
-    
-    try:
-        net_file, logic_file, detector_file = find_files()
-        
-        # Initialize Trainer
-        trainer = IndependentDQNTrainer(
-            net_file=net_file,
-            logic_file=logic_file,
-            detector_file=detector_file,
-            total_timesteps=50000, 
-            wandb_project="sumo-rl-sweep",
-            sumo_gui=args.gui
-        )
-        
-        # Run
-        trainer.run()
-        
-    except Exception as e:
-        print(f"Error: {e}")
+    parser = argparse.ArgumentParser(description="WandB Sweep Runner")
+    parser.add_argument("--gui", action="store_true", help="SUMO GUI engedélyezése")
+    parser.add_argument("--timesteps", type=int, default=None,
+                        help="Total timesteps (felülírja a configot)")
+    parser.add_argument("--project", type=str, default=None,
+                        help="WandB projekt név (felülírja a configot)")
+    args, _ = parser.parse_known_args()
+
+    # --- Config betöltése ---
+    config, config_path = load_config()
+
+    # Fájlok megkeresése
+    if config:
+        # YAML formátum
+        if "files" in config:
+            files = config["files"]
+            net_file = find_file([files.get("net", ""), "data/mega_catalogue_v2.net.xml"])
+            logic_file = find_file([files.get("logic", ""), "data/traffic_lights.json"])
+            detector_file = find_file([files.get("detector", ""), "data/detectors.add.xml"])
+        else:
+            net_file = find_file([config.get("net_file", ""), "data/mega_catalogue_v2.net.xml"])
+            logic_file = find_file([config.get("logic_file", ""), "data/traffic_lights.json"])
+            detector_file = find_file([config.get("detector_file", ""), "data/detectors.add.xml"])
+
+        hp = config.get("hyperparams", {})
+        env_kw = config.get("env_kwargs", {})
+        default_timesteps = int(config.get("total_timesteps", hp.get("total_timesteps", 50000)))
+        default_project = config.get("project_name", hp.get("wandb_project", "sumo-rl-sweep"))
+    else:
+        # Fallback: automatikus keresés
+        import glob
+        net_files = glob.glob("*.net.xml") + glob.glob("data/*.net.xml")
+        net_file = os.path.abspath(net_files[0]) if net_files else None
+        logic_file = find_file(["data/traffic_lights.json", "traffic_lights.json"])
+        detector_file = find_file(["data/detectors.add.xml", "detectors.add.xml"])
+        hp = {}
+        env_kw = {}
+        default_timesteps = 50000
+        default_project = "sumo-rl-sweep"
+
+    if not net_file or not logic_file or not detector_file:
+        print(f"[ERROR] Hiányzó fájlok! net={net_file}, logic={logic_file}, det={detector_file}")
         sys.exit(1)
+
+    # Prioritás: CLI arg > env var > config default
+    total_timesteps = args.timesteps or int(os.environ.get("SWEEP_TIMESTEPS", 0)) or default_timesteps
+    project = args.project or os.environ.get("SWEEP_PROJECT", "") or default_project
+
+    # Reward weights
+    rw = env_kw.get("reward_weights", {})
+    reward_weights = {
+        'waiting': float(rw.get('waiting', hp.get('w_waiting', 1.0))),
+        'co2': float(rw.get('co2', hp.get('w_co2', 1.0)))
+    }
+
+    print(f"[SWEEP] Config: {config_path or 'auto-detect'}")
+    print(f"[SWEEP] Net: {net_file}")
+    print(f"[SWEEP] Timesteps: {total_timesteps} | Project: {project}")
+    print(f"[SWEEP] Reward weights: {reward_weights}")
+    print(f"[SWEEP] Base hyperparams: {hp}")
+
+    # --- Trainer ---
+    trainer = IndependentDQNTrainer(
+        net_file=net_file,
+        logic_file=logic_file,
+        detector_file=detector_file,
+        total_timesteps=total_timesteps,
+        wandb_project=project,
+        hyperparams=hp,
+        reward_weights=reward_weights,
+        sumo_gui=args.gui,
+    )
+
+    try:
+        trainer.run()
+    except Exception as e:
+        print(f"[SWEEP ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    finally:
+        if wandb.run:
+            wandb.finish()
+
 
 if __name__ == "__main__":
     main()
