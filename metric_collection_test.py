@@ -339,6 +339,11 @@ def run_pca_analysis(output_dir):
     def draw_biplot(ax, show_legend=True, fontsize_labels=7, fontsize_legend=7):
         # Flow szintenkénti 2σ konfidencia-ellipszis (scatter felhő helyett!)
         from matplotlib.patches import Ellipse
+
+        # Ellipszis szélességek/pozíciók gyűjtése a tengely-limithez
+        all_extents_x = [0.0]
+        all_extents_y = [0.0]
+
         for fl in unique_flows:
             fl_mask = flow_levels == fl
             pc1_fl = pca_result[fl_mask, 0]
@@ -350,6 +355,12 @@ def run_pca_analysis(output_dir):
             eigenvalues, eigenvectors = np.linalg.eigh(cov)
             angle = np.degrees(np.arctan2(eigenvectors[1, 1], eigenvectors[0, 1]))
             width, height = 2 * 2.0 * np.sqrt(eigenvalues)  # 2σ ellipszis
+
+            # Ellipszis bounding box (konzervatív: félátlók összeadása)
+            half_diag = max(width, height) / 2.0
+            all_extents_x.extend([mean_x - half_diag, mean_x + half_diag])
+            all_extents_y.extend([mean_y - half_diag, mean_y + half_diag])
+
             ell = Ellipse(xy=(mean_x, mean_y), width=width, height=height, angle=angle,
                           facecolor=flow_color_map[fl], edgecolor=flow_color_map[fl],
                           alpha=0.15, lw=1.5, linestyle='-', zorder=1)
@@ -395,16 +406,20 @@ def run_pca_analysis(output_dir):
                         ha='center', va='center', zorder=11,
                         bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='gray', alpha=0.9, lw=0.5),
                         arrowprops=dict(arrowstyle='-', color='gray', lw=0.5, alpha=0.6))
+            # Label pozícióját is hozzávesszük a tengely-limithez
+            all_extents_x.extend([tx - 1.5, tx + 1.5])  # ~label szélesség margó
+            all_extents_y.extend([ty - 0.8, ty + 0.8])
 
         ax.set_xlabel(f'PC1 ({explained_var[0]:.1f}%) — Congestion', fontsize=10)
         ax.set_ylabel(f'PC2 ({explained_var[1]:.1f}%) — Travel Time', fontsize=10)
         ax.axhline(0, color='black', lw=0.4, ls='--', alpha=0.5)
         ax.axvline(0, color='black', lw=0.4, ls='--', alpha=0.5)
-        # Auto-range az adatok alapján
-        margin = 1.2
-        max_range = np.max(np.abs(pca_result[:, :2])) * margin
-        ax.set_xlim(-max_range, max_range)
-        ax.set_ylim(-max_range, max_range)
+
+        # Tengely-limit: a tényleges tartalom (ellipszisek + labelek) alapján
+        pad = 1.5
+        ax.set_xlim(min(all_extents_x) - pad, max(all_extents_x) + pad)
+        ax.set_ylim(min(all_extents_y) - pad, max(all_extents_y) + pad)
+
         if show_legend:
             ax.legend(fontsize=fontsize_legend, loc='upper right', markerscale=2.5,
                       framealpha=0.95, title='Flow max', title_fontsize=fontsize_legend)
