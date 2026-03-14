@@ -167,35 +167,102 @@ class IndependentDQNTrainer:
             if self.load_model_path and os.path.exists(self.load_model_path):
                 self.log(f"Loading pre-trained model from {self.load_model_path} for agent {jid}...")
                 try:
-                    # SB3 load method. Note: .zip usually contains the whole model.
-                    # If we have a single model file for ALL agents (unlikely for independent DQN unless shared),
-                    # we assume the zip file is the model for THIS agent or the user passes a specific file.
-                    # However, typical SB3 export is one zip per model.
-                    # If the user provides a single zip, we try to load it. 
-                    
-                    # Custom_objects needed if python versions differ slightly or custom classes used
-                    self.agents[jid] = QRDQN.load(
-                        self.load_model_path,
-                        env=model_env,
-                        print_system_info=True,
-                        force_reset=False, # Don't reset replay buffer if we were continuing (but here we are starting new env)
-                        custom_objects=None,
-                        device="auto"
-                    )
-                    
-                    # Update parameters that might want to be overridden for fine-tuning
-                    self.agents[jid].learning_rate = lr
-                    self.agents[jid].buffer_size = buf
-                    self.agents[jid].batch_size = bs
-                    self.agents[jid].gamma = gamma
-                    self.agents[jid].exploration_fraction = expl_fraction
-                    self.agents[jid].verbose = 0
-                    self.agents[jid].tensorboard_log = tb_log
-                    
-                    self.log(f"Model loaded successfully for {jid}.")
-                    
+                    if self.load_model_path.endswith('.onnx') or self.load_model_path.endswith('.onnx.zip'):
+                        self.log(f"Detected ONNX file or ONNX.ZIP archive. Performing manual PyTorch weight injection...")
+                        
+                        actual_onnx_path = self.load_model_path
+                        if self.load_model_path.endswith('.zip'):
+                            import zipfile
+                            import tempfile
+                            temp_dir = tempfile.mkdtemp()
+                            with zipfile.ZipFile(self.load_model_path, 'r') as z:
+                                z.extractall(temp_dir)
+                                # Find first .onnx file
+                                onnx_files = [f for f in os.listdir(temp_dir) if f.endswith('.onnx')]
+                                if onnx_files:
+                                    actual_onnx_path = os.path.join(temp_dir, onnx_files[0])
+                                else:
+                                    raise ValueError("No .onnx file found inside the provided zip archive.")
+                                    
+                        # 1. Initialize fresh PyTorch QRDQN model
+                        self.agents[jid] = QRDQN(
+                            "MultiInputPolicy",
+                            env=model_env,
+                            learning_rate=lr,
+                            buffer_size=buf,
+                            batch_size=bs,
+                            gamma=gamma,
+                            exploration_fraction=expl_fraction,
+                            verbose=0,
+                            tensorboard_log=tb_log,
+                            device="cpu", # Force CPU for reliable loading
+                            policy_kwargs=dict(net_arch=[layer_size] * num_layers)
+                        )
+                        
+                        # 2. Extract weights from ONNX and inject
+                        import onnx
+                        from onnx import numpy_helper
+                        import torch
+                        model_proto = onnx.load(actual_onnx_path, load_external_data=False)
+                        try:
+                            onnx_weights = []
+                            for init in model_proto.graph.initializer:
+                                onnx_weights.append(numpy_helper.to_array(init))
+                        except Exception as e:
+                            self.log(f"CRITICAL ERROR: Could not extract weights from ONNX.")
+                            self.log(f"If you exported a 'fused' model, PyTorch may have saved the weights into a separate '.onnx.data' file!")
+                            self.log(f"Please use a standard non-fused ONNX model, or the original '.zip' PyTorch model for fine-tuning.")
+                            raise ValueError(f"Missing ONNX external data: {e}")
+                            
+                        target_sd = self.agents[jid].policy.state_dict()
+                        target_keys = [k for k in target_sd.keys() if "weight" in k or "bias" in k]
+                        used_idx = set()
+                        
+                        for k in target_keys:
+                            target_param = target_sd[k]
+                            t_shape = tuple(target_param.shape)
+                            for i, w in enumerate(onnx_weights):
+                                if i in used_idx: continue
+                                w_shape = tuple(w.shape)
+                                if w_shape == t_shape:
+                                    with torch.no_grad(): target_param.copy_(torch.from_numpy(w))
+                                    used_idx.add(i)
+                                    break
+                                elif len(w_shape) == 2 and len(t_shape) == 2 and w_shape[::-1] == t_shape:
+                                    with torch.no_grad(): target_param.copy_(torch.from_numpy(w.T))
+                                    used_idx.add(i)
+                                    break
+                                    
+                        # Switch back to optimal device
+                        self.agents[jid] = self.agents[jid].to("auto")
+                        self.log(f"ONNX Model weights injected successfully into SB3 PyTorch graph for {jid}.")
+                        
+                    else:
+                        # SB3 load method for native .zip files
+                        self.agents[jid] = QRDQN.load(
+                            self.load_model_path,
+                            env=model_env,
+                            print_system_info=True,
+                            force_reset=False,
+                            custom_objects=None,
+                            device="auto"
+                        )
+                        
+                        # Update parameters for fine-tuning
+                        self.agents[jid].learning_rate = lr
+                        self.agents[jid].buffer_size = buf
+                        self.agents[jid].batch_size = bs
+                        self.agents[jid].gamma = gamma
+                        self.agents[jid].exploration_fraction = expl_fraction
+                        self.agents[jid].verbose = 0
+                        self.agents[jid].tensorboard_log = tb_log
+                        
+                        self.log(f"PyTorch Model loaded successfully from {self.load_model_path}.")
+                        
                 except Exception as e:
-                    self.log(f"FAILED to load model for {jid}: {e}. Falling back to clean initialization.")
+                    import traceback
+                    self.log(f"FAILED to load model for {jid}: {e}\n{traceback.format_exc()}")
+                    self.log("Falling back to clean initialization.")
                     # Fallback to copy-paste of initialization below
                     self.agents[jid] = QRDQN(
                         "MultiInputPolicy",
@@ -305,8 +372,8 @@ class IndependentDQNTrainer:
 
                     self.reward_smoothing[jid] = 0.95 * self.reward_smoothing[jid] + 0.05 * rewards[jid]
 
-                    if global_step > 100 and global_step % 4 == 0:
-                        model.train(gradient_steps=1, batch_size=bs)
+                    if global_step > 100:
+                        model.train(gradient_steps=2, batch_size=bs)
                     
                     model.num_timesteps += 1
 
@@ -340,6 +407,16 @@ class IndependentDQNTrainer:
                             log_dict["avg_reward"] = avg_reward
 
                         wandb.log(log_dict, commit=True)
+                        
+                # --- CHECKPOINTS ---
+                if global_step in [10000, 25000, 50000, 75000, 100000]:
+                    try:
+                        self.log(f"--- Saving CHECKPOINT at {global_step} steps ---")
+                        # Kimentjük a modellt "_10k", "_25k" stb. suffixszel
+                        self.save_pytorch_models(runs_dir, step_suffix=f"{global_step//1000}k")
+                        self.export_onnx_models(runs_dir, step_suffix=f"{global_step//1000}k")
+                    except Exception as e:
+                        self.log(f"Failed to save checkpoint at {global_step} steps: {e}")
 
                 if global_done:
                     obs, _ = self.env.reset()
@@ -358,6 +435,7 @@ class IndependentDQNTrainer:
             
             # Először exportálunk
             try:
+                self.save_pytorch_models(runs_dir)
                 self.export_onnx_models(runs_dir)
             except Exception as e:
                 self.log(f"Final export failed: {e}")
@@ -371,7 +449,28 @@ class IndependentDQNTrainer:
             
             self.log("Cleanup done.")
 
-    def export_onnx_models(self, runs_dir):
+    def save_pytorch_models(self, runs_dir, step_suffix=""):
+        """Mentés a natív SB3 .zip formátumba Transfer Learning-hez!"""
+        if not HAS_RL_LIBS: return
+        
+        export_dir = os.path.join(runs_dir, "pytorch_models")
+        os.makedirs(export_dir, exist_ok=True)
+        self.log(f"Saving PyTorch ZIP models to {export_dir}...")
+        
+        suffix_str = f"_{step_suffix}" if step_suffix else ""
+        
+        for jid, model in self.agents.items():
+            try:
+                zip_path = os.path.join(export_dir, f"{jid}{suffix_str}.zip")
+                model.save(zip_path)
+                self.log(f"Saved PyTorch {jid} to {zip_path}")
+                
+                if wandb.run:
+                    wandb.save(zip_path, base_path=runs_dir)
+            except Exception as e:
+                self.log(f"Failed to save PyTorch zip for {jid}: {e}")
+
+    def export_onnx_models(self, runs_dir, step_suffix=""):
         """Export models to ONNX format."""
         if not HAS_RL_LIBS: return
 
@@ -379,6 +478,8 @@ class IndependentDQNTrainer:
         export_dir = os.path.join(runs_dir, "onnx_models")
         os.makedirs(export_dir, exist_ok=True)
         self.log(f"Exporting ONNX models to {export_dir}...")
+
+        suffix_str = f"_{step_suffix}" if step_suffix else ""
 
         for jid, model in self.agents.items():
             try:
@@ -395,7 +496,7 @@ class IndependentDQNTrainer:
                 policy.set_training_mode(False) # Ensure eval mode for export
 
                 # 3. Export
-                onnx_path = os.path.join(export_dir, f"{jid}_model.onnx")
+                onnx_path = os.path.join(export_dir, f"{jid}{suffix_str}.onnx")
                 
                 # QRDQN policy forward pass expects 'obs'
                 # We trace the 'predict' method or the policy forward
@@ -438,6 +539,8 @@ class IndependentDQNTrainer:
                         wrapper,
                         inputs,
                         onnx_path,
+                        export_params=True,
+                        keep_initializers_as_inputs=False,
                         opset_version=18,
                         input_names=["flow", "occupancy", "phase"],
                         output_names=["action_logits"],
@@ -455,6 +558,8 @@ class IndependentDQNTrainer:
                         policy,
                         dummy_input,
                         onnx_path,
+                        export_params=True,
+                        keep_initializers_as_inputs=False,
                         opset_version=18,
                         input_names=["input"],
                         output_names=["output"]
@@ -472,7 +577,7 @@ class IndependentDQNTrainer:
                 # --- FUSED EXPORT (Optimized for Inference) ---
                 if isinstance(model, QRDQN):
                     try:
-                        fused_onnx_path = os.path.join(export_dir, f"{jid}_model_fused.onnx")
+                        fused_onnx_path = os.path.join(export_dir, f"{jid}{suffix_str}_fused.onnx")
                         n_quantiles = model.policy.n_quantiles
                         self.log(f"Creating FUSED model for {jid} (collapsing {n_quantiles} quantiles)...")
 
@@ -536,6 +641,8 @@ class IndependentDQNTrainer:
                             fused_model,
                             inputs,
                             fused_onnx_path,
+                            export_params=True,
+                            keep_initializers_as_inputs=False,
                             opset_version=18,
                             input_names=["flow", "occupancy", "phase"],
                             output_names=["action_logits"], # Same output name, but now it is size [Batch, Actions] directly!

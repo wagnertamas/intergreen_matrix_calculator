@@ -125,17 +125,20 @@ class SumoRLEnvironment(gym.Env):
 
         # 1. Random forgalom generálás
         if self.random_traffic:
-            if options and 'traffic_period' in options:
-                dynamic_period = options['traffic_period']
-            else:
-                # JAVÍTÁS: A 0.001-0.01 nagyon sűrű (100-1000 jármű/mp)!
-                # Életszerűbb tartomány: 0.8 - 3.0 (kb. 1200 - 4500 jármű/óra)
-                dynamic_period = round(random.uniform(0.8, 3.0), 4)
+            # flow_range opcionálisan felülírható az options-ből
+            flow_range = (100, 900)
+            if options and 'flow_range' in options:
+                flow_range = options['flow_range']
 
             if self.single_agent_id:
+                # Focused traffic: period-alapú, ha explicit kérés van
+                if options and 'traffic_period' in options:
+                    dynamic_period = options['traffic_period']
+                else:
+                    dynamic_period = round(random.uniform(4.0, 8.0), 4)
                 self.generate_focused_traffic(period=dynamic_period)
             else:
-                self.generate_random_traffic(period=dynamic_period)
+                self.generate_random_traffic(flow_range=flow_range)
 
         # 2. SUMO parancs összeállítása
         sumo_bin = "sumo-gui" if self.sumo_gui else "sumo"
@@ -210,36 +213,85 @@ class SumoRLEnvironment(gym.Env):
 
         return observations, infos
 
-    def generate_random_traffic(self, period):
-        print(f"\n[DEBUG] 🚗 Random Forgalom Generálása | Period: {period} (s/jármű) | Becsült sűrűség: {int(1/period)} jármű/mp")
-        
-        if 'SUMO_HOME' in os.environ:
-            tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
-            sys.path.append(tools)
-        else:
-            try:
-                import sumolib
-                tools = os.path.join(os.path.dirname(sumolib.__file__), '..', '..', 'tools')
-            except:
-                return 
+    def generate_random_traffic(self, period=None, flow_range=(100, 900)):
+        """
+        Lane-szintű forgalom generálás: minden bejövő lane-re külön-külön
+        generál járműveket a flow_range tartományban (jármű/óra).
 
-        random_trips_script = os.path.join(tools, "randomTrips.py")
-        cmd = [
-            sys.executable, random_trips_script,
-            "-n", self.net_file,
-            "-o", self.route_file,
-            "-e", str(self.traffic_duration),
-            "-p", str(period),
-            "--fringe-factor", "10",
-            "--validate",
-            "--min-distance", "50",
-            "--duarouter-routing-algorithm", "CH",
-            "--duarouter-routing-threads", "4",
-        ]
+        Sumolib-bal meghatározza az összes bejövő lane-t a vezérelt
+        junction-ökhöz, és mindegyikre véletlenszerű forgalmat ír.
+        A célpont az adott lane-ről elérhető kimenő edge-ek közül
+        véletlenszerűen választott, departLane-nel rögzítve a sávot.
+        """
+        import sumolib
+
         try:
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError as e:
-            print(f"HIBA a randomTrips-nél: {e}")
+            net = sumolib.net.readNet(self.net_file)
+        except Exception as e:
+            print(f"[ERROR] Nem sikerult beolvasni a halozatot: {e}")
+            return
+
+        # 1. Összegyűjtjük az összes bejövő lane-t és a célpontjaikat
+        #    lane_routes: {lane_id: (edge_id, lane_index, [to_edge_id, ...])}
+        lane_routes = {}
+
+        for jid in self.junction_ids:
+            node = net.getNode(jid)
+            if node is None:
+                continue
+            for inc_edge in node.getIncoming():
+                eid = inc_edge.getID()
+                if eid.startswith(':'):
+                    continue
+                for lane in inc_edge.getLanes():
+                    lane_id = lane.getID()
+                    lane_idx = lane.getIndex()
+                    targets = set()
+                    for conn in lane.getOutgoing():
+                        to_lane = conn.getToLane()
+                        to_edge = to_lane.getEdge()
+                        to_eid = to_edge.getID()
+                        if not to_eid.startswith(':'):
+                            targets.add(to_eid)
+                    if targets:
+                        lane_routes[lane_id] = (eid, lane_idx, list(targets))
+
+        # 2. Járművek generálása lane-enként
+        all_trips = []
+        min_flow, max_flow = flow_range
+        total_vehicles = 0
+
+        for lane_id, (edge_id, lane_idx, to_edges) in lane_routes.items():
+            flow_per_hour = random.randint(min_flow, max_flow)
+            num_vehicles = int(flow_per_hour * (self.traffic_duration / 3600.0))
+
+            if num_vehicles <= 0:
+                continue
+
+            total_vehicles += num_vehicles
+
+            avg_gap = self.traffic_duration / num_vehicles
+            for i in range(num_vehicles):
+                depart = i * avg_gap + random.uniform(0, avg_gap * 0.5)
+                depart = min(depart, self.traffic_duration - 1.0)
+                to_edge = random.choice(to_edges)
+                all_trips.append((depart, edge_id, lane_idx, to_edge))
+
+        # 3. Rendezés indulási idő szerint és kiírás
+        all_trips.sort(key=lambda x: x[0])
+
+        with open(self.route_file, 'w') as f:
+            f.write('<routes>\n')
+            f.write('    <vType id="car" accel="0.8" decel="4.5" sigma="0.5" '
+                    'length="5" minGap="2.5" maxSpeed="16.67" guiShape="passenger"/>\n')
+            for idx, (depart, from_e, lane_idx, to_e) in enumerate(all_trips):
+                f.write(f'    <trip id="veh_{idx}" type="car" depart="{depart:.2f}" '
+                        f'from="{from_e}" to="{to_e}" departLane="{lane_idx}" />\n')
+            f.write('</routes>\n')
+
+        print(f"[INFO] Lane-szintu forgalom generalas kesz | "
+              f"{len(lane_routes)} lane | {total_vehicles} jarmu | "
+              f"Tartomany: {min_flow}-{max_flow}/h lane-enkent")
 
     def generate_focused_traffic(self, period):
         print(f"\n[DEBUG] 🎯 Célzott Forgalom Generálása ({self.single_agent_id}) | Period: {period}")
@@ -418,16 +470,28 @@ class SumoRLEnvironment(gym.Env):
             avg_travel_time = agent.get_avg_travel_time_metric()
             total_co2 = agent.get_total_co2_metric()
 
-            z_time = (np.log(avg_travel_time + 1e-5) - MU_TIME) / (STD_TIME + 1e-9)
-            z_co2  = (np.log(total_co2 + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
+            if avg_travel_time == 0.0 and total_co2 == 0.0:
+                # Üres kereszteződés: sem mért forgalom, sem CO2 → semleges reward (0.0)
+                # Ne adj max (2.0) score-t, mert az ágens nem csinált semmi jót/rosszat
+                rewards[jid] = 0.0
+                z_time = float('nan')  # nincs értelmes z_time
+            else:
+                z_time = (np.log(avg_travel_time + 1e-5) - MU_TIME) / (STD_TIME + 1e-9)
+                z_co2  = (np.log(total_co2 + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
+                
+                score_time = 1 / (1 + np.exp(-z_time))
+                score_co2  = 1 / (1 + np.exp(-z_co2))
+                
+                r_time = 1.0 - score_time
+                r_co2  = 1.0 - score_co2
+                
+                rewards[jid] = w_time * r_time + w_co2 * r_co2
             
-            score_time = 1 / (1 + np.exp(-z_time))
-            score_co2  = 1 / (1 + np.exp(-z_co2))
-            
-            r_time = 1.0 - score_time
-            r_co2  = 1.0 - score_co2
-            
-            rewards[jid] = w_time * r_time + w_co2 * r_co2
+            # [DEBUG LOG] Csak egy agenthez nyomtatunk, hogy ne spammeljük tele a terminált
+            # Mivel nincs env_step, a traci.simulation.getTime() modulosával írunk ki
+            if jid == 'R1C1_C' and int(traci.simulation.getTime()) % 10 == 0:
+                print(f"[REWARD DEBUG {jid}] step avg_tts: {avg_travel_time:.2f} | z_time: {z_time:.2f} | score_time: {score_time:.4f} | Final R: {rewards[jid]:.4f}")
+
             
             infos[jid] = {
                 "ready": agent.is_ready_for_action(),
@@ -480,6 +544,7 @@ class TrafficAgent:
         self.transition_step_timer = 0
         self.min_green_timer = 0
         self.current_sumo_state = "??????"
+        self.phase_timer = 0  # Hány lépése tart már az aktuális fázis
 
     def setup_spaces(self):
         num_detectors = len(self.detectors)
@@ -490,6 +555,7 @@ class TrafficAgent:
         self.action_space = spaces.Discrete(self.num_phases)
         self.observation_space = spaces.Dict({
             "phase": spaces.Box(low=0, high=self.num_phases-1, shape=(1,), dtype=np.int32),
+            "phase_timer": spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
             "occupancy": spaces.Box(low=0, high=1, shape=(num_detectors,), dtype=np.float32),
             "flow": spaces.Box(low=0, high=np.inf, shape=(num_detectors,), dtype=np.float32)
         })
@@ -500,6 +566,7 @@ class TrafficAgent:
         self.det_accumulated_occ = {d: 0.0 for d in self.detectors}
         self.accumulated_travel_time = 0.0
         self.accumulated_co2 = 0.0
+        self.accumulated_veh_count = 0
 
     def is_ready_for_action(self):
         return (not self.is_transitioning) and (self.min_green_timer <= 0)
@@ -522,7 +589,6 @@ class TrafficAgent:
                         try:
                             traci.trafficlight.setRedYellowGreenState(self.jid, p['state'])
                         except Exception as e:
-                            # Ha itt hiba van, az valószínűleg fázis mismatch, de a reset-nél már javítottuk.
                             print(f"Error setting TLS state for {self.jid}: {e}")
                         self.transition_step_timer = max(0, int(p['duration']) - 1)
                     self.transition_cursor += 1
@@ -531,15 +597,18 @@ class TrafficAgent:
                     self.current_logic_idx = self.next_logic_idx_cache
                     self._apply_current_phase()
                     self.min_green_timer = self.min_green_const
+                    self.phase_timer = 0  # Fázisváltáskor reset
         else:
             if self.min_green_timer > 0:
                 self.min_green_timer -= 1
                 self._apply_current_phase()
+                self.phase_timer += 1
             else:
                 if self.target_logic_idx != self.current_logic_idx:
                     self._start_transition(self.target_logic_idx)
                 else:
                     self._apply_current_phase()
+                    self.phase_timer += 1
 
     def _apply_current_phase(self):
         if self.current_logic_idx in self.logic_phases:
@@ -568,11 +637,21 @@ class TrafficAgent:
             
         step_tt = 0.0
         step_co2 = 0.0
+        step_veh_count = 0
+        valid_tt_lanes = 0
+        MAX_REALISTIC_TT = 1000  # Egy ~90m savon max ~1000s realis (extrem dugo)
         for lane in self.incoming_lanes:
-            step_tt += traci.lane.getTraveltime(lane)
+            tt = traci.lane.getTraveltime(lane)
+            if 0 < tt < MAX_REALISTIC_TT:  # Csak valodi, mert ertekeket akkumulalunk
+                step_tt += tt
+                valid_tt_lanes += 1
             step_co2 += traci.lane.getCO2Emission(lane)
-        self.accumulated_travel_time += step_tt
+            step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+        # Ha csak sentinel értékek jöttek, ne adjunk hozzá semmit
+        if valid_tt_lanes > 0:
+            self.accumulated_travel_time += step_tt
         self.accumulated_co2 += step_co2
+        self.accumulated_veh_count += step_veh_count
 
     def get_observation(self):
         num_dets = len(self.detectors)
@@ -580,6 +659,7 @@ class TrafficAgent:
              # Fallback ha nincs detektor
              return {
                 "phase": np.array([self.current_logic_idx], dtype=np.int32),
+                "phase_timer": np.array([0.0], dtype=np.float32),
                 "occupancy": np.zeros(1, dtype=np.float32),
                 "flow": np.zeros(1, dtype=np.float32)
              }
@@ -591,8 +671,13 @@ class TrafficAgent:
                 occ[i] = (self.det_accumulated_occ[det] / self.steps_measured) / 100.0
                 flow[i] = (self.det_accumulated_flow[det] / self.steps_measured)
         
+        # phase_timer normalizálva [0, 1] tartományba
+        # 120 lépés (600 mp delta_time=5 esetén) a max referencia
+        normalized_timer = min(self.phase_timer / 120.0, 1.0)
+        
         return {
             "phase": np.array([self.current_logic_idx], dtype=np.int32),
+            "phase_timer": np.array([normalized_timer], dtype=np.float32),
             "occupancy": occ,
             "flow": flow
         }
