@@ -35,6 +35,9 @@ services:
           cpus: '2.0'
           memory: 2G
 
-    # Default: headless training
-    # Sweep mode-ban a start.sh felülírja a command-ot
-    command: python main_headless.py --config training_config.yaml
+    # NE induljon automatikusan — a start.sh vagy "docker-compose run" adja meg
+    # Használat:
+    #   Interaktív:  ./start.sh  →  válaszd a "Docker" platformot
+    #   Kézi:        docker-compose run --rm sumo-trainer python main_headless.py --config training_config.yaml --timesteps 50000 --project my-project
+    #   Sweep:       docker-compose run --rm sumo-trainer wandb agent SWEEP_ID
+    command: ["echo", "Használd: ./start.sh vagy docker-compose run --rm sumo-trainer <parancs>"]

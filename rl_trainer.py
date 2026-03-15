@@ -362,6 +362,8 @@ class IndependentDQNTrainer:
         # =========================================================================
         self.log(f"Starting Training Loop (Gamma={gamma}, Expl_Fraction={expl_fraction})...")
         global_step = 0
+        episode_count = 0
+        episode_step = 0
         start_time = time.time()
         
         try: # <--- KEZDŐDIK A BIZTONSÁGI BLOKK
@@ -404,7 +406,8 @@ class IndependentDQNTrainer:
                     model.num_timesteps += 1
 
                 obs = next_obs
-                
+                episode_step += 1
+
                 # --- LOGGING ---
                 if global_step % 100 == 0:
                     elapsed = time.time() - start_time
@@ -445,6 +448,25 @@ class IndependentDQNTrainer:
                         self.log(f"Failed to save checkpoint at {global_step} steps: {e}")
 
                 if global_done:
+                    episode_count += 1
+                    elapsed = time.time() - start_time
+                    avg_r = sum(self.reward_smoothing.values()) / max(len(self.reward_smoothing), 1)
+                    eps_rate = self.agents[agent_ids[0]].exploration_rate if agent_ids else 0
+                    self.log(
+                        f"Episode {episode_count} done | "
+                        f"steps={episode_step} | "
+                        f"total={global_step}/{self.total_timesteps} | "
+                        f"avg_reward={avg_r:.4f} | "
+                        f"epsilon={eps_rate:.3f} | "
+                        f"elapsed={elapsed:.0f}s"
+                    )
+                    if wandb.run:
+                        wandb.log({
+                            "episode": episode_count,
+                            "episode_length": episode_step,
+                            "episode/avg_reward": avg_r,
+                        }, commit=False)
+                    episode_step = 0
                     obs, _ = self.env.reset()
 
         except KeyboardInterrupt:
