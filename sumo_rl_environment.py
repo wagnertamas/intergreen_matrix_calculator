@@ -10,34 +10,16 @@ import random
 # Global traci placeholder
 traci = None
 
-# TraCI subscription constants (imported lazily after traci is loaded)
-_TC_LOADED = False
-TC_LAST_STEP_VEHICLE_NUMBER = None
-TC_LAST_STEP_OCCUPANCY = None
-TC_VAR_WAITING_TIME = None
-TC_VAR_CO2EMISSION = None
-TC_LAST_STEP_VEHICLE_NUMBER_LANE = None
-TC_VAR_CURRENT_TRAVELTIME = None
-
-def _load_tc_constants():
-    """Load TraCI constants after traci/libsumo is imported."""
-    global _TC_LOADED
-    global TC_LAST_STEP_VEHICLE_NUMBER, TC_LAST_STEP_OCCUPANCY
-    global TC_VAR_WAITING_TIME, TC_VAR_CO2EMISSION
-    global TC_LAST_STEP_VEHICLE_NUMBER_LANE, TC_VAR_CURRENT_TRAVELTIME
-    if _TC_LOADED:
-        return
-    try:
-        import traci.constants as tc
-        TC_LAST_STEP_VEHICLE_NUMBER = tc.LAST_STEP_VEHICLE_NUMBER
-        TC_LAST_STEP_OCCUPANCY = tc.LAST_STEP_OCCUPANCY
-        TC_VAR_WAITING_TIME = tc.VAR_WAITING_TIME
-        TC_VAR_CO2EMISSION = tc.VAR_CO2EMISSION
-        TC_LAST_STEP_VEHICLE_NUMBER_LANE = tc.LAST_STEP_VEHICLE_NUMBER
-        TC_VAR_CURRENT_TRAVELTIME = tc.VAR_CURRENT_TRAVELTIME
-        _TC_LOADED = True
-    except ImportError:
-        pass
+# TraCI subscription constants
+# Hardcoded SUMO constant values — ezek stabilak minden SUMO verzióban,
+# és libsumo-val is működnek (ahol `import traci.constants` nem elérhető).
+# Forrás: https://sumo.dlr.de/docs/TraCI/Vehicle_Value_Retrieval.html
+_TC_LOADED = True  # Mindig elérhető, mert hardcoded
+TC_LAST_STEP_VEHICLE_NUMBER = 0x10    # tc.LAST_STEP_VEHICLE_NUMBER
+TC_LAST_STEP_OCCUPANCY      = 0x13    # tc.LAST_STEP_OCCUPANCY
+TC_VAR_WAITING_TIME          = 0x7a   # tc.VAR_WAITING_TIME
+TC_VAR_CO2EMISSION           = 0x60   # tc.VAR_CO2EMISSION
+TC_VAR_CURRENT_TRAVELTIME    = 0x5a   # tc.VAR_CURRENT_TRAVELTIME
 
 class SumoRLEnvironment(gym.Env):
     """
@@ -482,10 +464,6 @@ class SumoRLEnvironment(gym.Env):
 
     def _setup_subscriptions(self):
         """Subscribe to detector and lane metrics for batch retrieval."""
-        _load_tc_constants()
-        if not _TC_LOADED:
-            print("[WARNING] TraCI constants not available, falling back to individual calls")
-            return
 
         # Subscribe to induction loop metrics
         for agent in self.agents.values():
@@ -737,26 +715,21 @@ class TrafficAgent:
     def collect_measurements(self):
         self.steps_measured += 1
 
-        # --- Detektorok: subscription results (1 hívás/detektor helyett 0 — már benne van) ---
-        if _TC_LOADED:
-            for det_id in self.detectors:
-                try:
-                    res = traci.inductionloop.getSubscriptionResults(det_id)
-                    if res:
-                        self.det_accumulated_flow[det_id] += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
-                        self.det_accumulated_occ[det_id] += res.get(TC_LAST_STEP_OCCUPANCY, 0.0)
-                        continue
-                except Exception:
-                    pass
-                # Fallback: individual calls
-                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
-                self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
-        else:
-            for det_id in self.detectors:
-                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
-                self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
+        # --- Detektorok: subscription-ből (simulationStep automatikusan frissíti) ---
+        for det_id in self.detectors:
+            try:
+                res = traci.inductionloop.getSubscriptionResults(det_id)
+                if res:
+                    self.det_accumulated_flow[det_id] += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                    self.det_accumulated_occ[det_id] += res.get(TC_LAST_STEP_OCCUPANCY, 0.0)
+                    continue
+            except Exception:
+                pass
+            # Fallback: individual calls (ha subscription nem sikerült)
+            self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
+            self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
 
-        # --- Lane metrikák: subscription results ---
+        # --- Lane metrikák: subscription-ből ---
         step_tt = 0.0
         step_waiting = 0.0
         step_co2 = 0.0
@@ -764,38 +737,28 @@ class TrafficAgent:
         valid_tt_lanes = 0
         MAX_REALISTIC_TT = 1000
 
-        if _TC_LOADED:
-            for lane in self.incoming_lanes:
-                try:
-                    res = traci.lane.getSubscriptionResults(lane)
-                    if res:
-                        tt = res.get(TC_VAR_CURRENT_TRAVELTIME, 0.0)
-                        if 0 < tt < MAX_REALISTIC_TT:
-                            step_tt += tt
-                            valid_tt_lanes += 1
-                        step_waiting += res.get(TC_VAR_WAITING_TIME, 0.0)
-                        step_co2 += res.get(TC_VAR_CO2EMISSION, 0.0)
-                        step_veh_count += res.get(TC_LAST_STEP_VEHICLE_NUMBER_LANE, 0)
-                        continue
-                except Exception:
-                    pass
-                # Fallback
-                tt = traci.lane.getTraveltime(lane)
-                if 0 < tt < MAX_REALISTIC_TT:
-                    step_tt += tt
-                    valid_tt_lanes += 1
-                step_waiting += traci.lane.getWaitingTime(lane)
-                step_co2 += traci.lane.getCO2Emission(lane)
-                step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
-        else:
-            for lane in self.incoming_lanes:
-                tt = traci.lane.getTraveltime(lane)
-                if 0 < tt < MAX_REALISTIC_TT:
-                    step_tt += tt
-                    valid_tt_lanes += 1
-                step_waiting += traci.lane.getWaitingTime(lane)
-                step_co2 += traci.lane.getCO2Emission(lane)
-                step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+        for lane in self.incoming_lanes:
+            try:
+                res = traci.lane.getSubscriptionResults(lane)
+                if res:
+                    tt = res.get(TC_VAR_CURRENT_TRAVELTIME, 0.0)
+                    if 0 < tt < MAX_REALISTIC_TT:
+                        step_tt += tt
+                        valid_tt_lanes += 1
+                    step_waiting += res.get(TC_VAR_WAITING_TIME, 0.0)
+                    step_co2 += res.get(TC_VAR_CO2EMISSION, 0.0)
+                    step_veh_count += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                    continue
+            except Exception:
+                pass
+            # Fallback
+            tt = traci.lane.getTraveltime(lane)
+            if 0 < tt < MAX_REALISTIC_TT:
+                step_tt += tt
+                valid_tt_lanes += 1
+            step_waiting += traci.lane.getWaitingTime(lane)
+            step_co2 += traci.lane.getCO2Emission(lane)
+            step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
 
         if valid_tt_lanes > 0:
             self.accumulated_travel_time += step_tt
