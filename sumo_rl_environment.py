@@ -172,11 +172,6 @@ class SumoRLEnvironment(gym.Env):
 
         # 1. Random forgalom generálás
         if self.random_traffic:
-            # flow_range: constructor default, felülírható options-ből
-            flow_range = self.flow_range
-            if options and 'flow_range' in options:
-                flow_range = options['flow_range']
-
             if self.single_agent_id:
                 # Focused traffic: period-alapú, ha explicit kérés van
                 if options and 'traffic_period' in options:
@@ -185,6 +180,19 @@ class SumoRLEnvironment(gym.Env):
                     dynamic_period = round(random.uniform(4.0, 8.0), 4)
                 self.generate_focused_traffic(period=dynamic_period)
             else:
+                # Epizód-szintű forgalmi target + spread randomizálás
+                # A target az összforgalom nagyságrendjét adja meg,
+                # a spread az irányok közötti aszimmetriát.
+                if options and 'flow_range' in options:
+                    flow_range = options['flow_range']
+                else:
+                    FLOW_TARGETS = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                    FLOW_SPREADS = [50, 100, 150, 200, 250, 300]
+                    target = random.choice(FLOW_TARGETS)
+                    spread = random.choice(FLOW_SPREADS)
+                    flow_range = (max(50, target - spread), min(1100, target + spread))
+                    print(f"[INFO] Traffic: target={target}, spread=±{spread} "
+                          f"→ flow_range={flow_range}")
                 self.generate_random_traffic(flow_range=flow_range)
 
         # 2. SUMO parancs összeállítása

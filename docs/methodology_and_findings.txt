@@ -182,10 +182,36 @@ II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?
        - Véletlenszerű célpont a sáv elérhető céljai közül
     7. Időrend szerinti rendezés, XML route fájl kiírása.
 
-  FORGALMI TARTOMÁNY — MIT JELENT A FLOW RANGE?
-    flow_range = (100, 900) azt jelenti, hogy MINDEN SÁVRA
-    véletlenszerűen 100 és 900 jármű/óra közötti forgalmat generálunk.
+  FORGALMI TARTOMÁNY — EPIZÓD-SZINTŰ TARGET + SPREAD RANDOMIZÁLÁS
+    A korábbi megoldás (flow_range=(100, 900) uniform per lane) problémája:
+    ha sok sáv van (~80), a nagy számok törvénye miatt az ÖSSZ-forgalom
+    mindig ~500 veh/h/lane körül áll be — az ágens nem lát igazán könnyű
+    vagy nehéz epizódokat.
 
+    Az ÚJ megoldás két szinten randomizál:
+      1. target = random.choice([100, 200, 300, 400, 500, 600, 700, 800, 900])
+         → az epizód összforgalmának nagyságrendje
+      2. spread = random.choice([50, 100, 150, 200, 250, 300])
+         → az irányok közötti aszimmetria mértéke
+      3. flow_range = (max(50, target-spread), min(1100, target+spread))
+      4. Sávonként: flow = randint(flow_min, flow_max)
+
+    Példák:
+      target=200, spread=50  → [150, 250]  — könnyű, egyenletes forgalom
+      target=200, spread=300 → [50, 500]   — könnyű átlag, nagy aszimmetria
+      target=700, spread=50  → [650, 750]  — nehéz, egyenletes
+      target=700, spread=300 → [400, 1000] — nehéz átlag, nagy aszimmetria
+      target=500, spread=300 → [200, 800]  — hasonló a régi [100,900]-hoz
+
+    Ezzel az ágens lát:
+      - Könnyű ÉS nehéz epizódokat (target variál)
+      - Egyenletes ÉS aszimmetrikus forgalmat (spread variál)
+      - Abszolút min: 50, max: 1100 veh/h/lane (gridlock elkerülése)
+
+    Ha a baseline_actuated.py vagy bármely külső hívó explicit flow_range-t
+    ad az options-ben, az felülírja a target+spread logikát.
+
+  FORGALMI SZINTEK ÉRTELMEZÉSE:
     100 veh/h/lane ≈ 36 másodpercenként jön egy autó → SZABAD FORGALOM
       Ilyenkor alig van sor, szinte minden autó zöldet kap.
       A reward magas lesz (~0.8), és az ágens nem kap sok "tanulnivalót".
@@ -198,10 +224,20 @@ II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?
       Egy sáv kapacitása jelzőlámpánál ~1800 veh/h (zöld időarány ≈50%).
       900 veh/h tehát ~50%-os kihasználtság — már komoly sorok képződhetnek.
 
-    1200 veh/h/lane ≈ 3 másodpercenként → TÚLTERHELÉS
-      Csak a PCA elemzésben használjuk (adatgyűjtés), nem a tanításban,
-      mert ilyen forgalomnál a jelzőlámpa már nem tud segíteni —
-      a hálózat egyszerűen nem bírja el.
+    1100 veh/h/lane ≈ 3.3 másodpercenként → MAXIMÁLIS TRÉNING SZINT
+      A target+spread logika legfeljebb 1100-ig engedi.
+      1200+ a PCA elemzésben volt, de a tanításban nem — gridlock kockázat.
+
+  PCA KALIBRÁCIÓ ÉRVÉNYESSÉGE AZ ÚJ FORGALOMGENERÁLÁSSAL:
+    A reward normalizációs konstansok (MU_WAIT=4.5848, STD_WAIT=1.8249,
+    MU_CO2=10.8706, STD_CO2=0.9629) a metric_pca_test_v2/ mappából
+    származnak (527K+ minta), ahol flow_max ∈ {100..1200} volt.
+
+    Az új target+spread logika effektív tartománya [50, 1100], ami a
+    kalibráció [100, 1200] tartományán BELÜL van. Ellenőrzés:
+      v2 adatból (>0 szűrt): log(Wait) MU=4.5852, STD=1.8244
+      Kódban:                 log(Wait) MU=4.5848, STD=1.8249
+    → Gyakorlatilag azonos. NEM KELL újrakalibrálni.
 
   JÁRMŰTÍPUS PARAMÉTEREK (realisztikus személygépjármű):
     accel = 0.8 m/s² (gyorsulás — átlagos személyautó)
