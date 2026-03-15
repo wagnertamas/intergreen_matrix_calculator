@@ -534,33 +534,28 @@ class IndependentDQNTrainer:
                 # Or just try standard export on policy.
                 
                 # Wrapper for dictionary handling
+                # Dynamically build wrapper from observation space keys
+                obs_keys = sorted(obs_space.spaces.keys())  # deterministic order
+
                 class OnnxWrapper(torch.nn.Module):
-                    def __init__(self, policy):
+                    def __init__(self, policy, keys):
                         super().__init__()
                         self.policy = policy
-                    
-                    def forward(self, flow, occupancy, phase):
-                        # Reconstruct dict
-                        obs = {
-                            "flow": flow,
-                            "occupancy": occupancy,
-                            "phase": phase
-                        }
+                        self.keys = keys
+
+                    def forward(self, *args):
+                        # Reconstruct dict from positional args
+                        obs = {k: v for k, v in zip(self.keys, args)}
                         return self.policy(obs)
 
-                # Prepare inputs as tuple for the wrapper
-                # Check keys in observation space
-                # Default keys: 'phase', 'occupancy', 'flow'
-                
                 if isinstance(model.policy.observation_space, gym.spaces.Dict):
                     # We need to decompose the dict
-                    wrapper = OnnxWrapper(policy)
-                    inputs = (
-                        dummy_obs["flow"],
-                        dummy_obs["occupancy"], 
-                        dummy_obs["phase"]
-                    )
+                    wrapper = OnnxWrapper(policy, obs_keys)
+                    inputs = tuple(dummy_obs[k] for k in obs_keys)
                     
+                    dynamic_axes_dict = {k: {0: "batch_size"} for k in obs_keys}
+                    dynamic_axes_dict["action_logits"] = {0: "batch_size"}
+
                     torch.onnx.export(
                         wrapper,
                         inputs,
@@ -568,14 +563,9 @@ class IndependentDQNTrainer:
                         export_params=True,
                         keep_initializers_as_inputs=False,
                         opset_version=18,
-                        input_names=["flow", "occupancy", "phase"],
+                        input_names=obs_keys,
                         output_names=["action_logits"],
-                        dynamic_axes={
-                            "flow": {0: "batch_size"},
-                            "occupancy": {0: "batch_size"},
-                            "phase": {0: "batch_size"},
-                            "action_logits": {0: "batch_size"}
-                        }
+                        dynamic_axes=dynamic_axes_dict
                     )
                 else:
                     # Flat observation
@@ -610,74 +600,58 @@ class IndependentDQNTrainer:
                         # 1. Get the Quantile Network (final layer)
                         
                         class FusedQRDQNPolicy(torch.nn.Module):
-                            def __init__(self, original_policy):
+                            def __init__(self, original_policy, keys):
                                 super().__init__()
+                                self.keys = keys
                                 # QRDQN stores features_extractor inside quantile_net
                                 self.features_extractor = original_policy.quantile_net.features_extractor
-                                
+
                                 # Access the internal sequential network
-                                # 'quantile_net' attribute contains the full MLP (body + head)
                                 q_net_seq = original_policy.quantile_net.quantile_net
-                                
-                                # The last layer is the one expanding to n_actions * n_quantiles
+
+                                # The last layer expands to n_actions * n_quantiles
                                 last_layer = q_net_seq[-1]
-                                
-                                # The rest of the network (feature -> latent body)
-                                # We take all layers EXCEPT the last one
+
+                                # Body = all layers EXCEPT the last one
                                 self.body = torch.nn.Sequential(*list(q_net_seq.children())[:-1])
-                                
+
                                 n_quantiles = original_policy.n_quantiles
                                 n_actions = model.action_space.n
-                                
-                                # Weights: [out_features, in_features] -> [n_actions * n_quantiles, hidden]
-                                W = last_layer.weight.data 
+
+                                W = last_layer.weight.data
                                 B = last_layer.bias.data
-                                
-                                # Reshape and Average
-                                # W: [n_actions, n_quantiles, hidden] -> mean -> [n_actions, hidden]
+
+                                # Reshape and Average quantiles
                                 W_fused = W.view(n_actions, n_quantiles, -1).mean(dim=1)
                                 B_fused = B.view(n_actions, n_quantiles).mean(dim=1)
-                                
+
                                 self.fused_head = torch.nn.Linear(W_fused.shape[1], n_actions)
                                 self.fused_head.weight.data = W_fused
                                 self.fused_head.bias.data = B_fused
-                                
-                            def forward(self, flow, occupancy, phase):
-                                obs = {
-                                    "flow": flow,
-                                    "occupancy": occupancy,
-                                    "phase": phase
-                                }
+
+                            def forward(self, *args):
+                                obs = {k: v for k, v in zip(self.keys, args)}
                                 features = self.features_extractor(obs)
                                 latent = self.body(features)
                                 return self.fused_head(latent)
 
-                        
-                        # Reuse the wrapper logic for inputs
-                        fused_model = FusedQRDQNPolicy(model.policy)
-                        
-                        # Prepare inputs (same as before)
-                        inputs = (
-                            dummy_obs["flow"],
-                            dummy_obs["occupancy"], 
-                            dummy_obs["phase"]
-                        )
-                        
+                        fused_model = FusedQRDQNPolicy(model.policy, obs_keys)
+
+                        fused_inputs = tuple(dummy_obs[k] for k in obs_keys)
+
+                        fused_dynamic = {k: {0: "batch_size"} for k in obs_keys}
+                        fused_dynamic["action_logits"] = {0: "batch_size"}
+
                         torch.onnx.export(
                             fused_model,
-                            inputs,
+                            fused_inputs,
                             fused_onnx_path,
                             export_params=True,
                             keep_initializers_as_inputs=False,
                             opset_version=18,
-                            input_names=["flow", "occupancy", "phase"],
-                            output_names=["action_logits"], # Same output name, but now it is size [Batch, Actions] directly!
-                            dynamic_axes={
-                                "flow": {0: "batch_size"},
-                                "occupancy": {0: "batch_size"},
-                                "phase": {0: "batch_size"},
-                                "action_logits": {0: "batch_size"}
-                            }
+                            input_names=obs_keys,
+                            output_names=["action_logits"],
+                            dynamic_axes=fused_dynamic
                         )
                         
                         self.log(f"Exported FUSED {jid} to {fused_onnx_path}")
