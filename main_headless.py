@@ -34,6 +34,16 @@ def main():
                         help="Total timesteps (felülírja a configot)")
     parser.add_argument("--project", type=str, default=None,
                         help="WandB projekt név")
+    # GUI-ból átadott hiperparaméterek (felülírják a config default-ot)
+    parser.add_argument("--learning-rate", type=float, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--buffer-size", type=int, default=None)
+    parser.add_argument("--gamma", type=float, default=None)
+    parser.add_argument("--exploration-fraction", type=float, default=None)
+    parser.add_argument("--num-layers", type=int, default=None)
+    parser.add_argument("--layer-size", type=int, default=None)
+    parser.add_argument("--w-waiting", type=float, default=None)
+    parser.add_argument("--w-co2", type=float, default=None)
     args = parser.parse_args()
 
     # Config keresés: explicit path → yaml → json
@@ -56,6 +66,20 @@ def main():
 
     hp = config.get("hyperparams", {})
     env_kw = config.get("env_kwargs", {})
+
+    # CLI args felülírják a config default-ot (GUI-ból jönnek)
+    cli_hp_map = {
+        "learning_rate": args.learning_rate,
+        "batch_size": args.batch_size,
+        "buffer_size": args.buffer_size,
+        "gamma": args.gamma,
+        "exploration_fraction": args.exploration_fraction,
+        "num_layers": args.num_layers,
+        "layer_size": args.layer_size,
+    }
+    for key, val in cli_hp_map.items():
+        if val is not None:
+            hp[key] = val
 
     # WandB login
     api_key = hp.get("wandb_api_key") or config.get("wandb_api_key", "")
@@ -91,11 +115,11 @@ def main():
     project = args.project or config.get("project_name", hp.get("wandb_project", "sumo-rl-single"))
     load_model = args.load_model or hp.get("load_model_path")
 
-    # Reward weights
+    # Reward weights (CLI args felülírják)
     rw = env_kw.get("reward_weights", {})
     reward_weights = {
-        'waiting': float(rw.get('waiting', hp.get('w_waiting', 1.0))),
-        'co2': float(rw.get('co2', hp.get('w_co2', 1.0)))
+        'waiting': args.w_waiting if args.w_waiting is not None else float(rw.get('waiting', hp.get('w_waiting', 1.0))),
+        'co2': args.w_co2 if args.w_co2 is not None else float(rw.get('co2', hp.get('w_co2', 1.0)))
     }
 
     print(f"[INFO] Net: {net_file}")

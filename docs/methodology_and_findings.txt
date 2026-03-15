@@ -18,6 +18,8 @@
   - A reward függvény matematikai leírása, számokkal (VI.)
   - A neurális háló és a hiperparaméter keresés (VII-VIII.)
   - Minden ábra részletes értelmezése (XIV.)
+  - Training pipeline: GUI, CLI, Docker (XVI.)
+  - Curriculum learning vs domain randomization (XVII.)
 
   Ha valami nem világos, az ábrák a metric_pca_test_v2/ mappában vannak.
   A kód: sumo_rl_environment.py (RL env), rl_trainer.py (tanítás),
@@ -978,12 +980,20 @@ IX. SIMULATION BACKEND — LIBSUMO vs TRACI
       Ha két libsumo-t próbálsz indítani, összeakadnak.
     - Nem használható sumo-gui-val
 
+  libtraci (Library TraCI):
+    - C++ natív kliens, teljes TraCI API kompatibilitás
+    - Gyors, mint a libsumo, de subscription-ök is működnek
+    - Nem singleton (több példány is futhat)
+    - macOS-en nincs PyPI csomag (csak ha a SUMO framework tartalmazza)
+
 9.2 Selection Logic — AUTOMATIKUS VÁLASZTÁS
 ---------------------------------------------
+  Import prioritás: libtraci > libsumo > traci
+
   A USE_LIBSUMO környezeti változó irányítja:
-    USE_LIBSUMO=1  → libsumo (ha elérhető, különben fallback traci)
+    USE_LIBSUMO=1  → libsumo/libtraci (ha elérhető)
     USE_LIBSUMO=0  → mindig traci (párhuzamos futáshoz)
-    nincs beállítva → libsumo próba, fallback traci
+    nincs beállítva → libtraci próba → libsumo próba → traci fallback
 
   PÁRHUZAMOS TANÍTÁS (start.sh):
     Futás #1: USE_LIBSUMO=1 (a leggyorsabb)
@@ -992,8 +1002,31 @@ IX. SIMULATION BACKEND — LIBSUMO vs TRACI
 
   DOCKER: USE_LIBSUMO=1 mindig (minden konténer külön process)
   GUI: mindig traci (a libsumo nem tud GUI-t)
+  BASELINE EVAL: mindig traci (hogy ne ütközzön a futó traininggel)
 
-  A kód: sumo_rl_environment.py, ~60-90. sor
+  macOS (Apple Silicon) megjegyzés:
+    A PyPI-ról telepíthető libsumo/libtraci csomagok x86_64 binárisok,
+    amelyek nem futnak arm64-en. Megoldás: a SUMO framework natív
+    arm64 libsumo-ját kell symlinkkelni a venv site-packages-be:
+    /Library/Frameworks/EclipseSUMO.framework/.../tools/libsumo/
+
+  A kód: sumo_rl_environment.py, ~60-114. sor
+
+9.3 SUMO Subscriptions — BATCH DATA RETRIEVAL
+------------------------------------------------
+  Az egyes TraCI API hívások (pl. traci.lane.getWaitingTime()) egyenként
+  küldik az üzeneteket. 21 junction × 7 sáv × 5 metrika = 735 hívás/step.
+  50k step → ~36M API hívás → extrém lassú.
+
+  Megoldás: subscription-ök. Egyszer feliratkozunk, és minden simulationStep()
+  után batch-ben visszakapjuk az összes adatot:
+    traci.inductionloop.subscribe(det_id, [0x10, 0x13])
+    traci.lane.subscribe(lane_id, [0x5a, 0x7a, 0x60, 0x10])
+
+  A subscription-ök működnek traci-val és libsumo-val is (az alap
+  subscription-ök, amelyek nem igényelnek extra argumentumokat).
+  A _setup_subscriptions() metódus egy próba-subscription-nel teszteli,
+  hogy a használt SUMO könyvtár támogatja-e.
 
 
 ================================================================================
@@ -1425,7 +1458,261 @@ XIV. GENERATED ANALYSIS CHARTS — DETAILED INTERPRETATION
 
 
 ================================================================================
-XV. KEY CONCLUSIONS FOR THE PAPER
+XV. BASELINE EVALUATION — ÖSSZEHASONLÍTÓ STRATÉGIÁK
+================================================================================
+
+  Az RL ágens teljesítményének értékeléséhez 4 baseline stratégiát
+  hasonlítunk össze, amelyek közül 2 a SUMO saját vezérlését használja
+  (eltérő döntési tér), 2 pedig PONTOSAN UGYANAZT az action space-t és
+  transition logic-ot, mint az RL ágens (fair összehasonlítás).
+
+  Script: baseline_actuated.py
+  Használat: python baseline_actuated.py --episodes 20 --wandb-project <project>
+
+15.1 Stratégiák Összefoglalása
+-------------------------------
+
+  +----------------+-------------------+----------------------------------------+
+  | Stratégia      | Döntési tér       | Leírás                                 |
+  +----------------+-------------------+----------------------------------------+
+  | static         | SUMO fix ciklus   | A .net.xml-beli program, nincs adaptáció|
+  | actuated       | SUMO fix sorrend  | Ciklus nyújtás/rövidítés detektorokkal |
+  | random         | RL action space   | Random fázisválasztás (worst case)     |
+  | max_pressure   | RL action space   | Legtöbb várakozó sávot zöldíti        |
+  +----------------+-------------------+----------------------------------------+
+
+  A "random" és "max_pressure" stratégiák a SumoRLEnvironment-et használják,
+  tehát a transition logic (intergreen matrix, yellow/all-red fázisok),
+  a reward függvény, és az observation space mind 100%-ban azonos az RL-lel.
+
+15.2 Static Baseline
+---------------------
+  A SUMO .net.xml-ben definiált fix ciklusidejű jelzésprogram.
+  Pl. R1C1_C: 42s zöld (É-D) → 3s sárga → 42s zöld (K-Ny) → 3s sárga = 90s ciklus.
+  Semmilyen adaptáció nincs — a forgalmi helyzettől függetlenül mindig
+  ugyanaz a ciklus fut.
+
+15.3 Actuated Baseline
+-----------------------
+  A SUMO beépített actuated vezérlése. Az eredeti fix fázisokból készül
+  runtime-ban, TraCI-n keresztül:
+
+  Green fázisok:  minDur = max(5s, duration × 0.5)
+                  maxDur = max(duration × 2.0, 60s)
+  Yellow/Red:     minDur = maxDur = duration (FIX, nem módosítható)
+
+  Működés: a green fázis legalább minDur-ig tart. Ezután, ha a detektor
+  maxGap (default 3.1s) ideig nem érzékel járművet, a fázis véget ér.
+  Ha folyamatosan jönnek járművek, a fázis maxDur-ig nyúlhat.
+  A ciklus sorrendje FIX (nem választhat fázist, csak nyújthat/rövidíthet).
+
+  FONTOS: az actuated NEM ugyanazt a döntési teret használja, mint az RL!
+  Az RL tetszőleges fázist választhat bármikor, az actuated csak a fix
+  sorrendű ciklust nyújtogatja. Ezért ez NEM fair összehasonlítás az RL-lel,
+  de az iparban ez a legelterjedtebb adaptív módszer, ezért referenciának
+  hasznos.
+
+15.4 Random Baseline
+---------------------
+  Az RL environment-et használja, de random fázist választ:
+    action = random.randint(0, num_phases - 1)
+
+  Ez a "worst case" baseline — ha az RL agent nem veri meg a random-ot,
+  az azt jelenti, hogy a tanulás teljesen sikertelen.
+
+  FONTOS: a random sem vált azonnal — ha átmenet (transition) van folyamatban,
+  az intergreen matrix szerint lejátssza a yellow → all-red → red-yellow
+  szekvenciát, pont úgy, mint az RL ágens. Ezért ez fair összehasonlítás.
+
+15.5 Max-Pressure Baseline (irodalmi referencia)
+--------------------------------------------------
+  A max-pressure a közlekedési RL irodalom standard baseline-ja.
+  (Varaiya, 2013; Wei et al., 2019)
+
+  Működés: minden döntési lépésnél kiszámítja az összes lehetséges green
+  fázis "nyomását" (pressure), és a legnagyobb nyomásút választja:
+
+    pressure(action) = Σ halting_vehicles(lane)
+                       ∀ lane ∈ green_lanes(action)
+
+  Ahol:
+    - green_lanes(action) = azok a bemenő sávok, amelyek az adott fázisban
+      zöldet kapnak (a state string + getControlledLinks alapján)
+    - halting_vehicles = traci.lane.getLastStepHaltingNumber()
+      (megállt járművek száma a sávon)
+
+  A fázis → sáv hozzárendelés felépítése:
+    1. getControlledLinks(junction_id) → link lista
+    2. Minden logic_phase-hez a phase_registry-ből kiolvassuk a state stringet
+    3. A state string i. karaktere 'G' vagy 'g' → link[i] zöldet kap
+    4. link[i] → incoming lane (a link tuple első eleme)
+
+  Példa (R1C1_C, 4 fázis):
+    Action 0 → state "GGGrrr" → link 0,1,2 zöld → e11_e_0, e11_s_0, ... sávok
+    Action 1 → state "GrGrGr" → link 0,2,4 zöld → más sávkombináció
+    stb.
+
+  A max-pressure UGYANAZT az environment-et (SumoRLEnvironment) használja,
+  mint az RL, ezért a transition logic, reward számítás mind azonos.
+  Ha az RL agent nem veri meg a max-pressure-t, nincs hozzáadott értéke
+  a neurális hálónak.
+
+15.6 WandB Integráció
+-----------------------
+  A baseline script minden stratégiát külön WandB run-ként logol:
+    - Run neve: "baseline-{strategy}" (pl. "baseline-max_pressure")
+    - Tag-ek: ["baseline", "{strategy}"]
+    - Logolt metrikák: avg_reward, episode, episode_length, global_step,
+      és junction-szintű reward-ok (reward/R1C1_C, reward/R1C2_C, ...)
+
+  Így a WandB dashboard-on az RL training run-ok és a baseline-ok
+  UGYANAZON a grafikonon megjeleníthetők, az avg_reward közvetlenül
+  összehasonlítható.
+
+15.7 Futtatás
+--------------
+  # Mind a 4 stratégia, 20 epizód, WandB-be is:
+  python baseline_actuated.py --episodes 20 --wandb-project sumo-rl-single-2
+
+  # Csak a fair összehasonlítók (RL action space):
+  python baseline_actuated.py --episodes 20 --strategies random,max_pressure
+
+  # Specifikus forgalmi tartomány:
+  python baseline_actuated.py --episodes 30 --flow-min 300 --flow-max 800
+
+  # Párhuzamos futtatás a traininggel (traci-t használ, nem ütközik libsumo-val):
+  python baseline_actuated.py --episodes 20 &
+  python main_headless.py --config training_config.yaml &
+
+  Kimenet:
+    eval_results/baseline_summary.csv       — epizódonkénti eredmények
+    eval_results/baseline_per_junction.csv   — junction-szintű részletek
+    eval_results/baseline_comparison.png     — box plot + junction diff chart
+
+
+================================================================================
+XVI. TRAINING PIPELINE — GUI ÉS CLI HIPERPARAMÉTER ÁTADÁS
+================================================================================
+
+  A rendszer két módot támogat a tanítás indítására:
+  1. GUI (rl_trainer.py) — grafikus felületen beállítható hiperparaméterek
+  2. CLI (main_headless.py) — parancssori argumentumokkal (Docker, Colab, sweep)
+
+16.1 GUI → Subprocess Hiperparaméter Átadás
+---------------------------------------------
+  A GUI (Tkinter) a tanítást KÜLÖN SUBPROCESS-ként indítja (main_headless.py).
+  A hiperparamétereket CLI argumentumként adja át:
+
+  GUI mező           → CLI argument           → main_headless.py feldolgozás
+  ─────────────────────────────────────────────────────────────────────────────
+  Learning Rate       → --learning-rate        → hp["learning_rate"]
+  Batch Size          → --batch-size           → hp["batch_size"]
+  Buffer Size         → --buffer-size          → hp["buffer_size"]
+  Gamma               → --gamma               → hp["gamma"]
+  Exploration Frac.   → --exploration-fraction → hp["exploration_fraction"]
+  Num Layers          → --num-layers           → hp["num_layers"]
+  Layer Size          → --layer-size           → hp["layer_size"]
+  W (waiting)         → --w-waiting            → reward_weights["waiting"]
+  W (CO2)             → --w-co2               → reward_weights["co2"]
+
+  Logika (main_headless.py):
+    1. YAML-ból betölti a default hiperparamétereket (training_config.yaml)
+    2. CLI argumentumok felülírják a YAML default-ot (cli_hp_map dict)
+    3. WandB sweep paraméterek felülírják a CLI-t (ha sweep fut)
+
+  Prioritás: sweep config > CLI args > YAML defaults
+
+16.2 WandB Sweep Integráció
+-----------------------------
+  A sweep_runner.py (vagy WandB agent) a main_headless.py-t hívja.
+  A sweep config (data/sweep_config.yaml) felülírja a wandb.config-on
+  keresztül a hiperparamétereket.
+
+  Több párhuzamos sweep agent futtatható:
+    # Ugyanaz a sweep ID, több terminál:
+    wandb agent <USERNAME>/<PROJECT>/<SWEEP_ID>    # Terminal 1
+    wandb agent <USERNAME>/<PROJECT>/<SWEEP_ID>    # Terminal 2
+    # Docker-ben:
+    docker-compose run -d sumo-trainer wandb agent <SWEEP_ID>  # x N
+
+  FONTOS: az első agent libsumo-t használhat (gyorsabb), de ha több
+  agent fut PÁRHUZAMOSAN, mindegyiknek traci-t kell használnia
+  (USE_LIBSUMO=0), mert a libsumo nem thread-safe.
+
+16.3 Docker Pipeline
+---------------------
+  A Docker container (docker-compose.yml) nem indít automatikusan tanítást.
+  A command: ["echo", "..."] csak a használati utasítást írja ki.
+
+  Futtatás:
+    docker-compose run --rm sumo-trainer python main_headless.py --config training_config.yaml
+    docker-compose run --rm sumo-trainer python baseline_actuated.py --episodes 20
+    docker-compose run -d sumo-trainer wandb agent <SWEEP_ID>
+
+16.4 Episode Logging
+---------------------
+  Minden epizód végén a következő metrikák logolódnak (WandB + konzol):
+    - episode_count: hányadik epizód
+    - episode_steps: lépések száma az epizódban
+    - avg_reward: átlagos reward az epizódon belül
+    - epsilon: jelenlegi exploration ráta
+    - traffic_duration: az epizód forgalmi időtartama
+    - flow_range: forgalmi tartomány [min, max]
+
+
+================================================================================
+XVII. CURRICULUM LEARNING — FOKOZATOS FORGALOMNÖVELÉS
+================================================================================
+
+  KÉRDÉS: Gyorsítja-e a tanulást, ha először könnyű (kevés) forgalmat
+  adunk, és fokozatosan növeljük a nehézséget?
+
+17.1 Potenciális Előnyök
+--------------------------
+  - Gyorsabb korai konvergencia: kevés forgalommal az ágens hamar megtanulja
+    az alapvető fázisváltási logikát
+  - Stabilabb gradiens: kevesebb "lehetetlen" szituáció az elején
+  - Egyre komplexebb stratégiák: a nehezebb szintek építenek az alapokra
+
+17.2 Problémák a Megközelítéssel
+----------------------------------
+  - CATASTROPHIC FORGETTING: a replay buffer fixed méretű (buffer_size).
+    Ha növeljük a forgalmat, a régi "könnyű" tapasztalatok kiszorulnak,
+    és az ágens elveszti a generalizáló képességét.
+  - EXPLORATION GAP: ha az exploration phase (ε-greedy, exploration_fraction)
+    alatt csak könnyű forgalmat lát, a nehéz szituációkra nem fedez fel
+    jó stratégiákat. Ez különösen problémás magas exploration_fraction (0.85)
+    mellett.
+  - DQN-SPECIFIKUS PROBLÉMA: a DQN/QR-DQN replay buffer-re épít.
+    A curriculum megváltoztatja az adateloszlást, amit a buffer tartalmaz,
+    így a Q-value becslések "elavulnak" az új nehézségi szinten.
+
+17.3 A Jelenlegi Megoldás: Domain Randomization
+-------------------------------------------------
+  A generate_random_traffic() függvény MINDEN epizódban véletlenszerű
+  forgalmat generál a [flow_min, flow_max] tartományból:
+    - Sávonként: flow ~ Uniform(flow_min, flow_max) veh/h
+    - Időtartam: random [900, 1800, 2700, 3600, 5400, 7200] sec
+
+  Ez JOBBAN MŰKÖDIK, mint a curriculum, mert:
+    1. Az ágens MINDIG lát könnyű ÉS nehéz forgalmat
+    2. A replay bufferben vegyes nehézségű tapasztalatok vannak
+    3. Nem kell a curriculum ütemezéssel bajlódni (schedule design)
+    4. A sweep optimalizálja a flow_min/flow_max tartományt is
+
+17.4 Ha Mégis Kipróbálnánk
+-----------------------------
+  A legjobb kompromisszum: az exploration phase alatt széles tartomány
+  (pl. flow_range=[50, 1200]), utána szűkíteni a nehezebb tartományra.
+  De a domain randomization már biztosítja ezt a hatást automatikusan.
+
+  KONKLÚZIÓ: A jelenlegi domain randomization megközelítés preferált
+  a curriculum learning-gel szemben, mert robusztusabb a catastrophic
+  forgetting ellen, és nem igényel manuális schedule tervezést.
+
+
+================================================================================
+XVIII. KEY CONCLUSIONS FOR THE PAPER
 ================================================================================
 
   1. PCA-BASED METRIC SELECTION:
@@ -1464,12 +1751,34 @@ XV. KEY CONCLUSIONS FOR THE PAPER
      - Episode duration rotation [15min - 2h] prevents temporal overfitting
 
   7. SIMULATION ENGINE SELECTION:
-     - libsumo for speed (30-50% faster), traci for parallel/GUI
+     - Import priority: libtraci > libsumo > traci
+     - libsumo/libtraci for speed (30-50% faster), traci for parallel/GUI
      - Automatic selection based on environment (local/docker/parallel)
+     - SUMO subscriptions for batch data retrieval (735 calls/step → 0)
+
+  8. BASELINE EVALUATION:
+     - 4 strategies: static, actuated, random, max-pressure
+     - random and max_pressure use the SAME environment as RL (fair comparison)
+     - Max-pressure: choose phase with most halting vehicles on green lanes
+     - Max-pressure is the standard baseline in traffic RL literature
+     - All baselines compute identical log-sigmoid reward for direct comparison
+     - WandB integration: baselines appear on same dashboard as RL runs
+
+  9. TRAINING PIPELINE:
+     - GUI (Tkinter) → subprocess (main_headless.py) → CLI args → WandB
+     - Hyperparameter priority: sweep config > CLI args > YAML defaults
+     - Docker: nem auto-start, explicit parancsokkal futtatandó
+     - Parallel sweep agents: USE_LIBSUMO=0 (traci) kötelező
+
+  10. DOMAIN RANDOMIZATION OVER CURRICULUM:
+     - Domain randomization (random flow per episode) preferred over curriculum learning
+     - Curriculum learning risks catastrophic forgetting in fixed-size replay buffer
+     - Exploration gap: easy-only exploration → poor strategies for hard scenarios
+     - Random traffic + sweep-optimized flow_range provides robust generalization
 
 
 ================================================================================
-XVI. BIBLIOGRAPHY / REFERENCES
+XIX. BIBLIOGRAPHY / REFERENCES
 ================================================================================
 
   SUMO:
@@ -1494,6 +1803,13 @@ XVI. BIBLIOGRAPHY / REFERENCES
   Log-Sigmoid Normalization:
     Custom method developed for this work, combining log-transform
     (variance stabilization) with sigmoid (bounded output).
+
+  Max-Pressure (baseline):
+    Varaiya, P. (2013). "Max pressure control of a network of signalized
+    intersections." Transportation Research Part C, 36, 177-195.
+
+    Wei, H. et al. (2019). "PressLight: Learning Max Pressure Control to
+    Coordinate Traffic Signals in Arterial Network." KDD 2019.
 
 
 ================================================================================

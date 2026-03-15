@@ -1,0 +1,232 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[magyar]{babel}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{lmodern}
+
+% Colors
+\definecolor{primary}{RGB}{30, 80, 150}
+\definecolor{accent}{RGB}{40, 140, 90}
+\definecolor{danger}{RGB}{180, 50, 50}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=primary,
+    pdftitle={SUMO RL Traffic Light Control — Methodology \& Research Findings}
+}
+
+% Section formatting
+\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection.}{1em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection}{1em}{}
+
+% Custom boxes
+\newtcolorbox{infobox}[1][]{
+  colback=primary!5!white,
+  colframe=primary,
+  fonttitle=\bfseries,
+  title=#1,
+  boxrule=0.8pt,
+  arc=3pt,
+  breakable,
+  top=2mm, bottom=2mm
+}
+
+\newtcolorbox{warningbox}[1][]{
+  colback=danger!5!white,
+  colframe=danger,
+  fonttitle=\bfseries,
+  title=#1,
+  boxrule=0.8pt,
+  arc=3pt,
+  breakable,
+  top=2mm, bottom=2mm
+}
+
+\newtcolorbox{codebox}[1][]{
+  colback=gray!5!white,
+  colframe=gray!60!black,
+  fonttitle=\bfseries\ttfamily,
+  title=#1,
+  boxrule=0.5pt,
+  arc=2pt,
+  breakable
+}
+
+\newcommand{\uv}[1]{\glqq#1\grqq}
+\newcommand{\code}[1]{\texttt{\color{black!80}#1}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+
+\begin{document}
+
+\begin{center}
+    \vspace*{1em}
+    {\Huge\bfseries\color{primary} SUMO RL Traffic Light Control}\vspace{0.5em}\\
+    {\Large\bfseries Methodology \& Research Findings}\vspace{0.8em}\\
+    {\large Comprehensive Documentation for Paper Writing}
+    \vspace{1.5em}
+\end{center}
+
+\begin{infobox}[Meta adatok]
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Generálva:} 2026-03-14
+    \item \textbf{Adatforrás:} \code{metric\_pca\_test\_v2/} (527,747 sample)
+    \item \textbf{Szimuláció:} SUMO (Simulation of Urban MObility) + traci/libsumo
+    \item \textbf{RL framework:} Stable-Baselines3 QR-DQN (Quantile Regression DQN)
+    \item \textbf{Hálózat:} \code{mega\_catalogue\_v2.net.xml} — 21 jelzőlámpás csomópont (4×5 + 2 osztott)
+\end{itemize}
+\end{infobox}
+
+\textbf{EZ A DOKUMENTUM CÉLJA:} Mindent tartalmaz, amit a cikk megírásához tudni kell:
+Mi a rendszer és hogyan működik, honnan jönnek a mérőszámok, miért pont ezeket a metrikákat választottuk a reward-hoz (PCA elemzés), a Log-Sigmoid normalizáció indoklása és matematikai leírása, a neurális háló felépítése, hiperparaméter keresés menete, és a vizualizált ábrák részletes értelmezése.
+
+\tableofcontents
+\newpage
+
+\section{System Architecture — A Rendszer Felépítése}
+
+\textbf{A Nagy Kép:} Van egy városi úthálózatunk (SUMO szimulátorban), 21 jelzőlámpás csomóponttal. Mindegyik csomóponthoz tartozik egy \uv{ágens} — egy mesterséges intelligencia, amely megtanulja, mikor melyik fázist (zöld irányt) kapcsolja be. Az ágensek egymástól függetlenül tanulnak (nincs kommunikáció köztük), de ugyanazt a hálózati architektúrát használják, külön-külön súlyokkal. A tanulás lényege: az ágens cselekszik (fázist vált), megfigyeli mi történik (forgalmi metrikák), és kap egy jutalmat (reward).
+
+\subsection{Multi-Agent RL Setup}
+\begin{itemize}
+    \item 21 csomópont, mindegyik önálló RL ágens. Csomópont azonosítók: \code{R1C1\_C ... R4C5\_C} (4×5 rács), \code{R4C2\_CE/R4C2\_CW} (kettéosztott).
+    \item Algoritmus: QR-DQN (Quantile Regression Deep Q-Network).
+\end{itemize}
+
+\begin{infobox}[Miért QR-DQN és nem sima DQN?]
+A hagyományos DQN egyetlen számot (átlagos várható érték) becsül minden cselekvésre. A QR-DQN viszont az EGÉSZ ELOSZLÁST becsli — tehát tudja, hogy \uv{ez a cselekvés átlagosan jó, de nagy a variancia}. Ez fontos, mert a forgalom természeténél fogva sztochasztikus: ugyanaz a jelzésprogramozás néha jól működik, néha nem.
+\end{infobox}
+
+\textbf{Miért független tanulás (nem kooperatív)?}
+Kooperatív tanulás (ahol az ágensek kommunikálnak) exponenciálisan növekvő állapotteret jelent 21 ágensre. A független tanulás skálázhatóbb, és a gyakorlatban jól működik, mert a szomszédos csomópontok hatása az observation-ön keresztül implicit megjelenik.
+
+\subsection{Observation Space — Mit Lát Az Ágens?}
+Minden lépésben az ágens a következő információkat kapja:
+\begin{itemize}
+    \item \textbf{phase} (1 szám): Melyik zöld fázis van éppen bekapcsolva (0, 1, 2, \dots).
+    \item \textbf{phase\_timer} (1 szám, 0.0 és 1.0 között): Mennyi ideje tart az aktuális fázis, normalizálva (pl. 120 lépés = 600 sec = 1.0).
+    \item \textbf{occupancy} (N szám): Detektorok foglaltsága 0 és 1 között (0=üres, 1=foglalt). A legfontosabb bemenet.
+    \item \textbf{flow} (N szám): Hány jármű haladt át a detektoron a lépés alatt.
+\end{itemize}
+
+\subsection{Action Space — Mit Csinálhat Az Ágens?}
+\code{Discrete(num\_phases)} — annyi lehetséges cselekvés, ahány zöld fázis van. (Pl. 4 fázis esetén \{0, 1, 2, 3\}). Ezenkívül érvényesül az \textbf{Intergreen rendszer} (átmeneti mátrix beiktatása piros és sárga időkkel fázisváltások között) és a \textbf{Minimum Zöld Idő} biztosítása (pl. legalább 5 mp).
+
+\subsection{Step Mechanics — Egy Lépés Részletei}
+\code{delta\_time = 5 SUMO sec / RL lépés}. Az ágens választ egy akciót, ezt követi 5 db 1 másodperces SUMO szimulációs substep. Ezek alatt a metrikákat összegezzük, majd az akkumulált értékek átlagát képezzük.
+
+\section{Traffic Generation — Hogyan Generáljuk A Forgalmat?}
+
+\subsection{Lane-Level Random Traffic}
+Metódus: \code{generate\_random\_traffic(flow\_range=(100, 900))}.
+Nem a SUMO beépített \code{randomTrips.py}-t használjuk, mert ott O-D utazásokat kapnánk, holott forgalommérnöki szempontból \textit{sáv szinten} kell definiálnunk a terhelést. Minden sávra véletlenszerű forgalmi szintet (\code{veh/h}) határozunk meg, a járműveket pedig egyenletes időközönként kis \uv{jitter}-rel generáljuk a sávokra véletlenszerű célpontokkal.
+
+\subsection{Episode Duration Rotation}
+Minden epizódban véletlenszerűen kiválasztunk egy időtartamot: 15 perctől 2 óráig terjedően. Ez meggátolja a temporális overfitting-et.
+
+\section{Metric Collection \& SUMO API — Honnan Jönnek A Mérőszámok?}
+
+Minden RL lépés elején NULLÁZZA az akkumulátorokat. Aztán 5× lefut a \code{collect\_measurements()}.
+
+\subsection{Raw SUMO Metrics}
+\begin{itemize}
+    \item \textbf{TotalWaitingTime [sec/step]:} Sávon várakozó járművek összes ideje. \textbf{Fő reward metrika.} (\code{getWaitingTime()})
+    \item \textbf{TotalCO2 [mg/s/step]:} Sáv összes járművének pillanatnyi CO2 kibocsátása. HBEFA modellt használja. \textbf{Reward része.}
+    \item \textbf{AvgCO2:} Konstantishoz közeli, HIBÁS tanulási szignál.
+    \item \textbf{TotalTravelTime [sec/step] (szűrt):} Csupán 0 < tt < 1000 közt, elemzési célra.
+\end{itemize}
+
+\begin{warningbox}[A TravelTime Csapdája (Sentinel Values)]
+A SUMO \code{getTraveltime()} üres/bedugult sáv esetén $\approx$ 200,000 és 5,000,000 közötti sentinel értékeket ad vissza. Ha ezt nem szűrjük, teljesen eltorzítja az átlagot. A PCA elemzés szerint az ilyen raw menetidő tiszta ZAJDIMENZIÓ. Sose használjuk a reward-ban szűrés nélkül!
+\end{warningbox}
+
+\section{PCA Analysis — Miért Pont Ezeket A Metrikákat Használjuk?}
+
+A naiv megközelítés — mind a 12 megfigyelt metrika berakása a reward-ba — egymásnak ellentmondó gradienset és redundáns értékeket adna. A Principal Component Analysis (PCA) 527,747 adatponton igazolta az alábbiakat:
+
+\begin{itemize}
+    \item \textbf{PC1 — Congestion (44.8\%):} \code{TotalWaitingTime}, \code{QueueLength}, \code{VehCount}, \code{TotalCO2}, és \code{AvgOccupancy} alkotják, korrelálnak egymással. (Ebből választjuk a \code{TotalWaitingTime}-ot).
+    \item \textbf{PC2 — Travel Time (22.6\%):} \code{TotalTravelTime} és fordítottan \code{AvgSpeed}.
+    \item \textbf{PC3 — Sentinel Noise (12.3\%):} A \code{RawTravelTime} sentineljeit izolálja.
+    \item \textbf{Near-zero loadings:} Az \code{AvgCO2} haszontalan állandó marad a vizsgált tartományokon.
+\end{itemize}
+
+\textbf{PCA Alapú Reward Választás:} \code{TotalWaitingTime} (PC1 dom.) és \code{TotalCO2} (PC1 de hozzáadja a környezeti másodlagos célt is). Kettő együttes súlyozása.
+
+\section{Normalization Method Comparison — Melyik Módszerrel Normalizáljunk?}
+
+10 módszer került összehasonlításra a torz forgalmi fázisok 0..1 tartományba transzformálására valós időben (online). A Quality = \textbar skewness\textbar + \textbar excess\_kurtosis\textbar.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llcll}
+\toprule
+\textbf{Rank} & \textbf{Method} & \textbf{Avg Quality} & \textbf{Online?} & \textbf{Notes} \\
+\midrule
+1 & Rank Gauss & 0.008 & \color{red}\textbf{NO} & Needs full dataset for ranking \\
+2 & \textbf{Log-Sigmoid} & \textbf{1.354} & \color{accent}\textbf{YES} & \textbf{Legjobb online módszer} \\
+3 & Robust (IQR) & 1.641 & YES & Needs median + IQR \\
+... & Raw Data & 68.020 & -- & Baseline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A \textbf{Log-Sigmoid} kiválasztott offline előre kalkulált paraméterek ($\mu, \sigma$) alapján működik streamelt adatokkal torzulás nélkül.
+
+\section{Reward Function — A Jutalom Függvény Matematikája}
+
+\begin{infobox}[Lépésről lépésre: Log-Sigmoid Formula]
+\begin{enumerate}
+    \item \textbf{Log transzformáció:} Elnyomja az extrém értékeket. $v = \log(x + \varepsilon)$
+    \item \textbf{Z-score normalizáció:} Kalkuláljuk a szórást az átlagtól. $z = (v - \mu) / \sigma$
+    \item \textbf{Sigmoid leképezés:} $[0, 1]$ tartományra vetítés. $score = 1 / (1 + \exp(-z))$
+    \item \textbf{Invertálás:} A reward-ban a magas érték a jó, így: $reward\_component = 1 - score$
+\end{enumerate}
+\end{infobox}
+
+A két fő metrika \code{TotalWaitingTime} ($\mu=4.5848$, $\sigma=1.8249$) és \code{TotalCO2} ($\mu=10.8706$, $\sigma=0.9629$) ez alapján értékelődik ki, és egyszerű súlyozott átlagot (\code{reward = (r\_wait + r\_co2)/2}) kap a rendszer. Ha a csomópont teljesen üres, manuálisan \code{0.0} jutalom van garantálva az igazságtalan túl-jutalmazás ellen.
+
+\section{Neural Network Architecture — A Háló Felépítése}
+
+\textbf{QR-DQN háló:} MultiInputPolicy (\code{2 + 2N} bemeneti vektor). \\
+A rejtett rétegek száma és mérete (\code{[layer\_size] $\times$ num\_layers}) Bayes-i optimalizáción alapuló hiperparaméter szerű Sweep során dől el. A kimeneti vektor \code{num\_actions $\times$ num\_quantiles} dimenziós (pl. $4 \times 200 = 800$). Mentés mind natív SB3 \code{.zip} formatumban (Transfer Learning-hez) és \code{ONNX} formátumban inefrence futtatáshoz is megtörténik.
+
+\section{Hyperparameter Sweep — Hogyan Keressük A Legjobb Beállítást?}
+
+A \textbf{Weights \& Biases (WandB)} Bayesian Sweep optimalizációja megkeresi azokat a konfigokat amik maximalizálják a rewardot. A legfontosabb swept paraméterek a learning rate, batch size, discount (\code{gamma}), early exploration fraction és a neurális háló mélysége.
+Minden beágyazott epizód véletlenszerű forgalmi adatokkal dolgozik a memorizálás elkerülése végett. 
+
+\section{Simulation Backend — LIBSUMO vs TRACI}
+A \code{libsumo} gyorsabb (singleton korlát!), a \code{traci} párhuzamosítható de overheadje magasabb. Ezt a \code{USE\_LIBSUMO} environment variablék irányítják.
+
+\section{Correlation Matrix \& Key Results}
+\begin{itemize}
+    \item Erős pozitív korreláció ($>0.8$): WaitingTime, QueueLength, Occupancy. (Torlódási klaszter).
+    \item Független ($\approx0.0$): AvgCO2. 
+    \item Ellentétes korreláció ($-0.5$): AvgSpeed és WaitingTime közt.
+\end{itemize}
+
+\section{Key Conclusions for the Paper}
+\begin{enumerate}
+    \item \textbf{PCA-Based Metric Selection:} A 12 vizsgált indikátorból mindössze 3 redundanciamentes komponens van. \code{TotalWaitingTime} (PC1) és \code{TotalCO2} használata az optimális.
+    \item \textbf{Normalization for Online RL:} A stream adatokra fókuszálva a parametrikus Log-Sigmoid lett beépítve a Reward kiszámításába a hagyományos offline rangsoroló módszerekkel szemben.
+    \item \textbf{Sentinel Values in TT:} A \code{getTraveltime()} nyers eredményei mérgező zajt okoznak a betanításban 200K+ értékekkel, ha nincs utólagos szűrés.
+    \item \textbf{Simulation Flow:} Egyedi véletlengenerátor random \code{flow/lane} adagolással gátolja a temporal-overfitting-et epizodikusan váltva.
+\end{enumerate}
+
+\end{document}

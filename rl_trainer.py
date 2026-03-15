@@ -992,6 +992,16 @@ class TrainingDialog:
                 "--config", "training_config.yaml",
                 "--timesteps", str(settings["total_timesteps"]),
                 "--project", settings["wandb_project"],
+                # GUI-ból beírt hiperparaméterek átadása
+                "--learning-rate", str(settings["learning_rate"]),
+                "--batch-size", str(settings["batch_size"]),
+                "--buffer-size", str(settings["buffer_size"]),
+                "--gamma", str(settings["gamma"]),
+                "--exploration-fraction", str(settings["exploration_fraction"]),
+                "--num-layers", str(settings["num_layers"]),
+                "--layer-size", str(settings["layer_size"]),
+                "--w-waiting", str(settings["w_waiting"]),
+                "--w-co2", str(settings["w_co2"]),
             ]
 
             if settings["sumo_gui"]:
