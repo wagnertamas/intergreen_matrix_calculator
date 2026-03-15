@@ -17,6 +17,32 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# --- Cleanup: Ctrl+C megöli az ÖSSZES gyermek processt ---
+CHILD_PIDS=()
+
+cleanup() {
+    echo ""
+    echo -e "\033[1;33m[!] Leállítás... összes futás megszakítása.\033[0m"
+    for pid in "${CHILD_PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            echo -e "  Leállítás: PID $pid"
+            kill -TERM "$pid" 2>/dev/null || true
+        fi
+    done
+    # Várunk max 5 mp-et, utána SIGKILL
+    sleep 2
+    for pid in "${CHILD_PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            echo -e "  \033[0;31mKényszerített leállítás: PID $pid\033[0m"
+            kill -9 "$pid" 2>/dev/null || true
+        fi
+    done
+    echo -e "\033[0;32m[✓] Minden leállítva.\033[0m"
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
 # --- Színek ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -175,7 +201,7 @@ run_local() {
             else
                 echo -e "${GREEN}[▶] $PARALLEL párhuzamos tanítás indítása...${NC}"
                 echo -e "  ${DIM}#1 = libsumo (gyors), #2+ = traci (parallel safe)${NC}"
-                PIDS=()
+                CHILD_PIDS=()
                 for i in $(seq 1 "$PARALLEL"); do
                     if [ "$i" -eq 1 ]; then
                         echo -e "${GREEN}  [▶] Run #$i indítása (libsumo)...${NC}"
@@ -192,13 +218,13 @@ run_local() {
                             --project "$PROJECT" \
                             $gui_flag &
                     fi
-                    PIDS+=($!)
+                    CHILD_PIDS+=($!)
                     sleep 2  # Staggered start — ne egyszerre próbáljon mindegyik SUMO-t indítani
                 done
                 echo ""
-                echo -e "${GREEN}  $PARALLEL futás elindítva. PID-ek: ${PIDS[*]}${NC}"
-                echo -e "  ${DIM}Várakozás az összes befejezésére...${NC}"
-                wait "${PIDS[@]}"
+                echo -e "${GREEN}  $PARALLEL futás elindítva. PID-ek: ${CHILD_PIDS[*]}${NC}"
+                echo -e "  ${DIM}Várakozás az összes befejezésére... (Ctrl+C a leállításhoz)${NC}"
+                wait "${CHILD_PIDS[@]}"
             fi
             ;;
         3)
@@ -231,8 +257,9 @@ run_local() {
             echo -e "  → Sweep: ${GREEN}$SWEEP_ID${NC}"
             echo ""
 
-            PIDS=()
+            CHILD_PIDS=()
             echo -e "  ${DIM}#1 = libsumo (gyors), #2+ = traci (parallel safe)${NC}"
+            echo -e "  ${DIM}Ctrl+C a leállításhoz${NC}"
             for i in $(seq 1 "$PARALLEL"); do
                 if [ "$i" -eq 1 ]; then
                     LIBSUMO_FLAG="USE_LIBSUMO=1"
@@ -242,15 +269,12 @@ run_local() {
                     engine="traci"
                 fi
                 echo -e "${GREEN}  [▶] Sweep Agent #$i ($engine) indítása...${NC}"
-                if [ "$i" -lt "$PARALLEL" ]; then
-                    env $LIBSUMO_FLAG wandb agent "$SWEEP_ID" &
-                    PIDS+=($!)
-                    sleep 1
-                else
-                    # Az utolsó agent foreground-ban fut
-                    env $LIBSUMO_FLAG wandb agent "$SWEEP_ID"
-                fi
+                env $LIBSUMO_FLAG wandb agent "$SWEEP_ID" &
+                CHILD_PIDS+=($!)
+                sleep 1
             done
+            echo -e "${GREEN}  $PARALLEL sweep agent fut. PID-ek: ${CHILD_PIDS[*]}${NC}"
+            wait "${CHILD_PIDS[@]}"
             ;;
         4)
             echo -e "${GREEN}[▶] Transfer Learning indítása...${NC}"
@@ -378,7 +402,7 @@ echo -e "    Timesteps:  ${GREEN}$TIMESTEPS${NC}"
 [ "$PARALLEL" -gt 1 ] && echo -e "    Párhuzamos: ${GREEN}$PARALLEL futás${NC}"
 [ -n "$MODEL_PATH" ] && echo -e "    Modell:     ${GREEN}$MODEL_PATH${NC}"
 echo -e ""
-echo -e "  ${DIM}Szimuláció: minden epizódban random hossz (15min–2h)${NC}"
+echo -e "  ${DIM}Szimuláció: minden epizódban random hossz (15min–1h)${NC}"
 echo -e "  ${DIM}Forgalom:   100–900 jármű/óra/sáv (random per epizód)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
