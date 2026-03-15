@@ -961,46 +961,99 @@ class TrainingDialog:
 
         try:
             settings = self.get_settings()
-            if settings["wandb_api_key"]:
-                os.environ["WANDB_API_KEY"] = settings["wandb_api_key"]
 
-            self.trainer_instance = IndependentDQNTrainer(
-                net_file=self.net_file,
-                logic_file=self.logic_file,
-                detector_file=self.detector_file,
-                total_timesteps=settings["total_timesteps"],
-                wandb_project=settings["wandb_project"],
-                log_queue=self.log_queue,
-                hyperparams=settings,
-                reward_weights={'waiting': settings["w_waiting"], 'co2': settings["w_co2"]},
-                single_agent_id=settings["single_agent_id"],
-                sumo_gui=settings["sumo_gui"]
+            # --- Subprocess-ben indítjuk a tanítást ---
+            # libsumo C++ singleton ütközik a tkinter event loop-pal macOS-en (segfault),
+            # ezért KÜLÖN processzben fut a SUMO szimuláció.
+            cmd = [
+                sys.executable, "main_headless.py",
+                "--config", "training_config.yaml",
+                "--timesteps", str(settings["total_timesteps"]),
+                "--project", settings["wandb_project"],
+            ]
+
+            if settings["sumo_gui"]:
+                cmd.append("--gui")
+
+            if settings["single_agent_id"]:
+                cmd.extend(["--single-agent", settings["single_agent_id"]])
+
+            # Környezeti változók
+            env = os.environ.copy()
+            if settings["wandb_api_key"]:
+                env["WANDB_API_KEY"] = settings["wandb_api_key"]
+
+            # libsumo használata (kivéve ha GUI, mert az traci-t igényel)
+            if settings["sumo_gui"]:
+                env["USE_LIBSUMO"] = "0"
+            else:
+                env["USE_LIBSUMO"] = "1"
+
+            # Hyperparaméterek env var-ként (main_headless.py olvassa a config-ból,
+            # de a sweep_runner is támogatja az env var-okat)
+            env["SWEEP_PROJECT"] = settings["wandb_project"]
+            env["SWEEP_TIMESTEPS"] = str(settings["total_timesteps"])
+
+            self.log(f"Tanítás indítása subprocess-ben...")
+            self.log(f"  Parancs: {' '.join(cmd)}")
+            self.log(f"  SUMO: {'traci (GUI)' if settings['sumo_gui'] else 'libsumo'}")
+
+            import subprocess as sp
+            self.training_process = sp.Popen(
+                cmd,
+                stdout=sp.PIPE,
+                stderr=sp.STDOUT,
+                env=env,
+                bufsize=1,
+                universal_newlines=True
             )
 
-            self.trainer_thread = threading.Thread(target=self.run_trainer_thread)
-            self.trainer_thread.daemon = True
+            # Háttérszál olvassa a subprocess stdout-ját és logba írja
+            self.trainer_thread = threading.Thread(target=self._read_subprocess_output, daemon=True)
             self.trainer_thread.start()
 
             self.btn_start.config(state="disabled")
             self.btn_stop.config(state="normal")
-            
+
         except ValueError as e:
             messagebox.showerror("Input Error", f"Hibás paraméter: {e}")
-
-    def run_trainer_thread(self):
-        try:
-            self.trainer_instance.run()
         except Exception as e:
-            self.log(f"Thread Error: {e}")
+            messagebox.showerror("Hiba", str(e))
             import traceback
             traceback.print_exc()
+
+    def _read_subprocess_output(self):
+        """Olvassa a subprocess stdout-ját és a GUI logba írja."""
+        try:
+            proc = self.training_process
+            for line in proc.stdout:
+                line = line.rstrip('\n')
+                if line:
+                    self.log(line)
+            proc.wait()
+            exit_code = proc.returncode
+            if exit_code == 0:
+                self.log("Tanítás sikeresen befejezve.")
+            else:
+                self.log(f"Tanítás hibával zárult (exit code: {exit_code})")
+        except Exception as e:
+            self.log(f"Subprocess olvasási hiba: {e}")
         finally:
             self.top.after(0, self.on_training_finished)
 
     def stop_training(self):
-        if self.trainer_instance:
-            self.log("Stopping requested...")
-            self.trainer_instance.stop_requested = True
+        if hasattr(self, 'training_process') and self.training_process:
+            self.log("Leállítás kérve...")
+            try:
+                self.training_process.terminate()
+                # Várunk max 5 mp-et
+                try:
+                    self.training_process.wait(timeout=5)
+                except:
+                    self.training_process.kill()
+                self.log("Subprocess leállítva.")
+            except Exception as e:
+                self.log(f"Leállítási hiba: {e}")
 
     def on_training_finished(self):
         self.log("Training thread exited.")
