@@ -56,12 +56,6 @@ parameters:
   buffer_size:
     values: [5000, 10000, 25000, 50000]
 
-  # --- Forgalmi tartomány (jármű/óra/sáv) ---
-  # flow_min és flow_max: a generate_random_traffic() lane-szintű forgalmát szabályozza
-  # Alacsonyabb tartomány: könnyebb feladat, gyorsabb tanulás
-  # Magasabb tartomány: nehezebb, torlódásos szituációk
-  flow_min:
-    values: [50, 100, 150, 200]
-
-  flow_max:
-    values: [600, 800, 1000, 1200]
+  # MEGJEGYZÉS: flow_min/flow_max NINCS a sweep-ben.
+  # A forgalmi tartomány epizódonként randomizálódik (target+spread logika
+  # a sumo_rl_environment.py reset()-ben), nem hiperparaméter.

@@ -121,11 +121,7 @@ class IndependentDQNTrainer:
             self.log("WandB config applied (Sweep compatible).")
 
         # 2. Környezet létrehozása
-        # Forgalmi tartomány: sweep-ből jöhet flow_min/flow_max
-        flow_min = int(current_config.get("flow_min", 100))
-        flow_max = int(current_config.get("flow_max", 900))
-        self.log(f"Flow range: {flow_min}-{flow_max} veh/h/lane")
-
+        # Forgalmi tartomány: epizódonként randomizálódik (target+spread)
         self.env = SumoRLEnvironment(
             net_file=self.net_file,
             logic_json_file=self.logic_file,
@@ -135,7 +131,6 @@ class IndependentDQNTrainer:
             min_green_time=5,
             delta_time=5,
             random_traffic=True,
-            flow_range=(flow_min, flow_max),
             single_agent_id=self.single_agent_id,
             run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
             **self.env_kwargs
