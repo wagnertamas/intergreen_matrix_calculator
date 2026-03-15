@@ -270,6 +270,23 @@ II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?
 
   Felülírható: options={'traffic_duration': 3600} a reset()-ben.
 
+2.3 Warm-up — KIKAPCSOLVA
+-----------------------------
+  Korábbi megoldás: a reset() elején 50-150 random másodperc warm-up,
+  ahol a jelzőlámpák VÉLETLENSZERŰ fázisokat kaptak. Ez dugót okozott,
+  amit az ágens a legelső lépésben megörökölt.
+
+  MIÉRT LETT KIKAPCSOLVA?
+    1. A random fázisok kaotikus jelzésprogramot adtak → dugó képződött
+    2. Az ágens memória nélküli (nincs LSTM/Transformer), tehát nem tudja
+       megkülönböztetni a "megörökölt dugó" és a "saját maga által okozott
+       dugó" szituációkat → zajos, nem informatív tanulási jel
+    3. A forgalom a jitter miatt úgyis fokozatosan indul (depart ≈ 0 + jitter),
+       tehát az első 1-2 másodpercben már vannak járművek a hálózatban
+    4. A detektorok az első RL lépésnél (5 sec) már látnak forgalmat
+
+  Felülírható: options={'warmup_seconds': 60} a reset()-ben (pl. baseline teszthez).
+
 
 ================================================================================
 III. METRIC COLLECTION & SUMO API — HONNAN JÖNNEK A MÉRŐSZÁMOK?

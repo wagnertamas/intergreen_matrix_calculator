@@ -247,9 +247,11 @@ class SumoRLEnvironment(gym.Env):
                  jid: self.agents[jid].action_space for jid in self.agents.keys()
              })
 
-        # 5. Warm-up — forgalom "bemelegítése" mielőtt a tanulás indul
-        #    Nem kell collect_measurements mert reset_step_metrics nulláz mindent
-        warmup_seconds = random.randint(50, 150)  # Csökkentve: 300→150 max (felesleges overhead)
+        # 5. Warm-up — KIKAPCSOLVA
+        #    A warm-up random fázisokkal dugót okozott, amit az ágens megörökölt.
+        #    Memória nélküli ágensnél (nincs LSTM) ez zajos, nem informatív jel.
+        #    A forgalom a jitter miatt úgyis fokozatosan indul (depart ≈ 0 + jitter).
+        warmup_seconds = 0
         if options and 'warmup_seconds' in options:
             warmup_seconds = options['warmup_seconds']
 
