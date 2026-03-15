@@ -10,6 +10,35 @@ import random
 # Global traci placeholder
 traci = None
 
+# TraCI subscription constants (imported lazily after traci is loaded)
+_TC_LOADED = False
+TC_LAST_STEP_VEHICLE_NUMBER = None
+TC_LAST_STEP_OCCUPANCY = None
+TC_VAR_WAITING_TIME = None
+TC_VAR_CO2EMISSION = None
+TC_LAST_STEP_VEHICLE_NUMBER_LANE = None
+TC_VAR_CURRENT_TRAVELTIME = None
+
+def _load_tc_constants():
+    """Load TraCI constants after traci/libsumo is imported."""
+    global _TC_LOADED
+    global TC_LAST_STEP_VEHICLE_NUMBER, TC_LAST_STEP_OCCUPANCY
+    global TC_VAR_WAITING_TIME, TC_VAR_CO2EMISSION
+    global TC_LAST_STEP_VEHICLE_NUMBER_LANE, TC_VAR_CURRENT_TRAVELTIME
+    if _TC_LOADED:
+        return
+    try:
+        import traci.constants as tc
+        TC_LAST_STEP_VEHICLE_NUMBER = tc.LAST_STEP_VEHICLE_NUMBER
+        TC_LAST_STEP_OCCUPANCY = tc.LAST_STEP_OCCUPANCY
+        TC_VAR_WAITING_TIME = tc.VAR_WAITING_TIME
+        TC_VAR_CO2EMISSION = tc.VAR_CO2EMISSION
+        TC_LAST_STEP_VEHICLE_NUMBER_LANE = tc.LAST_STEP_VEHICLE_NUMBER
+        TC_VAR_CURRENT_TRAVELTIME = tc.VAR_CURRENT_TRAVELTIME
+        _TC_LOADED = True
+    except ImportError:
+        pass
+
 class SumoRLEnvironment(gym.Env):
     """
     Egyszerűsített, Single-Instance Multi-Agent RL Környezet.
@@ -132,6 +161,8 @@ class SumoRLEnvironment(gym.Env):
         self.observation_space = None
         self.action_space = None
         self.is_running = False
+        self._network_mapped = False  # Cache: ne mappeljünk minden epizódban
+        self._cached_net = None  # sumolib network cache
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -140,7 +171,7 @@ class SumoRLEnvironment(gym.Env):
         #    Reális forgalmi időszakok: 15 perc → 2 óra
         #    Rövid epizódok: gyorsabb feedback, de zajosabb metrikák
         #    Hosszú epizódok: stabilabb átlagok, lassabb tanulás
-        DURATION_OPTIONS = [900, 1800, 2700, 3600, 5400, 7200]  # 15min, 30min, 45min, 1h, 1.5h, 2h
+        DURATION_OPTIONS = [900, 1800, 2700, 3600]  # 15min, 30min, 45min, 1h (5400/7200 túl lassú)
         if options and 'traffic_duration' in options:
             self.traffic_duration = int(options['traffic_duration'])
         else:
@@ -216,14 +247,14 @@ class SumoRLEnvironment(gym.Env):
                  jid: self.agents[jid].action_space for jid in self.agents.keys()
              })
 
-        # 5. Warm-up
-        warmup_seconds = random.randint(50, 300)
+        # 5. Warm-up — forgalom "bemelegítése" mielőtt a tanulás indul
+        #    Nem kell collect_measurements mert reset_step_metrics nulláz mindent
+        warmup_seconds = random.randint(50, 150)  # Csökkentve: 300→150 max (felesleges overhead)
         if options and 'warmup_seconds' in options:
             warmup_seconds = options['warmup_seconds']
 
         for _ in range(warmup_seconds):
             for agent in self.agents.values():
-                agent.collect_measurements() 
                 agent.update_logic()
                 if agent.is_ready_for_action():
                      agent.set_target_phase(random.randint(0, agent.num_phases - 1))
@@ -249,11 +280,14 @@ class SumoRLEnvironment(gym.Env):
         """
         import sumolib
 
-        try:
-            net = sumolib.net.readNet(self.net_file)
-        except Exception as e:
-            print(f"[ERROR] Nem sikerult beolvasni a halozatot: {e}")
-            return
+        # Cache network — XML parsing minden epizódban ~100-500ms
+        if self._cached_net is None:
+            try:
+                self._cached_net = sumolib.net.readNet(self.net_file)
+            except Exception as e:
+                print(f"[ERROR] Nem sikerult beolvasni a halozatot: {e}")
+                return
+        net = self._cached_net
 
         # 1. Összegyűjtjük az összes bejövő lane-t és a célpontjaikat
         #    lane_routes: {lane_id: (edge_id, lane_index, [to_edge_id, ...])}
@@ -393,51 +427,88 @@ class SumoRLEnvironment(gym.Env):
              f.write('</routes>\n')
 
     def _map_network_elements(self):
-        all_loops = traci.inductionloop.getIDList()
-        
+        # --- Fázis string hossz javítása (mindig kell, mert SUMO újraindul) ---
         for jid, agent in self.agents.items():
-            # --- JAVÍTÁS KEZDETE: Fázis string hossz ellenőrzése és javítása ---
             try:
-                # Lekérjük a SUMO-tól az aktuális fázist, hogy lássuk a helyes hosszt
                 current_state_sumo = traci.trafficlight.getRedYellowGreenState(jid)
                 correct_len = len(current_state_sumo)
-                
-                # Végigmegyünk az ágens tárolt fázisain
                 for p_idx, p_data in agent.phase_registry.items():
                     current_len = len(p_data['state'])
                     if current_len != correct_len:
                         print(f"WARNING: Phase size mismatch for {jid} (Phase {p_idx}). "
                               f"JSON: {current_len}, SUMO: {correct_len}. Auto-fixing...")
-                        
                         if current_len > correct_len:
-                            # Ha túl hosszú a JSON string, levágjuk a végét
                             p_data['state'] = p_data['state'][:correct_len]
                         else:
-                            # Ha túl rövid, kiegészítjük 'r' (piros) karakterekkel
                             p_data['state'] = p_data['state'].ljust(correct_len, 'r')
             except Exception as e:
                 print(f"Error checking TLS state for {jid}: {e}")
-            # --- JAVÍTÁS VÉGE ---
 
             agent.reset_step_metrics()
             agent.reset_logic()
 
-            controlled_links = traci.trafficlight.getControlledLinks(jid)
-            incoming_lanes_set = set()
-            for link_group in controlled_links:
-                for link in link_group:
-                    if link: incoming_lanes_set.add(link[0])
-            agent.incoming_lanes = list(incoming_lanes_set)
+        # --- Detektorok és lane-ek: csak egyszer kell feltérképezni ---
+        if not self._network_mapped:
+            all_loops = traci.inductionloop.getIDList()
+            for jid, agent in self.agents.items():
+                controlled_links = traci.trafficlight.getControlledLinks(jid)
+                incoming_lanes_set = set()
+                for link_group in controlled_links:
+                    for link in link_group:
+                        if link: incoming_lanes_set.add(link[0])
+                agent.incoming_lanes = list(incoming_lanes_set)
 
-            temp_detectors = []
-            for loop in all_loops:
-                lane_id = traci.inductionloop.getLaneID(loop)
-                if lane_id in incoming_lanes_set:
-                    temp_detectors.append(loop)
+                temp_detectors = []
+                for loop in all_loops:
+                    lane_id = traci.inductionloop.getLaneID(loop)
+                    if lane_id in incoming_lanes_set:
+                        temp_detectors.append(loop)
 
-            agent.detectors = sorted(temp_detectors)
-            agent.setup_spaces()
-            agent.reset_step_metrics()
+                agent.detectors = sorted(temp_detectors)
+                agent.setup_spaces()
+                agent.reset_step_metrics()
+
+            self._network_mapped = True
+            print(f"[INFO] Network mapped: {len(self.agents)} agents, "
+                  f"{sum(len(a.detectors) for a in self.agents.values())} detectors, "
+                  f"{sum(len(a.incoming_lanes) for a in self.agents.values())} lanes")
+        else:
+            # Reset metrics for cached agents
+            for agent in self.agents.values():
+                agent.reset_step_metrics()
+
+        # --- SUMO subscriptions beállítása (minden epizód elején kell, mert traci.load után resetelődnek) ---
+        self._setup_subscriptions()
+
+    def _setup_subscriptions(self):
+        """Subscribe to detector and lane metrics for batch retrieval."""
+        _load_tc_constants()
+        if not _TC_LOADED:
+            print("[WARNING] TraCI constants not available, falling back to individual calls")
+            return
+
+        # Subscribe to induction loop metrics
+        for agent in self.agents.values():
+            for det_id in agent.detectors:
+                try:
+                    traci.inductionloop.subscribe(det_id, [
+                        TC_LAST_STEP_VEHICLE_NUMBER,
+                        TC_LAST_STEP_OCCUPANCY
+                    ])
+                except Exception:
+                    pass
+
+            # Subscribe to lane metrics
+            for lane_id in agent.incoming_lanes:
+                try:
+                    traci.lane.subscribe(lane_id, [
+                        TC_VAR_CURRENT_TRAVELTIME,
+                        TC_VAR_WAITING_TIME,
+                        TC_VAR_CO2EMISSION,
+                        TC_LAST_STEP_VEHICLE_NUMBER_LANE
+                    ])
+                except Exception:
+                    pass
 
     def step(self, actions):
         if not self.is_running:
@@ -665,25 +736,67 @@ class TrafficAgent:
 
     def collect_measurements(self):
         self.steps_measured += 1
-        for det_id in self.detectors:
-            self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
-            self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
-            
+
+        # --- Detektorok: subscription results (1 hívás/detektor helyett 0 — már benne van) ---
+        if _TC_LOADED:
+            for det_id in self.detectors:
+                try:
+                    res = traci.inductionloop.getSubscriptionResults(det_id)
+                    if res:
+                        self.det_accumulated_flow[det_id] += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                        self.det_accumulated_occ[det_id] += res.get(TC_LAST_STEP_OCCUPANCY, 0.0)
+                        continue
+                except Exception:
+                    pass
+                # Fallback: individual calls
+                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
+                self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
+        else:
+            for det_id in self.detectors:
+                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
+                self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
+
+        # --- Lane metrikák: subscription results ---
         step_tt = 0.0
         step_waiting = 0.0
         step_co2 = 0.0
         step_veh_count = 0
         valid_tt_lanes = 0
-        MAX_REALISTIC_TT = 1000  # Egy ~90m savon max ~1000s realis (extrem dugo)
-        for lane in self.incoming_lanes:
-            tt = traci.lane.getTraveltime(lane)
-            if 0 < tt < MAX_REALISTIC_TT:  # Csak valodi, mert ertekeket akkumulalunk
-                step_tt += tt
-                valid_tt_lanes += 1
-            step_waiting += traci.lane.getWaitingTime(lane)  # sec, pillanatnyi összes várakozás
-            step_co2 += traci.lane.getCO2Emission(lane)      # mg/s, pillanatnyi kibocsátás
-            step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
-        # Ha csak sentinel értékek jöttek, ne adjunk hozzá semmit
+        MAX_REALISTIC_TT = 1000
+
+        if _TC_LOADED:
+            for lane in self.incoming_lanes:
+                try:
+                    res = traci.lane.getSubscriptionResults(lane)
+                    if res:
+                        tt = res.get(TC_VAR_CURRENT_TRAVELTIME, 0.0)
+                        if 0 < tt < MAX_REALISTIC_TT:
+                            step_tt += tt
+                            valid_tt_lanes += 1
+                        step_waiting += res.get(TC_VAR_WAITING_TIME, 0.0)
+                        step_co2 += res.get(TC_VAR_CO2EMISSION, 0.0)
+                        step_veh_count += res.get(TC_LAST_STEP_VEHICLE_NUMBER_LANE, 0)
+                        continue
+                except Exception:
+                    pass
+                # Fallback
+                tt = traci.lane.getTraveltime(lane)
+                if 0 < tt < MAX_REALISTIC_TT:
+                    step_tt += tt
+                    valid_tt_lanes += 1
+                step_waiting += traci.lane.getWaitingTime(lane)
+                step_co2 += traci.lane.getCO2Emission(lane)
+                step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+        else:
+            for lane in self.incoming_lanes:
+                tt = traci.lane.getTraveltime(lane)
+                if 0 < tt < MAX_REALISTIC_TT:
+                    step_tt += tt
+                    valid_tt_lanes += 1
+                step_waiting += traci.lane.getWaitingTime(lane)
+                step_co2 += traci.lane.getCO2Emission(lane)
+                step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+
         if valid_tt_lanes > 0:
             self.accumulated_travel_time += step_tt
         self.accumulated_waiting_time += step_waiting
