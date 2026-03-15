@@ -983,13 +983,8 @@ class TrainingDialog:
             if settings["wandb_api_key"]:
                 env["WANDB_API_KEY"] = settings["wandb_api_key"]
 
-            # macOS-en a libsumo gyakran segfault-ol (binary incompatibility),
-            # ezért GUI-ból indított tanítás mindig traci-t használ.
-            # Headless (start.sh / Colab) használjon libsumo-t a sebességért.
-            if sys.platform == "darwin":
-                env["USE_LIBSUMO"] = "0"
-                sumo_engine = "traci (macOS safe)"
-            elif settings["sumo_gui"]:
+            # libsumo: gyorsabb, de nem támogat GUI-t
+            if settings["sumo_gui"]:
                 env["USE_LIBSUMO"] = "0"
                 sumo_engine = "traci (GUI)"
             else:
