@@ -882,10 +882,100 @@ class JunctionApp:
 
     # --- 5. ÚJ: FULL EXPORT (VÉGLEGES: GRAFIKONNAL EGYEZŐ LOGIKA) ---
 
+    def _validate_existing_json(self, filename_json):
+        """
+        Összehasonlítja a meglévő JSON state string hosszait az aktuális hálózattal.
+        Ha eltérés van, figyelmeztet és backup-ot készít.
+
+        Returns:
+            True  → folytathatja az exportot
+            False → felhasználó megszakította
+        """
+        if not os.path.exists(filename_json):
+            return True  # Nincs régi fájl, nincs mit ellenőrizni
+
+        try:
+            with open(filename_json, 'r', encoding='utf-8') as f:
+                old_data = json.load(f)
+        except Exception:
+            return True  # Nem olvasható, felülírjuk
+
+        # Aktuális hálózatból kiszámolt state string hosszak
+        mismatches = []
+
+        for jdata in self.junctions:
+            jid = jdata['id']
+            if jid not in old_data:
+                continue
+
+            data = calculate_junction_data(jdata)
+            n = len(data['lines'])
+            if n == 0:
+                continue
+
+            # Aktuális hálózat elvárt state string hossza
+            all_logic_idxs = [l['logic_idx'] for l in data['lines']]
+            max_logic_idx = max(all_logic_idxs) if all_logic_idxs else (n - 1)
+            expected_len = max(n, max_logic_idx + 1)
+
+            # Régi JSON state string hosszai
+            old_phases = old_data[jid].get('phases', [])
+            if old_phases:
+                old_len = len(old_phases[0].get('state', ''))
+                if old_len != expected_len:
+                    mismatches.append({
+                        'jid': jid,
+                        'old_len': old_len,
+                        'new_len': expected_len,
+                        'n_lanes': n,
+                        'n_phases': len(old_phases)
+                    })
+
+        if not mismatches:
+            return True  # Minden egyezik
+
+        # --- Figyelmeztető dialógus ---
+        msg_lines = [
+            "⚠️ FIGYELEM: A meglévő JSON fájl eltérő sávszerkezetet tartalmaz!\n",
+            "A következő csomópontoknál a state string hossza nem egyezik",
+            "az aktuális hálózattal:\n"
+        ]
+        for m in mismatches:
+            msg_lines.append(
+                f"  • {m['jid']}: JSON={m['old_len']} karakter, "
+                f"Hálózat={m['new_len']} karakter "
+                f"({m['n_lanes']} sáv, {m['n_phases']} fázis)"
+            )
+
+        msg_lines.append(f"\nÖsszesen {len(mismatches)} csomópont érintett.\n")
+        msg_lines.append(
+            "Ha folytatod, a régi fájl BACKUP-ja automatikusan mentésre kerül:\n"
+            f"  → {filename_json}.backup\n\n"
+            "A meglévő intergreen mátrix beállításaid (saved_settings) megmaradnak,\n"
+            "csak a state stringek generálódnak újra az aktuális hálózatból.\n\n"
+            "Folytatod az exportot?"
+        )
+
+        result = messagebox.askyesno(
+            "Sávszerkezet Eltérés Észlelve",
+            "\n".join(msg_lines),
+            icon="warning"
+        )
+
+        if result:
+            # Backup készítése
+            import shutil
+            backup_path = filename_json + ".backup"
+            shutil.copy2(filename_json, backup_path)
+            print(f"[INFO] Backup mentve: {backup_path}")
+            return True
+        else:
+            return False
+
     def export_all_to_sumo(self):
         """
         Kiexportálja a közlekedési lámpákat SUMO (.add.xml) és JSON (.json) formátumban.
-        
+
         MŰKÖDÉS:
         1. Mátrix olvasása a helyes [stop][start] (Honnan->Hova) irányban.
         2. Idővonal-vágásos (Timeline Slicing) generálás:
@@ -901,6 +991,10 @@ class JunctionApp:
             return
 
         filename_json = filename_xml.rsplit('.', 2)[0] + ".json"
+
+        # --- Validálás: meglévő JSON vs aktuális hálózat ---
+        if not self._validate_existing_json(filename_json):
+            return  # Felhasználó megszakította
 
         root_xml = ET.Element("additional")
         json_export_data = {}
@@ -1155,8 +1249,15 @@ class JunctionApp:
             with open(filename_json, 'w', encoding='utf-8') as f:
                 json.dump(json_export_data, f, indent=4)
 
+            backup_path = filename_json + ".backup"
+            backup_msg = ""
+            if os.path.exists(backup_path):
+                backup_msg = f"\n\nRégi verzió mentve: {os.path.basename(backup_path)}"
+
             messagebox.showinfo("Siker",
-                                f"Export Kész!\nJSON és SUMO átmenetek pontosan követik a grafikus tervet.")
+                                f"Export Kész!\n"
+                                f"JSON és SUMO átmenetek pontosan követik a grafikus tervet."
+                                f"{backup_msg}")
 
         except Exception as e:
             messagebox.showerror("Hiba", str(e))
