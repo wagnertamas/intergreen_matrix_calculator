@@ -483,7 +483,7 @@ class SumoRLEnvironment(gym.Env):
                         TC_VAR_CURRENT_TRAVELTIME,
                         TC_VAR_WAITING_TIME,
                         TC_VAR_CO2EMISSION,
-                        TC_LAST_STEP_VEHICLE_NUMBER_LANE
+                        TC_LAST_STEP_VEHICLE_NUMBER
                     ])
                 except Exception:
                     pass
@@ -597,6 +597,7 @@ class TrafficAgent:
     def __init__(self, jid, logic_data, min_green_time, measure_during_transition):
         self.jid = jid
         self.min_green_const = min_green_time
+        self.measure_during_transition = measure_during_transition
         
         self.phase_registry = {}
         if 'phases' in logic_data:
@@ -688,6 +689,7 @@ class TrafficAgent:
                 self.phase_timer += 1
             else:
                 if self.target_logic_idx != self.current_logic_idx:
+                    self.phase_timer = 0  # Reset: fázis véget ért, átmenet indul
                     self._start_transition(self.target_logic_idx)
                 else:
                     self._apply_current_phase()
@@ -713,6 +715,10 @@ class TrafficAgent:
         self.next_logic_idx_cache = next_idx
 
     def collect_measurements(self):
+        # Ha átmenet alatt vagyunk és nem kérte a mérést, kihagyjuk
+        # (sárga/piros-sárga fázisok torzítják a reward-ot)
+        if self.is_transitioning and not self.measure_during_transition:
+            return
         self.steps_measured += 1
 
         # --- Detektorok: subscription-ből (simulationStep automatikusan frissíti) ---
