@@ -1723,28 +1723,57 @@ XVII. CURRICULUM LEARNING — FOKOZATOS FORGALOMNÖVELÉS
     A curriculum megváltoztatja az adateloszlást, amit a buffer tartalmaz,
     így a Q-value becslések "elavulnak" az új nehézségi szinten.
 
-17.3 A Jelenlegi Megoldás: Domain Randomization
--------------------------------------------------
+17.3 A Jelenlegi Megoldás: Domain Randomization + Target+Spread
+-----------------------------------------------------------------
   A generate_random_traffic() függvény MINDEN epizódban véletlenszerű
-  forgalmat generál a [flow_min, flow_max] tartományból:
-    - Sávonként: flow ~ Uniform(flow_min, flow_max) veh/h
+  forgalmat generál, de NEM fix tartományból. A forgalomgenerálás
+  két szinten randomizál (target+spread logika):
+
+    1. target = random.choice([100, 200, 300, 400, 500, 600, 700, 800, 900])
+       → az epizód összforgalmának nagyságrendje (9 diszkrét szint)
+    2. spread = random.choice([50, 100, 150, 200, 250, 300])
+       → az irányok közötti aszimmetria mértéke (6 szint)
+    3. flow_range = (max(50, target-spread), min(1100, target+spread))
+    4. Sávonként: flow = randint(flow_min, flow_max)
     - Időtartam: random [900, 1800, 2700, 3600, 5400, 7200] sec
+
+  MIÉRT NEM FIX TARTOMÁNY?
+    A korábbi fix Uniform(100, 900) per lane megoldás problémája:
+    ha sok sáv van (~80-146), a nagy számok törvénye miatt az összforgalom
+    mindig ~500 veh/h/lane körül áll be — az ágens nem lát igazán
+    könnyű vagy nehéz epizódokat.
+
+    A target+spread logikával:
+    - target variál → az ágens lát könnyű ÉS nehéz epizódokat
+    - spread variál → egyenletes ÉS aszimmetrikus forgalom is előfordul
+      (pl. észak-délről 800, kelet-nyugatról 200 — reggeli csúcs főúton)
+    - Abszolút min: 50, max: 1100 veh/h/lane (gridlock elkerülése)
+
+  MIÉRT NEM A SWEEP KERESI A FORGALMI SZINTET?
+    A forgalmi tartomány NEM hiperparaméter — a sweep dolga a háló
+    architektúráját (learning_rate, num_layers, stb.) optimalizálni.
+    A forgalomnak minden epizódban változatosnak kell lennie, hogy az
+    ágens általánosítani tudjon. Ezért a flow_min/flow_max kikerült
+    a sweep_config.yaml-ból.
 
   Ez JOBBAN MŰKÖDIK, mint a curriculum, mert:
     1. Az ágens MINDIG lát könnyű ÉS nehéz forgalmat
     2. A replay bufferben vegyes nehézségű tapasztalatok vannak
     3. Nem kell a curriculum ütemezéssel bajlódni (schedule design)
-    4. A sweep optimalizálja a flow_min/flow_max tartományt is
+    4. Az aszimmetrikus forgalom is megjelenik (spread randomizálás)
 
-17.4 Ha Mégis Kipróbálnánk
------------------------------
+  MEGJEGYZÉS: Ha egy külső hívó (pl. baseline_actuated.py) explicit
+  flow_range-t ad az options-ben, az felülírja a target+spread logikát.
+
+17.4 Ha Mégis Kipróbálnánk Curriculum-ot
+-------------------------------------------
   A legjobb kompromisszum: az exploration phase alatt széles tartomány
   (pl. flow_range=[50, 1200]), utána szűkíteni a nehezebb tartományra.
   De a domain randomization már biztosítja ezt a hatást automatikusan.
 
-  KONKLÚZIÓ: A jelenlegi domain randomization megközelítés preferált
-  a curriculum learning-gel szemben, mert robusztusabb a catastrophic
-  forgetting ellen, és nem igényel manuális schedule tervezést.
+  KONKLÚZIÓ: A jelenlegi domain randomization + target+spread megközelítés
+  preferált a curriculum learning-gel szemben, mert robusztusabb a
+  catastrophic forgetting ellen, és nem igényel manuális schedule tervezést.
 
 
 ================================================================================
@@ -1783,7 +1812,9 @@ XVIII. KEY CONCLUSIONS FOR THE PAPER
 
   6. TRAFFIC GENERATION:
      - Lane-level control (not O-D based) for reproducible per-lane density
-     - Flow range [100, 900] veh/h/lane covers light to near-saturation
+     - Epizód-szintű target+spread randomizálás (NEM fix tartomány)
+     - target ∈ {100..900}, spread ∈ {50..300} → flow_range = [max(50, t-s), min(1100, t+s)]
+     - A forgalmi szint NEM hiperparaméter — kikerült a sweep-ből
      - Episode duration rotation [15min - 2h] prevents temporal overfitting
 
   7. SIMULATION ENGINE SELECTION:
@@ -1807,10 +1838,11 @@ XVIII. KEY CONCLUSIONS FOR THE PAPER
      - Parallel sweep agents: USE_LIBSUMO=0 (traci) kötelező
 
   10. DOMAIN RANDOMIZATION OVER CURRICULUM:
-     - Domain randomization (random flow per episode) preferred over curriculum learning
+     - Domain randomization (target+spread per episode) preferred over curriculum learning
      - Curriculum learning risks catastrophic forgetting in fixed-size replay buffer
      - Exploration gap: easy-only exploration → poor strategies for hard scenarios
-     - Random traffic + sweep-optimized flow_range provides robust generalization
+     - Target+spread ensures both easy/hard episodes AND symmetric/asymmetric traffic
+     - Flow_min/flow_max removed from sweep — traffic diversity is automatic, not a hyperparameter
 
 
 ================================================================================
