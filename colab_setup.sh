@@ -36,7 +36,7 @@ pip install -q \
     tensorboard torch torchvision \
     onnx onnxscript \
     pyyaml wandb \
-    libsumo sumolib
+    libsumo libtraci sumolib
 
 echo "  ✓ Python csomagok kész"
 
@@ -63,6 +63,12 @@ print(f'  QR-DQN: ✓')
 
 import gymnasium
 print(f'  Gymnasium: {gymnasium.__version__}')
+
+try:
+    import libtraci
+    print(f'  libtraci: ✓ (preferred)')
+except ImportError:
+    print(f'  libtraci: ✗')
 
 try:
     import libsumo

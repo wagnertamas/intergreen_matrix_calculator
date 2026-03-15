@@ -94,16 +94,24 @@ class SumoRLEnvironment(gym.Env):
             import traci as t
             traci = t
         else:
-            # Default: libsumo próba (USE_LIBSUMO=1 vagy nincs beállítva)
-            if traci is None or traci.__name__ != 'libsumo':
+            # Prioritás: libtraci > libsumo > traci
+            #   libtraci: C++ natív, teljes API (subscription, GUI kompatibilitás)
+            #   libsumo:  C++ natív, gyors, de korlátozott subscription support
+            #   traci:    Python IPC, leglassabb
+            if traci is None or (traci.__name__ not in ('libtraci', 'libsumo')):
                 try:
-                    import libsumo as t
+                    import libtraci as t
                     traci = t
-                    print(f"[INFO] Using 'libsumo' (fast headless mode, OS={sys.platform}).")
+                    print(f"[INFO] Using 'libtraci' (fast + full API, OS={sys.platform}).")
                 except ImportError:
-                    print(f"[INFO] 'libsumo' not available, falling back to 'traci'.")
-                    import traci as t
-                    traci = t
+                    try:
+                        import libsumo as t
+                        traci = t
+                        print(f"[INFO] Using 'libsumo' (fast headless mode, OS={sys.platform}).")
+                    except ImportError:
+                        print(f"[INFO] 'libtraci'/'libsumo' not available, falling back to 'traci'.")
+                        import traci as t
+                        traci = t
 
         with open(self.logic_json_file, 'r') as f:
             self.logic_data = json.load(f)
@@ -467,25 +475,31 @@ class SumoRLEnvironment(gym.Env):
     def _setup_subscriptions(self):
         """Subscribe to detector and lane metrics for batch retrieval.
 
-        Egyes libsumo verziók nem támogatják a subscribe()-ot (segfault),
-        ezért először egy próba subscription-nel teszteljük.
-        Ha nem megy, fallback az egyedi hívásokra (lassabb de stabil).
+        A SUMO dokumentáció szerint az alap subscription-ök (amelyek nem igényelnek
+        extra argumentumokat) működnek libsumo-val és libtraci-vel is.
+        Forrás: https://sumo.dlr.de/docs/Libsumo.html
+
+        Először egy próba-subscription-nel teszteljük, ha sikertelen → fallback.
         """
         global _USE_SUBSCRIPTIONS
-
-        # libsumo egyes verzióknál segfault-ol subscribe() hívásnál (C++ crash,
-        # nem elkapható Python try/except-tel). Ezért libsumo esetén NE használjunk
-        # subscription-öket — az egyedi hívások lassabbak, de stabilak.
-        is_libsumo = (traci.__name__ == 'libsumo') if hasattr(traci, '__name__') else False
-        if is_libsumo:
-            print(f"[INFO] libsumo detected — subscriptions disabled (stability)")
-            _USE_SUBSCRIPTIONS = False
-            return
 
         first_agent = next(iter(self.agents.values()), None)
         if not first_agent or not first_agent.detectors:
             _USE_SUBSCRIPTIONS = False
             return
+
+        # Próba-subscription: ha ez sikertelen, az egyedi hívásokat használjuk
+        test_det = first_agent.detectors[0] if first_agent.detectors else None
+        if test_det:
+            try:
+                traci.inductionloop.subscribe(test_det, [TC_LAST_STEP_VEHICLE_NUMBER])
+                # Ha idáig eljutottunk, a subscribe API működik
+                # (a test subscription felül lesz írva a teljes listával alább)
+            except Exception as e:
+                lib_name = getattr(traci, '__name__', 'unknown')
+                print(f"[INFO] {lib_name}: subscribe() failed ({e}) — using individual calls (slower)")
+                _USE_SUBSCRIPTIONS = False
+                return
 
         # Subscription API elérhető — feliratkozás az összes detektorra és lane-re
         _USE_SUBSCRIPTIONS = True
@@ -514,7 +528,8 @@ class SumoRLEnvironment(gym.Env):
                 except Exception:
                     pass
 
-        print(f"[INFO] Subscriptions active: {sub_count} (fast mode)")
+        lib_name = getattr(traci, '__name__', 'traci')
+        print(f"[INFO] Subscriptions active: {sub_count} ({lib_name}, fast mode)")
 
     def step(self, actions):
         if not self.is_running:
