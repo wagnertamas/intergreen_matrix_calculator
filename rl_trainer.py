@@ -983,20 +983,25 @@ class TrainingDialog:
             if settings["wandb_api_key"]:
                 env["WANDB_API_KEY"] = settings["wandb_api_key"]
 
-            # libsumo használata (kivéve ha GUI, mert az traci-t igényel)
-            if settings["sumo_gui"]:
+            # macOS-en a libsumo gyakran segfault-ol (binary incompatibility),
+            # ezért GUI-ból indított tanítás mindig traci-t használ.
+            # Headless (start.sh / Colab) használjon libsumo-t a sebességért.
+            if sys.platform == "darwin":
                 env["USE_LIBSUMO"] = "0"
+                sumo_engine = "traci (macOS safe)"
+            elif settings["sumo_gui"]:
+                env["USE_LIBSUMO"] = "0"
+                sumo_engine = "traci (GUI)"
             else:
                 env["USE_LIBSUMO"] = "1"
+                sumo_engine = "libsumo"
 
-            # Hyperparaméterek env var-ként (main_headless.py olvassa a config-ból,
-            # de a sweep_runner is támogatja az env var-okat)
             env["SWEEP_PROJECT"] = settings["wandb_project"]
             env["SWEEP_TIMESTEPS"] = str(settings["total_timesteps"])
 
             self.log(f"Tanítás indítása subprocess-ben...")
             self.log(f"  Parancs: {' '.join(cmd)}")
-            self.log(f"  SUMO: {'traci (GUI)' if settings['sumo_gui'] else 'libsumo'}")
+            self.log(f"  SUMO: {sumo_engine}")
 
             import subprocess as sp
             self.training_process = sp.Popen(
