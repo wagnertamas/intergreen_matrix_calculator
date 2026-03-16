@@ -23,20 +23,26 @@ CHILD_PIDS=()
 cleanup() {
     echo ""
     echo -e "\033[1;33m[!] Leállítás... összes futás megszakítása.\033[0m"
+    # Először TERM jelzés az összes gyerek process-csoportnak (beleértve a sweep_runner.py-t is)
     for pid in "${CHILD_PIDS[@]}"; do
         if kill -0 "$pid" 2>/dev/null; then
-            echo -e "  Leállítás: PID $pid"
+            echo -e "  Leállítás: PID $pid (+ gyerek processek)"
+            # Process group kill: megöli a wandb agent-et ÉS az általa indított sweep_runner.py-t is
+            pkill -TERM -P "$pid" 2>/dev/null || true
             kill -TERM "$pid" 2>/dev/null || true
         fi
     done
-    # Várunk max 5 mp-et, utána SIGKILL
-    sleep 2
+    # Várunk max 3 mp-et, utána SIGKILL
+    sleep 3
     for pid in "${CHILD_PIDS[@]}"; do
         if kill -0 "$pid" 2>/dev/null; then
             echo -e "  \033[0;31mKényszerített leállítás: PID $pid\033[0m"
+            pkill -9 -P "$pid" 2>/dev/null || true
             kill -9 "$pid" 2>/dev/null || true
         fi
     done
+    # Háttérben maradt SUMO processzek leállítása
+    pkill -f "sumo.*mega_catalogue" 2>/dev/null || true
     echo -e "\033[0;32m[✓] Minden leállítva.\033[0m"
     exit 0
 }
@@ -258,18 +264,11 @@ run_local() {
             echo ""
 
             CHILD_PIDS=()
-            echo -e "  ${DIM}#1 = libsumo (gyors), #2+ = traci (parallel safe)${NC}"
+            echo -e "  ${DIM}Sweep: minden agent traci-t használ (parallel safe, libsumo crash-el sweep-ben)${NC}"
             echo -e "  ${DIM}Ctrl+C a leállításhoz${NC}"
             for i in $(seq 1 "$PARALLEL"); do
-                if [ "$i" -eq 1 ]; then
-                    LIBSUMO_FLAG="USE_LIBSUMO=1"
-                    engine="libsumo"
-                else
-                    LIBSUMO_FLAG="USE_LIBSUMO=0"
-                    engine="traci"
-                fi
-                echo -e "${GREEN}  [▶] Sweep Agent #$i ($engine) indítása...${NC}"
-                env $LIBSUMO_FLAG wandb agent "$SWEEP_ID" &
+                echo -e "${GREEN}  [▶] Sweep Agent #$i (traci) indítása...${NC}"
+                USE_LIBSUMO=0 wandb agent "$SWEEP_ID" &
                 CHILD_PIDS+=($!)
                 sleep 1
             done
@@ -402,8 +401,8 @@ echo -e "    Timesteps:  ${GREEN}$TIMESTEPS${NC}"
 [ "$PARALLEL" -gt 1 ] && echo -e "    Párhuzamos: ${GREEN}$PARALLEL futás${NC}"
 [ -n "$MODEL_PATH" ] && echo -e "    Modell:     ${GREEN}$MODEL_PATH${NC}"
 echo -e ""
-echo -e "  ${DIM}Szimuláció: minden epizódban random hossz (15min–1h)${NC}"
-echo -e "  ${DIM}Forgalom:   100–900 jármű/óra/sáv (random per epizód)${NC}"
+echo -e "  ${DIM}Szimuláció: minden epizódban random hossz (15min–2h)${NC}"
+echo -e "  ${DIM}Forgalom:   target+spread (epizódonként random nehézség és aszimmetria)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 read -p "  Indítás? [Y/n]: " confirm
