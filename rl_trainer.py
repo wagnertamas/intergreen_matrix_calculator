@@ -156,7 +156,17 @@ class IndependentDQNTrainer:
 
         # 4. Modellek létrehozása
         runs_dir = os.path.join(os.path.dirname(self.net_file), "runs")
-        
+
+        # Device detektálás: CUDA > MPS (Apple Silicon) > CPU
+        import torch
+        if torch.cuda.is_available():
+            rl_device = "cuda"
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            rl_device = "mps"
+        else:
+            rl_device = "cpu"
+        print(f"[INFO] RL device: {rl_device}")
+
         # Paraméterek betöltése
         lr = float(current_config.get("learning_rate", 1e-4))
         bs = int(current_config.get("batch_size", 32))
@@ -268,7 +278,7 @@ class IndependentDQNTrainer:
                             print_system_info=True,
                             force_reset=False,
                             custom_objects=None,
-                            device="auto"
+                            device=rl_device
                         )
                         
                         # Update parameters for fine-tuning
@@ -298,7 +308,7 @@ class IndependentDQNTrainer:
                         policy_kwargs=dict(net_arch=net_arch),
                         verbose=0,
                         tensorboard_log=tb_log,
-                        device="auto"
+                        device=rl_device
                     )
             elif self.load_model_path and self.load_model_path.endswith(".onnx"):
                 # [NEW] ONNX Loading Strategy
@@ -324,7 +334,7 @@ class IndependentDQNTrainer:
                     policy_kwargs=dict(net_arch=net_arch),
                     verbose=0,
                     tensorboard_log=tb_log,
-                    device="auto"
+                    device=rl_device
                 )
                 
                 # 3. Load weights
@@ -349,7 +359,7 @@ class IndependentDQNTrainer:
                     policy_kwargs=dict(net_arch=net_arch),
                     verbose=0,
                     tensorboard_log=tb_log,
-                    device="auto"
+                    device=rl_device
                 )
             
             self.agents[jid].set_logger(configure(tb_log, ["stdout", "tensorboard"]))
