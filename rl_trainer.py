@@ -165,6 +165,8 @@ class IndependentDQNTrainer:
         expl_fraction = float(current_config.get("exploration_fraction", 0.5))
         num_layers = int(current_config.get("num_layers", 2))
         layer_size = int(current_config.get("layer_size", 64))
+        train_freq = int(current_config.get("train_freq", 4))
+        grad_steps = int(current_config.get("gradient_steps", 1))
         net_arch = [layer_size] * num_layers
 
         for jid in agent_ids:
@@ -410,9 +412,9 @@ class IndependentDQNTrainer:
 
                     self.reward_smoothing[jid] = 0.95 * self.reward_smoothing[jid] + 0.05 * rewards[jid]
 
-                    if global_step > 100:
+                    if global_step > 100 and global_step % train_freq == 0:
                         _tt = time.perf_counter()
-                        model.train(gradient_steps=2, batch_size=bs)
+                        model.train(gradient_steps=grad_steps, batch_size=bs)
                         _t_train += time.perf_counter() - _tt
 
                     model.num_timesteps += 1
