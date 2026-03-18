@@ -360,6 +360,13 @@ class IndependentDQNTrainer:
         episode_count = 0
         episode_step = 0
         start_time = time.time()
+
+        # --- PROFILING ---
+        _prof_predict = 0.0
+        _prof_env_step = 0.0
+        _prof_train = 0.0
+        _prof_buffer = 0.0
+        _prof_count = 0
         
         try: # <--- KEZDŐDIK A BIZTONSÁGI BLOKK
             while global_step < self.total_timesteps and not self.stop_requested:
@@ -373,32 +380,45 @@ class IndependentDQNTrainer:
                     model.exploration_rate = model.exploration_schedule(remaining_progress)
 
                 # --- AKCIÓVÁLASZTÁS ---
+                _t0 = time.perf_counter()
                 actions = {}
                 for jid, model in self.agents.items():
                     agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
                     action, _ = model.predict(agent_obs, deterministic=False)
                     actions[jid] = int(action[0])
+                _prof_predict += time.perf_counter() - _t0
 
                 # --- LÉPÉS ---
+                _t0 = time.perf_counter()
                 next_obs, rewards, global_done, _, infos = self.env.step(actions)
+                _prof_env_step += time.perf_counter() - _t0
                 global_step += 1
 
                 # --- BUFFER & TRAIN ---
+                _t_buf = 0.0
+                _t_train = 0.0
                 for jid, model in self.agents.items():
                     o = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
                     no = {k: v.reshape(1, *v.shape) for k, v in next_obs[jid].items()}
                     a = np.array([[actions[jid]]])
                     r = np.array([rewards[jid]])
                     d = np.array([global_done])
-                    
+
+                    _tb = time.perf_counter()
                     model.replay_buffer.add(o, no, a, r, d, [infos[jid]])
+                    _t_buf += time.perf_counter() - _tb
 
                     self.reward_smoothing[jid] = 0.95 * self.reward_smoothing[jid] + 0.05 * rewards[jid]
 
                     if global_step > 100:
+                        _tt = time.perf_counter()
                         model.train(gradient_steps=2, batch_size=bs)
-                    
+                        _t_train += time.perf_counter() - _tt
+
                     model.num_timesteps += 1
+                _prof_buffer += _t_buf
+                _prof_train += _t_train
+                _prof_count += 1
 
                 obs = next_obs
                 episode_step += 1
@@ -408,6 +428,22 @@ class IndependentDQNTrainer:
                     elapsed = time.time() - start_time
                     fps = int(global_step / (elapsed + 1e-5))
                     self.log(f"Step: {global_step}/{self.total_timesteps} | FPS: {fps}")
+
+                    # --- PROFILING REPORT (every 100 steps) ---
+                    if _prof_count > 0:
+                        _total = _prof_predict + _prof_env_step + _prof_train + _prof_buffer
+                        if _total > 0:
+                            self.log(
+                                f"  [PROFILE] predict={_prof_predict/_prof_count*1000:.1f}ms "
+                                f"env.step={_prof_env_step/_prof_count*1000:.1f}ms "
+                                f"train={_prof_train/_prof_count*1000:.1f}ms "
+                                f"buffer={_prof_buffer/_prof_count*1000:.1f}ms "
+                                f"| split: env={_prof_env_step/_total*100:.0f}% "
+                                f"train={_prof_train/_total*100:.0f}% "
+                                f"predict={_prof_predict/_total*100:.0f}%"
+                            )
+                        _prof_predict = _prof_env_step = _prof_train = _prof_buffer = 0.0
+                        _prof_count = 0
                     
                     if wandb.run:
                         log_dict = {
