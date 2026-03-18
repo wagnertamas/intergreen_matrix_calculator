@@ -144,7 +144,7 @@ select_parallelism() {
     else
         PARALLEL=1
     fi
-    [ "$PARALLEL" -gt 1 ] && echo -e "  → ${GREEN}$PARALLEL párhuzamos futás${NC}"
+    if [ "$PARALLEL" -gt 1 ]; then echo -e "  → ${GREEN}$PARALLEL párhuzamos futás${NC}"; fi
 }
 
 # --- 5. Timesteps ---
@@ -398,8 +398,8 @@ echo -e "    Mód:        ${GREEN}${mode_names[$MODE]}${NC}"
 platform_names=("" "Lokális" "Docker")
 echo -e "    Platform:   ${GREEN}${platform_names[$PLATFORM]}${NC}"
 echo -e "    Timesteps:  ${GREEN}$TIMESTEPS${NC}"
-[ "$PARALLEL" -gt 1 ] && echo -e "    Párhuzamos: ${GREEN}$PARALLEL futás${NC}"
-[ -n "$MODEL_PATH" ] && echo -e "    Modell:     ${GREEN}$MODEL_PATH${NC}"
+if [ "$PARALLEL" -gt 1 ]; then echo -e "    Párhuzamos: ${GREEN}$PARALLEL futás${NC}"; fi
+if [ -n "$MODEL_PATH" ]; then echo -e "    Modell:     ${GREEN}$MODEL_PATH${NC}"; fi
 echo -e ""
 echo -e "  ${DIM}Szimuláció: minden epizódban random hossz (15min–2h)${NC}"
 echo -e "  ${DIM}Forgalom:   target+spread (epizódonként random nehézség és aszimmetria)${NC}"
