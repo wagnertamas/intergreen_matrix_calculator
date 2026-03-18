@@ -1,33 +1,46 @@
 # =============================================================================
-# Docker Compose — SUMO RL Training
+# Docker Compose — SUMO RL Training (CPU + GPU támogatás)
 # =============================================================================
 # Használat:
+#   CPU:  docker-compose run --rm sumo-trainer <parancs>
+#   GPU:  docker-compose run --rm sumo-trainer-gpu <parancs>
+#
 #   1. Hozd létre a .env fájlt:  echo "WANDB_API_KEY=your_key" > .env
-#   2. Indítás:                   docker-compose up
-#   3. Sweep (N párhuzamos):      docker-compose up --scale sumo-trainer=N
+#   2. CPU build:  docker-compose build sumo-trainer
+#   3. GPU build:  docker-compose build sumo-trainer-gpu
 #
 # A start.sh script interaktívan kezeli mindezt.
 # =============================================================================
 
 version: '3.8'
 
+# --- Közös beállítások (YAML anchor) ---
+x-common: &common
+  env_file:
+    - .env   # WANDB_API_KEY itt legyen, NE a docker-compose-ban!
+
+  environment:
+    - SUMO_HOME=/usr/share/sumo
+    - SWEEP_PROJECT=${SWEEP_PROJECT:-sumo-rl-sweep}
+    - SWEEP_TIMESTEPS=${SWEEP_TIMESTEPS:-100000}
+    - USE_LIBSUMO=1   # Docker: minden konténer külön process → mindig libsumo
+
+  volumes:
+    - ./data:/app/data
+    - ./runs:/app/runs
+
+  # NE induljon automatikusan — a start.sh vagy "docker-compose run" adja meg
+  command: ["echo", "Használd: ./start.sh vagy docker-compose run --rm sumo-trainer <parancs>"]
+
 services:
+  # --- CPU verzió (alapértelmezett, mindig működik) ---
   sumo-trainer:
-    build: .
-    image: sumo-rl-agent
-
-    env_file:
-      - .env   # WANDB_API_KEY itt legyen, NE a docker-compose-ban!
-
-    environment:
-      - SUMO_HOME=/usr/share/sumo
-      - SWEEP_PROJECT=${SWEEP_PROJECT:-sumo-rl-sweep}
-      - SWEEP_TIMESTEPS=${SWEEP_TIMESTEPS:-100000}
-      - USE_LIBSUMO=1   # Docker: minden konténer külön process → mindig libsumo
-
-    volumes:
-      - ./data:/app/data
-      - ./runs:/app/runs
+    <<: *common
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ubuntu:22.04
+    image: sumo-rl-agent:cpu
 
     deploy:
       resources:
@@ -35,9 +48,22 @@ services:
           cpus: '2.0'
           memory: 2G
 
-    # NE induljon automatikusan — a start.sh vagy "docker-compose run" adja meg
-    # Használat:
-    #   Interaktív:  ./start.sh  →  válaszd a "Docker" platformot
-    #   Kézi:        docker-compose run --rm sumo-trainer python main_headless.py --config training_config.yaml --timesteps 50000 --project my-project
-    #   Sweep:       docker-compose run --rm sumo-trainer wandb agent SWEEP_ID
-    command: ["echo", "Használd: ./start.sh vagy docker-compose run --rm sumo-trainer <parancs>"]
+  # --- GPU verzió (NVIDIA CUDA) ---
+  sumo-trainer-gpu:
+    <<: *common
+    build:
+      context: .
+      args:
+        BASE_IMAGE: nvidia/cuda:12.4.1-runtime-ubuntu22.04
+    image: sumo-rl-agent:gpu
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          cpus: '4.0'
+          memory: 4G

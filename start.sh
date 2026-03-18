@@ -291,33 +291,48 @@ run_docker() {
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
+    # GPU/CPU választás
+    echo -e "${BOLD}Docker: GPU vagy CPU?${NC}"
+    echo "  1) CPU  (alapértelmezett, mindig működik)"
+    echo "  2) GPU  (NVIDIA CUDA — nvidia-docker szükséges)"
+    read -p "  Választás [1]: " docker_hw
+    if [ "${docker_hw:-1}" == "2" ]; then
+        DOCKER_SERVICE="sumo-trainer-gpu"
+        DOCKER_TAG="gpu"
+        echo -e "  → ${GREEN}GPU mód (CUDA)${NC}"
+    else
+        DOCKER_SERVICE="sumo-trainer"
+        DOCKER_TAG="cpu"
+        echo -e "  → ${GREEN}CPU mód${NC}"
+    fi
+
     # Docker image ellenőrzése / build
-    if ! docker image inspect sumo-rl-agent &>/dev/null; then
-        echo -e "${YELLOW}[!] Docker image nem létezik, build indítása...${NC}"
-        docker-compose build
+    if ! docker image inspect "sumo-rl-agent:${DOCKER_TAG}" &>/dev/null; then
+        echo -e "${YELLOW}[!] Docker image (${DOCKER_TAG}) nem létezik, build indítása...${NC}"
+        docker-compose build "$DOCKER_SERVICE"
     else
         echo -e "${BOLD}Docker image újraépítése?${NC}"
         read -p "  Rebuild? [n]: " rebuild
         if [ "${rebuild:-n}" == "y" ]; then
-            docker-compose build
+            docker-compose build "$DOCKER_SERVICE"
         fi
     fi
 
     case "$MODE" in
         1)
             if [ "$PARALLEL" -le 1 ]; then
-                echo -e "${GREEN}[▶] Docker headless tanítás...${NC}"
-                docker-compose run --rm sumo-trainer \
+                echo -e "${GREEN}[▶] Docker headless tanítás ($DOCKER_TAG)...${NC}"
+                docker-compose run --rm "$DOCKER_SERVICE" \
                     python main_headless.py \
                         --config training_config.yaml \
                         --timesteps "$TIMESTEPS" \
                         --project "$PROJECT"
             else
-                echo -e "${GREEN}[▶] Docker $PARALLEL párhuzamos tanítás...${NC}"
+                echo -e "${GREEN}[▶] Docker $PARALLEL párhuzamos tanítás ($DOCKER_TAG)...${NC}"
                 for i in $(seq 1 "$PARALLEL"); do
                     container_name="train-agent-$i"
                     echo -e "${GREEN}  [▶] $container_name indítása...${NC}"
-                    docker-compose run -d --name "$container_name" sumo-trainer \
+                    docker-compose run -d --name "$container_name" "$DOCKER_SERVICE" \
                         python main_headless.py \
                             --config training_config.yaml \
                             --timesteps "$TIMESTEPS" \
@@ -329,7 +344,7 @@ run_docker() {
             fi
             ;;
         3)
-            echo -e "${GREEN}[▶] Docker Sweep ($PARALLEL agent)...${NC}"
+            echo -e "${GREEN}[▶] Docker Sweep ($PARALLEL agent, $DOCKER_TAG)...${NC}"
             export SWEEP_PROJECT="$PROJECT"
             export SWEEP_TIMESTEPS="$TIMESTEPS"
             echo ""
@@ -353,7 +368,7 @@ run_docker() {
             for i in $(seq 1 "$PARALLEL"); do
                 container_name="sweep-agent-$i"
                 echo -e "${GREEN}  [▶] $container_name indítása...${NC}"
-                docker-compose run -d --name "$container_name" sumo-trainer \
+                docker-compose run -d --name "$container_name" "$DOCKER_SERVICE" \
                     wandb agent "$SWEEP_ID"
             done
             echo ""
@@ -362,10 +377,10 @@ run_docker() {
             echo -e "  docker-compose ps"
             ;;
         4)
-            echo -e "${GREEN}[▶] Docker Transfer Learning...${NC}"
+            echo -e "${GREEN}[▶] Docker Transfer Learning ($DOCKER_TAG)...${NC}"
             docker-compose run --rm \
                 -v "$(cd "$(dirname "$MODEL_PATH")" && pwd):/app/pretrained" \
-                sumo-trainer \
+                "$DOCKER_SERVICE" \
                 python main_headless.py \
                     --config training_config.yaml \
                     --timesteps "$TIMESTEPS" \
