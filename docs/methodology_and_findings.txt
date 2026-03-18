@@ -1861,6 +1861,21 @@ XVIII. KEY CONCLUSIONS FOR THE PAPER
      - Target+spread ensures both easy/hard episodes AND symmetric/asymmetric traffic
      - Flow_min/flow_max removed from sweep — traffic diversity is automatic, not a hyperparameter
 
+  11. WARM-UP KIKAPCSOLVA:
+     - Korábban 50-150 sec random fázisokkal → dugó az ágens első lépésekor
+     - Memória nélküli ágens (nincs LSTM) nem tudja megkülönböztetni az
+       "örökölt dugó" és "saját hiba" szituációkat → zajos tanulási jel
+     - A forgalom jitter miatt úgyis fokozatosan indul (depart ≈ 0 + jitter)
+
+  12. TRAINING LOOP PERFORMANCE PROFILING:
+     - Inline profiler 100 lépésenként kiírja: predict, env.step, train, buffer
+     - Fő bottleneck: env.step (SUMO szimuláció, 53-97% a forgalomtól függően)
+     - Második: train (14-35%) — 21 ágens gradient update
+     - KRITIKUS BUG JAVÍTVA: train_freq=4 és gradient_steps=1 a configban volt,
+       de a kód MINDEN lépésben 2 gradient step-et csinált (8x több mint kellett)
+     - Javítás után: FPS 3 → 8-9 (3x gyorsulás)
+     - Predict idő nő a lépésszámmal (1.9ms → 16ms) — PyTorch memória fragmentáció
+
 
 ================================================================================
 XIX. BIBLIOGRAPHY / REFERENCES
