@@ -99,7 +99,7 @@ select_project() {
         2) PROJECT="sumo-rl-sweep" ;;
         3) PROJECT="sumo-rl-finetune" ;;
         4) read -p "  Projekt név: " PROJECT ;;
-        *) PROJECT="sumo-rl-single" ;;
+        *) PROJECT="$proj_choice" ;;  # Ha nem szám, egyéni névként kezeljük
     esac
     echo -e "  → ${GREEN}$PROJECT${NC}"
 }
