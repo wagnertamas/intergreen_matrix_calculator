@@ -98,6 +98,7 @@ class IndependentDQNTrainer:
         self.agents = {}
         self.env = None
         self.reward_smoothing = {} # Futó átlag tárolása
+        self.action_counts = {}    # Action distribution tracking per agent
 
     def _build_reset_options(self):
         """Reset options összeállítása fix forgalom beállításokkal."""
@@ -415,6 +416,11 @@ class IndependentDQNTrainer:
                     agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
                     action, _ = model.predict(agent_obs, deterministic=False)
                     actions[jid] = int(action[0])
+                    # Action distribution tracking
+                    if jid not in self.action_counts:
+                        self.action_counts[jid] = {}
+                    a = actions[jid]
+                    self.action_counts[jid][a] = self.action_counts[jid].get(a, 0) + 1
                 _prof_predict += time.perf_counter() - _t0
 
                 # --- LÉPÉS ---
@@ -512,6 +518,21 @@ class IndependentDQNTrainer:
                     elapsed = time.time() - start_time
                     avg_r = sum(self.reward_smoothing.values()) / max(len(self.reward_smoothing), 1)
                     eps_rate = self.agents[agent_ids[0]].exploration_rate if agent_ids else 0
+
+                    # Action distribution log (minden 5. epizódban)
+                    if episode_count % 5 == 0:
+                        for jid in agent_ids:
+                            counts = self.action_counts.get(jid, {})
+                            total_a = sum(counts.values()) or 1
+                            dist_str = " ".join([f"a{k}={v/total_a*100:.0f}%" for k, v in sorted(counts.items())])
+                            self.log(f"  [ACTION] {jid}: {dist_str}")
+                            if wandb.run:
+                                for a_id, cnt in counts.items():
+                                    wandb.log({f"{jid}/action_pct/phase_{a_id}": cnt / total_a * 100}, commit=False)
+
+                    # Reset action counts per episode
+                    self.action_counts = {}
+
                     self.log(
                         f"Episode {episode_count} done | "
                         f"steps={episode_step} | "
