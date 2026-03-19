@@ -25,6 +25,12 @@
   A kód: sumo_rl_environment.py (RL env), rl_trainer.py (tanítás),
   metric_collection_test.py (PCA adatgyűjtés), normalization_comparison.py.
 
+  FONTOS: XX. fejezetben leírt ARCHITEKTURÁLIS VÁLTÁS:
+  A rendszer átállt junction-szintű independens tréningre.
+  Többé NEM egyszerre tanul 21 junction, hanem egyenként, saját
+  reward kalibrációval. A részleteket és implementációs checklistet
+  lásd a XX. fejezetben.
+
 
 ================================================================================
 I. SYSTEM ARCHITECTURE — A RENDSZER FELÉPÍTÉSE
@@ -1886,6 +1892,320 @@ XVIII. KEY CONCLUSIONS FOR THE PAPER
        de a kód MINDEN lépésben 2 gradient step-et csinált (8x több mint kellett)
      - Javítás után: FPS 3 → 8-9 (3x gyorsulás)
      - Predict idő nő a lépésszámmal (1.9ms → 16ms) — PyTorch memória fragmentáció
+
+  13. JUNCTION-SZINTŰ INDEPENDENS TRÉNING (ARCHITEKTURÁLIS VÁLTÁS):
+     - A multi-agent (21 junction egyszerre) megközelítés ELHAGYVA
+     - OK: a globális normalizáció nem működik junction-szinten
+       (OSM MU_WAIT=2.45 vs MEGA MU_WAIT=4.58 → 2.1 eltérés log-skálán)
+     - ÚJ: minden junction-re külön RL ágens, külön reward konstansok
+     - A teljes hálózat továbbra is szimulálódik (realisztikus cross-traffic)
+     - Per-junction metrika kalibráció → junction_reward_params.json
+     - WandB: egy projekt, group=junction_id, külön sweep-ek
+     - Transfer learning: katalógus → OSM junction, reward rekalibráció
+     - Lásd: XX. fejezet a részletekért
+
+
+================================================================================
+XX. ARCHITEKTURÁLIS VÁLTÁS — JUNCTION-SZINTŰ INDEPENDENS TRÉNING
+================================================================================
+
+  HÁTTÉR ÉS MOTIVÁCIÓ:
+  Az eddigi megközelítés (multi-agent, 21 junction egyszerre) egy globális
+  reward normalizációs készletet használt. A metric_collection_osm.py
+  eredményei bizonyították, hogy a normalizációs konstansok HÁLÓZAT- ÉS
+  JUNCTION-FÜGGŐEK. Egyetlen junction metrikái drasztikusan eltérhetnek
+  a globális átlagtól (OSM: MU_WAIT=2.45 vs MEGA: MU_WAIT=4.58 → 2.1
+  eltérés log-skálán). Ez lehetetlenné teszi az egységes reward-al
+  való érdemi tanulást.
+
+  KUTATÁSI CÉL:
+  Átfogó módszertan kidolgozása arra, hogyan lehet a valóságban
+  DEPLOYOLNI traffic RL megoldásokat tetszőleges kereszteződésekre.
+  A kereszteződés-könyvtár (catalogue) megmarad a pre-training
+  alapjaként, de az ágensek egyenként tanulnak, egyedi reward
+  kalibrációval.
+
+  ────────────────────────────────────────────────────────────────────
+  XX.1 AZ ÚJ PIPELINE ÁTTEKINTÉSE
+  ────────────────────────────────────────────────────────────────────
+
+  A módszertan 4 fázisból áll:
+
+  FÁZIS 1: PER-JUNCTION METRIKA KALIBRÁCIÓ
+  ─────────────────────────────────────────
+    Minden egyes junction-re (pl. R1C1_C, R2C3_C, ...) külön lefut
+    a metric_collection teszt:
+      - Input: mega_catalogue_v2.net.xml (teljes hálózat)
+      - De CSAK az adott junction forgalmát és metrikáit gyűjtjük
+      - Flow szintek: 100, 200, 300, ..., 1100 veh/h/lane
+      - Epizódok szintenként: 3
+      - Kimenet per junction: MU_WAIT, STD_WAIT, MU_CO2, STD_CO2
+      - PCA opcionális de hasznos: ellenőrzi, hogy a metrikák jellege
+        (mely PC-re loadolnak) megegyezik-e a globálissal
+
+    A gyűjtés a meglévő metric_collection_test.py és
+    metric_collection_osm.py mintájára történik, de automatizálva
+    mind a 21 junction-re.
+
+    OUTPUT: data/junction_reward_params.json
+    Formátum:
+      {
+        "R1C1_C": {
+          "MU_WAIT": 3.21, "STD_WAIT": 1.65,
+          "MU_CO2": 10.12, "STD_CO2": 0.85
+        },
+        "R1C2_C": { ... },
+        ...
+      }
+
+    Ez a fájl a "katalógus tudásbázisa" — minden junction-höz
+    tartalmazza az optimális reward paramétereket.
+
+  FÁZIS 2: ÖSSZEHASONLÍTÁS A GLOBÁLIS ÉRTÉKEKKEL
+  ─────────────────────────────────────────────────
+    Minden junction paraméterei összehasonlítva a korábbi globális
+    értékekkel (MU_WAIT=4.5848, MU_CO2=10.8706):
+      - Eltérés mértéke (abszolút és %-os)
+      - Reward szimulálás mindkét paraméter-készlettel
+      - Reward range (p10-p90) — mekkora a tanulható grádiens?
+      - Heatmap: junction × paraméter eltérés mátrix
+
+    ELVÁRT EREDMÉNY:
+      - A szélső junction-ök (R1C1, R4C5 — kevesebb szomszéd,
+        kevesebb bejövő forgalom) lényegesen eltérhetnek a belső
+        junction-öktől (R2C3 — sok szomszéd, magas cross-traffic)
+      - A split junction (R4C2_CE, R4C2_CW) különleges eset:
+        fél annyi sáv → fél annyi forgalom → alacsonyabb MU_WAIT
+
+    VALIDÁCIÓ:
+      - A reward függvény FORMÁJA (Log-Sigmoid) megmarad
+      - A metrika KIVÁLASZTÁS (TotalWaitingTime + TotalCO2) megmarad
+      - CSAK a 4 normalizációs konstans változik junction-önként
+
+  FÁZIS 3: EGYENKÉNTI JUNCTION TRAINING
+  ──────────────────────────────────────
+    LÉNYEGI VÁLTOZÁS: többé NEM egyszerre tanítunk 21 ágenst!
+    Minden junction-re külön-külön fut a tréning, saját reward
+    paraméterekkel.
+
+    3.1 SZIMULÁCIÓS BEÁLLÍTÁS:
+      - Hálózat: MARAD a mega_catalogue_v2.net.xml (nem vágjuk szét!)
+      - MIÉRT? A szomszédos junction-ök nélkül a forgalmi minta
+        irreális: nem lennének eltorlaszolódó sorok, upstream
+        visszahatás, stb. A teljes hálózat szimulálásával az ágens
+        természetes forgalmi környezetet lát.
+      - RL ágens: CSAK az adott junction kapja az RL ágenst
+      - Többi junction: actuated control (SUMO beépített) vagy
+        fix időzítéssel, hogy realisztikus legyen
+      - Forgalomgenerálás: az egész hálózatra generálunk forgalmat
+        (target+spread), de a reward CSAK az adott junctionből számolódik
+      - Detektorok: csak az adott junction detektorai kellenek az
+        observation-höz
+
+    3.2 IMPLEMENTÁCIÓ — sumo_rl_environment.py MÓDOSÍTÁSOK:
+      - single_agent_id KITERJESZTÉSE: nem csak OSM junction-re,
+        hanem bármely mega_catalogue junction-re is használható
+      - ÚJ: junction_reward_params.json betöltése __init__-ben
+      - A reward konstansok kiválasztása az aktuális junction alapján:
+          params = self.junction_params.get(junction_id, global_defaults)
+          MU_WAIT = params['MU_WAIT']
+          STD_WAIT = params['STD_WAIT']
+          MU_CO2 = params['MU_CO2']
+          STD_CO2 = params['STD_CO2']
+      - A többi junction-re NEM kell RL — static/actuated control
+
+    3.3 WANDB STRUKTÚRA:
+      PROJEKT STRUKTÚRA (egy WandB projekt, csoportosítva):
+        Projekt neve: pl. "sumo-rl-catalogue"
+
+        CSOPORTOK (wandb.init group= paraméter):
+          - "R1C1_C" — R1C1_C junction összes futása
+          - "R1C2_C" — R1C2_C junction összes futása
+          - ...
+
+        TAGS:
+          - junction neve (pl. "R1C1_C")
+          - "sweep" vagy "manual"
+          - "pre-training" vagy "fine-tuning"
+
+        SWEEP SETUP:
+          Minden junction-höz KÜLÖN sweep futtatható:
+            wandb sweep data/sweep_config.yaml \
+              --project sumo-rl-catalogue \
+              --name "sweep-R1C1_C"
+          A sweep_runner.py paraméterként kapja a junction ID-t:
+            python sweep_runner.py --junction R1C1_C
+          A sweep az avg_reward-ot optimalizálja, de a reward
+          az adott junction SAJÁT paramétereivel számolódik.
+
+        DASHBOARD:
+          - Filter by group → egy junction összes run-ja
+          - Runs table: junction oszlop a gyors szűréshez
+          - Panel: avg_reward, episode_length, epsilon, FPS
+          - Az avg_reward értékek junction-ök KÖZÖTT NEM összehasonlíthatók
+            közvetlenül (más normalizáció!), de junction-ÖN BELÜL igen
+
+        FONTOS: A különböző junction-ök más-más optimális reward-al
+        fognak bírni! Ez NEM hiba:
+          - Egyszerű junction (2 fázis, alacsony forgalom) → reward 0.7-0.8
+          - Komplex junction (4 fázis, magas cross-traffic) → reward 0.5-0.6
+          - A sweep minden junction-re KÜLÖN keresi a legjobb hiperparamétereket
+
+    3.4 MODELL MENTÉS:
+      - Minden junction modellje KÜLÖN mentődik:
+          runs/sumo-rl-catalogue/R1C1_C_<timestamp>/
+            ├── model_R1C1_C.zip (SB3 model)
+            ├── model_R1C1_C.onnx (exportált)
+            ├── reward_params.json (a használt MU/STD értékek)
+            └── training_config.yaml (hiperparaméterek)
+      - A reward_params.json MINDIG mentődik a modellel együtt,
+        mert a modell CSAK a saját normalizációjával működik helyesen
+
+    3.5 CLI HASZNÁLAT:
+      # Egy junction tréning
+      python main_headless.py \
+        --junction R1C1_C \
+        --project sumo-rl-catalogue \
+        --timesteps 50000
+
+      # Sweep egy junction-re
+      wandb sweep data/sweep_config.yaml --project sumo-rl-catalogue
+      python sweep_runner.py --junction R1C1_C
+
+      # Összes junction szekvenciálisan (shell script)
+      for jid in R1C1_C R1C2_C R1C3_C ...; do
+        python main_headless.py --junction $jid --timesteps 50000
+      done
+
+    3.6 BACKGROUND JUNCTIONS KEZELÉSE:
+      A teljes hálózaton a NEM RL-es junction-ök jelzőlámpái:
+        Opció A: SUMO actuated program (beépített, adaptív)
+          → Reális háttérforgalmi mintákat ad
+          → A SUMO traffic_lights.json tartalmazza az alap programot
+        Opció B: Random fázisváltás (mint a metric collection tesztben)
+          → Gyorsabb, de kevésbé realisztikus
+        AJÁNLÁS: Opció A (actuated), mert a tanult ágens végül
+          ilyen környezetben fog működni
+
+  FÁZIS 4: TRANSFER LEARNING — VALÓS DEPLOYMENT
+  ──────────────────────────────────────────────
+    ÚJ MÓDSZERTANI LÉPÉS: a katalógus-beli junction-re tanított
+    modellt alkalmazni egy VALÓS (OSM) junction-re.
+
+    4.1 A FOLYAMAT:
+      1. METRIKA KALIBRÁCIÓ az OSM junction-re
+         - Lefut a metric_collection_osm.py (vagy analóg script)
+         - Kiszámítja az OSM junction MU_WAIT, STD_WAIT, MU_CO2, STD_CO2-t
+         - Menti: data/osm_reward_params.json
+
+      2. TOPOLÓGIAI MATCHING
+         - Az OSM junction obs_space méretét összehasonlítjuk a
+           katalógus junction-ökkel
+         - MATCH feltétel: azonos phase count + azonos detektor szám
+         - Pl. OSM 4 fázis, 6 detektor → match R1C1_C (4 fázis, 6 det)
+
+      3. SÚLY TRANSZFER
+         - A matchelő katalógus junction modelljét töltjük be
+         - A policy háló súlyai változatlanul átkerülnek
+         - CSAK a reward normalizáció változik (OSM paraméterekre)
+
+      4. FINE-TUNING
+         - Kis learning rate-tel (1/10 az eredeti) tovább tréningel
+         - Az OSM junction SAJÁT reward paramétereivel
+         - Kevesebb timestep kell (az ágens már "tud" jelzőlámpát kezelni)
+         - WandB: tag = "fine-tuning", group = OSM junction ID
+
+    4.2 MIÉRT GYORSÍT A TRANSFER LEARNING?
+      A katalógus pre-training megtanítja:
+        - A "jelzőlámpa kezelés alapjait" (ne villogj, tartsd a zöldet)
+        - A detektorfoglaltság és akció közötti kapcsolatot
+        - Az intergreen mátrix kezelését (átmeneti fázisok)
+      A fine-tuning CSAK az adott junction sajátosságait tanulja:
+        - Konkrét forgalmi minták (aszimmetria, csúcsirányok)
+        - Konkrét fázis-kombináció optimuma
+        - Az adott junction méretéhez igazított reward grádiens
+
+    4.3 VALIDÁCIÓ:
+      - Pre-training nélküli tréning vs transfer learning:
+        Összehasonlítjuk a konvergencia sebességet és végső reward-ot
+      - Különböző source junction-ök hatása: melyik katalógus junction
+        ad jobb transzfert az adott OSM junction-re?
+
+  ────────────────────────────────────────────────────────────────────
+  XX.2 IMPLEMENTÁCIÓS CHECKLIST
+  ────────────────────────────────────────────────────────────────────
+
+  A program NEM tanítási részei (GUI, intergreen matrix, netedit,
+  transition planner, stb.) VÁLTOZATLANOK MARADNAK.
+
+  IMPLEMENTÁLANDÓ MÓDOSÍTÁSOK:
+
+  □ 1. metric_collection_per_junction.py
+       Automatizált PCA + metrika gyűjtés mind a 21 junction-re,
+       egyenként. Kimenet: junction_reward_params.json
+       Alap: metric_collection_test.py + metric_collection_osm.py
+
+  □ 2. data/junction_reward_params.json
+       Per-junction normalizációs konstansok (MU/STD)
+       Generálja: metric_collection_per_junction.py
+
+  □ 3. sumo_rl_environment.py — reward konstans betöltés
+       junction_reward_params.json betöltése __init__-ben
+       Per-junction MU/STD kiválasztás a reward számításnál
+       A jelenlegi if single_agent → OSM logika általánosítva
+
+  □ 4. sumo_rl_environment.py — background junction kezelés
+       single_agent módban a többi junction actuated/static
+       NEM kapnak RL ágenst, de a forgalomgenerálás rájuk is vonatkozik
+
+  □ 5. rl_trainer.py — wandb group + junction tag
+       wandb.init(group=junction_id, tags=[junction_id, "pre-training"])
+       Per-junction sweep támogatás
+
+  □ 6. sweep_runner.py — --junction CLI arg
+       A junction ID-t paraméterként kapja
+       Továbbadja a trainer-nek mint single_agent_id
+
+  □ 7. main_headless.py — --junction CLI arg
+       Az eddigi --single-agent analógiájára, de a mega_catalogue-ra
+
+  □ 8. transfer_learning.py — reward rekalibráció
+       Fine-tuning előtt automatikusan kiszámítja az OSM junction
+       reward paramétereit (ha még nincs meg)
+       A pre-trained modell source junction-jét kiírja logba
+
+  □ 9. start.sh — junction választó menü
+       Junction lista megjelenítése, választás lehetősége
+       "Összes junction" opció szekvenciális futtatáshoz
+
+  □ 10. Dokumentáció + Colab + Docker frissítés
+        Az új pipeline tükrözése minden platformon
+
+  ────────────────────────────────────────────────────────────────────
+  XX.3 FONTOS MEGKÖTÉSEK ÉS TRADE-OFF-OK
+  ────────────────────────────────────────────────────────────────────
+
+  1. A TELJES HÁLÓZAT SZIMULÁLÓDIK (nem vágjuk szét):
+     PRO: Realisztikus cross-traffic, upstream visszahatás
+     CON: Lassabb, mint egy egyetlen junction szimuláció
+     TRADE-OFF: A sebesség elfogadható, mert az RL ágens predict
+     csak 1 junction-re fut (nem 21-re), és a train is csak 1 modellre
+
+  2. JUNCTION-ÖK KÖZÖTTI REWARD NEM ÖSSZEHASONLÍTHATÓ:
+     Más normalizáció → más reward skála. Ez rendben van, mert
+     a cél NEM a junction-ök rangsorolása, hanem minden junction-re
+     a SAJÁT optimum megtalálása. WandB-ben a group szűrés segít.
+
+  3. SWEEP IDÉNYESSÉG:
+     21 junction × N sweep run = sok GPU/CPU idő. Lehetséges
+     optimalizáció: ha két junction hasonló topológiájú (pl.
+     R1C1_C és R1C3_C mindkettő 4 fázis, 6 det), a sweep
+     eredmények átvihetők (warm start).
+
+  4. A REWARD PARAMS STABIL, NEM KELL GYAKRAN FRISSÍTENI:
+     A normalizációs konstansok a HÁLÓZAT TOPOLÓGIÁJÁTÓL függnek,
+     nem a tréning állapotától. Ha a net file nem változik, a
+     junction_reward_params.json is érvényes marad.
 
 
 ================================================================================
