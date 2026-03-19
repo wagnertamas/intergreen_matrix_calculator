@@ -593,15 +593,27 @@ class SumoRLEnvironment(gym.Env):
         #
         # Metrika: TotalWaitingTime = Σ lane.getWaitingTime / steps [sec/step]
         #   PCA PC1 loading: -0.3797 (domináns torlódási dimenzió, 48.5%)
-        #   medián: 120.20 sec, p5: 3.20 sec, p95: 1340.40 sec
-        MU_WAIT = 4.584800   # E[log(TotalWaitingTime)]
-        STD_WAIT = 1.824900  # Std[log(TotalWaitingTime)]
         #
         # Metrika: TotalCO2 = Σ lane.getCO2Emission / steps [mg/s átlag]
         #   PCA PC1 loading: -0.3409 (korrelál torlódással, önálló környezeti dimenzió)
-        #   medián: 70,129 mg/s, p5: 8,383 mg/s, p95: 173,545 mg/s
-        MU_CO2 = 10.870600   # E[log(TotalCO2)]
-        STD_CO2 = 0.962900   # Std[log(TotalCO2)]
+        #
+        # MEGA CATALOGUE (21 junction, 527K minta):
+        #   medián wait: 120.20 sec, medián CO2: 70,129 mg/s
+        # OSM SINGLE JUNCTION (2632893078, 63K minta):
+        #   medián wait: 14.60 sec, medián CO2: 23,246 mg/s
+        #   → LÉNYEGESEN eltérő skála, ezért külön konstansok kellenek!
+        if self.single_agent_id:
+            # OSM junction (metric_collection_osm.py alapján)
+            MU_WAIT  = 2.448600   # E[log(TotalWaitingTime)]
+            STD_WAIT = 1.858600   # Std[log(TotalWaitingTime)]
+            MU_CO2   = 9.965200   # E[log(TotalCO2)]
+            STD_CO2  = 0.738100   # Std[log(TotalCO2)]
+        else:
+            # Mega catalogue (metric_pca_test_v2/ alapján)
+            MU_WAIT  = 4.584800   # E[log(TotalWaitingTime)]
+            STD_WAIT = 1.824900   # Std[log(TotalWaitingTime)]
+            MU_CO2   = 10.870600  # E[log(TotalCO2)]
+            STD_CO2  = 0.962900   # Std[log(TotalCO2)]
 
         for jid, agent in self.agents.items():
             observations[jid] = agent.get_observation()

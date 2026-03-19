@@ -228,16 +228,27 @@ II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?
       A target+spread logika legfeljebb 1100-ig engedi.
       1200+ a PCA elemzésben volt, de a tanításban nem — gridlock kockázat.
 
-  PCA KALIBRÁCIÓ ÉRVÉNYESSÉGE AZ ÚJ FORGALOMGENERÁLÁSSAL:
-    A reward normalizációs konstansok (MU_WAIT=4.5848, STD_WAIT=1.8249,
-    MU_CO2=10.8706, STD_CO2=0.9629) a metric_pca_test_v2/ mappából
-    származnak (527K+ minta), ahol flow_max ∈ {100..1200} volt.
+  PCA KALIBRÁCIÓ — HÁLÓZAT-FÜGGŐ NORMALIZÁCIÓ:
+    A reward normalizációs konstansok HÁLÓZAT-FÜGGŐEK, mert a forgalmi
+    metrikák skálája erősen függ a hálózat méretétől és topológiájától.
 
-    Az új target+spread logika effektív tartománya [50, 1100], ami a
-    kalibráció [100, 1200] tartományán BELÜL van. Ellenőrzés:
-      v2 adatból (>0 szűrt): log(Wait) MU=4.5852, STD=1.8244
-      Kódban:                 log(Wait) MU=4.5848, STD=1.8249
-    → Gyakorlatilag azonos. NEM KELL újrakalibrálni.
+    MEGA CATALOGUE (21 junction, 527K+ minta, metric_pca_test_v2/):
+      MU_WAIT=4.5848, STD_WAIT=1.8249 (medián wait: 120.2 sec)
+      MU_CO2=10.8706, STD_CO2=0.9629  (medián CO2: 70,129 mg/s)
+
+    OSM SINGLE JUNCTION (2632893078, 63K minta, metric_pca_osm/):
+      MU_WAIT=2.4486, STD_WAIT=1.8586 (medián wait: 14.6 sec)
+      MU_CO2=9.9652,  STD_CO2=0.7381  (medián CO2: 23,246 mg/s)
+
+    ELTÉRÉS: MU_WAIT -2.14, MU_CO2 -0.91 → az OSM junction lényegesen
+    kisebb forgalmi terhelést generál. Ha a mega konstansokat használjuk
+    az OSM junction-re, a sigmoid szinte minden értéket "jónak" lát
+    (reward átlag 0.69, szűk range 0.35) → az agens nem tud tanulni,
+    mert nincs érdemi reward grádiens a jó és rossz akciók között.
+
+    MEGOLDÁS: sumo_rl_environment.py a single_agent_id alapján választ
+    konstansokat — single agent → OSM, multi agent → mega catalogue.
+    Új hálózatoknál a metric_collection_osm.py mintájára kell kalibrálni.
 
   JÁRMŰTÍPUS PARAMÉTEREK (realisztikus személygépjármű):
     accel = 0.8 m/s² (gyorsulás — átlagos személyautó)

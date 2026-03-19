@@ -403,7 +403,7 @@ def compare_normalization(output_dir):
         axes[1, 0].legend()
 
         # 4. Reward vs flow level
-        flow_levels = df_valid.loc[mask_pos[mask_pos].index, 'flow_level'].values if len(df_valid) == len(mask_pos) else df_valid['flow_level'].values[:len(rewards_mega)]
+        flow_levels = df_valid['flow_level'].values[mask_pos]
         if len(flow_levels) == len(rewards_mega):
             unique_flows = sorted(set(flow_levels))
             mega_means = [np.mean(rewards_mega[flow_levels == fl]) for fl in unique_flows]
