@@ -44,6 +44,11 @@ def main():
     parser.add_argument("--layer-size", type=int, default=None)
     parser.add_argument("--w-waiting", type=float, default=None)
     parser.add_argument("--w-co2", type=float, default=None)
+    # Fix forgalom (debug/teszt)
+    parser.add_argument("--flow-target", type=int, default=None,
+                        help="Fix forgalom target (veh/h/lane). Ha nincs → random target+spread.")
+    parser.add_argument("--flow-spread", type=int, default=0,
+                        help="Fix forgalom spread (±). 0 = pontosan target.")
     args = parser.parse_args()
 
     # Config keresés: explicit path → yaml → json
@@ -122,10 +127,19 @@ def main():
         'co2': args.w_co2 if args.w_co2 is not None else float(rw.get('co2', hp.get('w_co2', 1.0)))
     }
 
+    # Fix forgalom beállítás
+    fixed_flow = None
+    if args.flow_target is not None:
+        fixed_flow = {'target': args.flow_target, 'spread': args.flow_spread}
+
     print(f"[INFO] Net: {net_file}")
     print(f"[INFO] Timesteps: {total_timesteps} | Project: {project}")
     print(f"[INFO] Single agent: {args.single_agent or 'ALL'}")
     print(f"[INFO] Load model: {load_model or 'None (fresh)'}")
+    if fixed_flow:
+        print(f"[INFO] Fixed traffic: target={fixed_flow['target']}, spread=±{fixed_flow['spread']}")
+    else:
+        print(f"[INFO] Traffic: random target+spread (epizódonként)")
 
     trainer = IndependentDQNTrainer(
         net_file=net_file,
@@ -139,6 +153,7 @@ def main():
         single_agent_id=args.single_agent,
         sumo_gui=args.gui,
         load_model_path=load_model,
+        fixed_flow=fixed_flow,
     )
 
     try:

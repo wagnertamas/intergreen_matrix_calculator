@@ -76,9 +76,10 @@ class IndependentDQNTrainer:
                  single_agent_id=None,
                  sumo_gui=False,
                  load_model_path=None,  # [NEW] Path to pre-trained model .zip
+                 fixed_flow=None,       # Fix forgalom: {'target': int, 'spread': int} vagy None (random)
                  **env_kwargs):
 
-        
+
         self.net_file = net_file
         self.logic_file = logic_file
         self.detector_file = detector_file
@@ -89,14 +90,28 @@ class IndependentDQNTrainer:
         self.hyperparams = hyperparams or {}
         self.reward_weights = reward_weights or {'waiting': 1.0, 'co2': 1.0}
         self.single_agent_id = single_agent_id
-        self.single_agent_id = single_agent_id
         self.load_model_path = load_model_path
+        self.fixed_flow = fixed_flow  # {'target': 500, 'spread': 0} → fix 500 veh/h
         self.env_kwargs = env_kwargs
         
         self.stop_requested = False
         self.agents = {}
         self.env = None
         self.reward_smoothing = {} # Futó átlag tárolása
+
+    def _build_reset_options(self):
+        """Reset options összeállítása fix forgalom beállításokkal."""
+        options = {}
+        if self.fixed_flow:
+            target = self.fixed_flow.get('target', 500)
+            spread = self.fixed_flow.get('spread', 0)
+            flow_range = (max(50, target - spread), min(1100, target + spread))
+            options['flow_range'] = flow_range
+            # Single agent focused traffic: period-re konvertálás
+            # target veh/h/lane → period = 3600 / target sec/veh
+            if self.single_agent_id and spread == 0:
+                options['traffic_period'] = round(3600.0 / max(target, 1), 4)
+        return options if options else None
 
     def log(self, msg):
         if self.log_queue: self.log_queue.put(msg)
@@ -138,8 +153,10 @@ class IndependentDQNTrainer:
 
         # 3. KÖRNYEZET INDÍTÁSA
         self.log("Starting SUMO...")
+        # Fix forgalom beállítása (ha van)
+        reset_options = self._build_reset_options()
         try:
-            obs, infos = self.env.reset()
+            obs, infos = self.env.reset(options=reset_options)
         except Exception as e:
             self.log(f"CRITICAL ERROR during env.reset(): {e}")
             import traceback
@@ -510,7 +527,7 @@ class IndependentDQNTrainer:
                             "episode/avg_reward": avg_r,
                         }, commit=False)
                     episode_step = 0
-                    obs, _ = self.env.reset()
+                    obs, _ = self.env.reset(options=self._build_reset_options())
 
         except KeyboardInterrupt:
             self.log("Training interrupted by user.")
@@ -961,6 +978,30 @@ class TrainingDialog:
         chk_gui = tk.Checkbutton(frame_single, text="Enable SUMO GUI", variable=self.var_gui_enabled)
         chk_gui.grid(row=1, column=0, sticky="w", pady=5)
 
+        # --- FIX FORGALOM ---
+        frame_flow = tk.LabelFrame(self.top, text="Traffic Generation", padx=10, pady=5)
+        frame_flow.pack(fill="x", padx=10, pady=5)
+
+        self.var_fixed_flow = tk.BooleanVar(value=False)
+        chk_fixed = tk.Checkbutton(frame_flow, text="Fix forgalom (debug/teszt)",
+                                    variable=self.var_fixed_flow, command=self.toggle_fixed_flow)
+        chk_fixed.grid(row=0, column=0, sticky="w", columnspan=2)
+
+        tk.Label(frame_flow, text="Target (veh/h/lane):").grid(row=1, column=0, sticky="w")
+        self.entry_flow_target = tk.Entry(frame_flow, width=10)
+        self.entry_flow_target.insert(0, "500")
+        self.entry_flow_target.config(state="disabled")
+        self.entry_flow_target.grid(row=1, column=1, padx=5)
+
+        tk.Label(frame_flow, text="Spread (±):").grid(row=1, column=2, sticky="w")
+        self.entry_flow_spread = tk.Entry(frame_flow, width=10)
+        self.entry_flow_spread.insert(0, "0")
+        self.entry_flow_spread.config(state="disabled")
+        self.entry_flow_spread.grid(row=1, column=3, padx=5)
+
+        tk.Label(frame_flow, text="(Spread=0 → minden epizód pontosan Target forgalommal fut)",
+                 font=("Arial", 8)).grid(row=2, column=0, columnspan=4, sticky="w")
+
         frame_btns = tk.Frame(self.top, pady=10)
         frame_btns.pack(fill="x")
 
@@ -1007,7 +1048,10 @@ class TrainingDialog:
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
             "single_agent_id": self.combo_agent.get() if self.var_single_enabled.get() else None,
-            "sumo_gui": self.var_gui_enabled.get()
+            "sumo_gui": self.var_gui_enabled.get(),
+            "fixed_flow": self.var_fixed_flow.get(),
+            "flow_target": int(self.entry_flow_target.get()) if self.var_fixed_flow.get() else None,
+            "flow_spread": int(self.entry_flow_spread.get()) if self.var_fixed_flow.get() else None,
         }
 
     def toggle_single_agent_ui(self):
@@ -1018,6 +1062,11 @@ class TrainingDialog:
         else:
             self.combo_agent.config(state="disabled")
             self.combo_agent.set("")
+
+    def toggle_fixed_flow(self):
+        state = "normal" if self.var_fixed_flow.get() else "disabled"
+        self.entry_flow_target.config(state=state)
+        self.entry_flow_spread.config(state=state)
 
     def start_training(self):
         if not HAS_RL_LIBS:
@@ -1052,6 +1101,10 @@ class TrainingDialog:
 
             if settings["single_agent_id"]:
                 cmd.extend(["--single-agent", settings["single_agent_id"]])
+
+            if settings.get("fixed_flow") and settings.get("flow_target") is not None:
+                cmd.extend(["--flow-target", str(settings["flow_target"])])
+                cmd.extend(["--flow-spread", str(settings.get("flow_spread", 0))])
 
             # Környezeti változók
             env = os.environ.copy()

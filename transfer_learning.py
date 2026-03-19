@@ -117,6 +117,30 @@ class TransferLearningDialog:
         chk_gui = tk.Checkbutton(frame_hyper, text="Enable SUMO GUI", variable=self.var_gui_enabled)
         chk_gui.grid(row=len(params), column=0, sticky="w", pady=5)
 
+        # --- FIX FORGALOM ---
+        frame_flow = tk.LabelFrame(self.top, text="5. Traffic Generation", padx=10, pady=5)
+        frame_flow.pack(fill="x", padx=10, pady=5)
+
+        self.var_fixed_flow = tk.BooleanVar(value=False)
+        chk_fixed = tk.Checkbutton(frame_flow, text="Fix forgalom (debug/teszt)",
+                                    variable=self.var_fixed_flow, command=self.toggle_fixed_flow)
+        chk_fixed.grid(row=0, column=0, sticky="w", columnspan=2)
+
+        tk.Label(frame_flow, text="Target (veh/h/lane):").grid(row=1, column=0, sticky="w")
+        self.entry_flow_target = tk.Entry(frame_flow, width=10)
+        self.entry_flow_target.insert(0, "500")
+        self.entry_flow_target.config(state="disabled")
+        self.entry_flow_target.grid(row=1, column=1, padx=5)
+
+        tk.Label(frame_flow, text="Spread (±):").grid(row=1, column=2, sticky="w")
+        self.entry_flow_spread = tk.Entry(frame_flow, width=10)
+        self.entry_flow_spread.insert(0, "0")
+        self.entry_flow_spread.config(state="disabled")
+        self.entry_flow_spread.grid(row=1, column=3, padx=5)
+
+        tk.Label(frame_flow, text="(Spread=0 → minden epizód pontosan Target forgalommal fut)",
+                 font=("Arial", 8)).grid(row=2, column=0, columnspan=4, sticky="w")
+
         # --- CONTROLS ---
         frame_btns = tk.Frame(self.top, pady=10)
         frame_btns.pack(fill="x")
@@ -142,6 +166,11 @@ class TransferLearningDialog:
             else:
                 self.entry_num_layers.config(state="normal")
                 self.entry_layer_size.config(state="normal")
+
+    def toggle_fixed_flow(self):
+        state = "normal" if self.var_fixed_flow.get() else "disabled"
+        self.entry_flow_target.config(state=state)
+        self.entry_flow_spread.config(state=state)
 
     def browse_model(self):
         filename = filedialog.askopenfilename(
@@ -176,7 +205,10 @@ class TransferLearningDialog:
             "layer_size": int(self.entry_layer_size.get()),
             "single_agent_id": self.combo_agent.get(),
             "sumo_gui": self.var_gui_enabled.get(),
-            "load_model_path": self.model_path.get()
+            "load_model_path": self.model_path.get(),
+            "fixed_flow": self.var_fixed_flow.get(),
+            "flow_target": int(self.entry_flow_target.get()) if self.var_fixed_flow.get() else None,
+            "flow_spread": int(self.entry_flow_spread.get()) if self.var_fixed_flow.get() else None,
         }
 
     def start_training(self):
@@ -199,6 +231,11 @@ class TransferLearningDialog:
              return
 
         try:
+            # Fix forgalom beállítás
+            fixed_flow = None
+            if settings.get("fixed_flow") and settings.get("flow_target") is not None:
+                fixed_flow = {'target': settings["flow_target"], 'spread': settings.get("flow_spread", 0)}
+
             # We reuse IndependentDQNTrainer but pass load_model_path
             self.trainer_instance = IndependentDQNTrainer(
                 net_file=self.net_file,
@@ -210,7 +247,8 @@ class TransferLearningDialog:
                 hyperparams=settings,
                 single_agent_id=settings["single_agent_id"], # ALWAYS Single Agent for Fine-Tuning here
                 sumo_gui=settings["sumo_gui"],
-                load_model_path=settings["load_model_path"]
+                load_model_path=settings["load_model_path"],
+                fixed_flow=fixed_flow,
             )
 
             self.trainer_thread = threading.Thread(target=self.run_trainer_thread)
