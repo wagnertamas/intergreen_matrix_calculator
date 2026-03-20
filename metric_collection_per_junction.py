@@ -897,6 +897,416 @@ def check_fit_quality(output_dir):
             print(f"    Javaslat: alternatív normalizáció vizsgálata (pl. quantile, adaptive).")
 
 
+def compare_normalization_methods(output_dir):
+    """
+    Különböző normalizációs módszerek összehasonlítása junction-önként.
+
+    Tesztelt módszerek:
+      1. log-sigmoid (jelenlegi)     : R = 1 - sigmoid((log(x) - mu) / std)
+      2. linear-sigmoid              : R = 1 - sigmoid((x - mu) / std)
+      3. sqrt-sigmoid                : R = 1 - sigmoid((sqrt(x) - mu) / std)
+      4. quantile (empirikus CDF)    : R = 1 - F_empirikus(x)
+      5. min-max                     : R = 1 - (x - p5) / (p95 - p5)
+      6. box-cox + sigmoid           : R = 1 - sigmoid((boxcox(x) - mu) / std)
+
+    Értékelési szempontok:
+      - Reward range (p90-p10): minél nagyobb, annál informatívabb
+      - Sigmoid hasznos zóna [0.15-0.85]: minél több adat esik ide
+      - Reward std: minél nagyobb, annál jobban differenciál
+      - Normalitás (Anderson-Darling): a transzformált adat illeszkedése
+    """
+    from scipy import stats as sp_stats
+    from scipy.special import inv_boxcox
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    print("\n" + "=" * 80)
+    print("  NORMALIZACIOS MODSZEREK OSSZEHASONLITASA")
+    print("=" * 80)
+
+    # --- CSV-k betöltése ---
+    csv_files = [f for f in os.listdir(output_dir) if f.endswith('.csv') and '_flow' in f]
+    if not csv_files:
+        print("[ERROR] Nincsenek CSV fajlok!")
+        return
+
+    all_data = []
+    for csv_file in csv_files:
+        df = pd.read_csv(os.path.join(output_dir, csv_file))
+        flow_level = int(csv_file.split('_flow')[1].split('_')[0])
+        df['flow_level'] = flow_level
+        jid = csv_file.split('_flow')[0]
+        df['junction'] = jid
+        all_data.append(df)
+
+    full_df = pd.concat(all_data, ignore_index=True)
+    junction_ids = sorted(full_df['junction'].unique())
+
+    # =====================================================================
+    # Normalizációs módszerek definíciója
+    # =====================================================================
+
+    def sigmoid(z):
+        return 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
+
+    def method_log_sigmoid(vals):
+        """Jelenlegi módszer: log-sigmoid."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        log_v = np.log(vals_pos + 1e-5)
+        mu, std = np.mean(log_v), np.std(log_v)
+        rewards = 1.0 - sigmoid((log_v - mu) / (std + 1e-9))
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    def method_linear_sigmoid(vals):
+        """Lineáris sigmoid (nincs log transzformáció)."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        mu, std = np.mean(vals_pos), np.std(vals_pos)
+        rewards = 1.0 - sigmoid((vals_pos - mu) / (std + 1e-9))
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    def method_sqrt_sigmoid(vals):
+        """Sqrt + sigmoid."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        sqrt_v = np.sqrt(vals_pos)
+        mu, std = np.mean(sqrt_v), np.std(sqrt_v)
+        rewards = 1.0 - sigmoid((sqrt_v - mu) / (std + 1e-9))
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    def method_quantile(vals):
+        """Empirikus CDF (quantile-based)."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        # Empirikus CDF: rangsor / N → reward = 1 - rank/N
+        sorted_vals = np.sort(vals_pos)
+        ranks = np.searchsorted(sorted_vals, vals_pos, side='right')
+        rewards = 1.0 - ranks / len(vals_pos)
+        params = {'p5': np.percentile(vals_pos, 5), 'p95': np.percentile(vals_pos, 95)}
+        return rewards, params, vals_pos
+
+    def method_minmax(vals):
+        """Min-max normalizáció (p5-p95)."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        p5 = np.percentile(vals_pos, 5)
+        p95 = np.percentile(vals_pos, 95)
+        if p95 - p5 < 1e-9:
+            return None, None, None
+        normalized = (vals_pos - p5) / (p95 - p5)
+        rewards = np.clip(1.0 - normalized, 0, 1)
+        params = {'p5': p5, 'p95': p95}
+        return rewards, params, vals_pos
+
+    def method_boxcox_sigmoid(vals):
+        """Box-Cox optimális transzformáció + sigmoid."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        try:
+            bc_vals, lmbda = sp_stats.boxcox(vals_pos)
+            mu, std = np.mean(bc_vals), np.std(bc_vals)
+            rewards = 1.0 - sigmoid((bc_vals - mu) / (std + 1e-9))
+            params = {'lambda': lmbda, 'mu': mu, 'std': std}
+            return rewards, params, vals_pos
+        except Exception:
+            return None, None, None
+
+    methods = [
+        ('log-sigmoid', method_log_sigmoid),
+        ('linear-sigmoid', method_linear_sigmoid),
+        ('sqrt-sigmoid', method_sqrt_sigmoid),
+        ('quantile', method_quantile),
+        ('min-max', method_minmax),
+        ('box-cox-sigmoid', method_boxcox_sigmoid),
+    ]
+
+    # =====================================================================
+    # Minden junction + metrika + módszer tesztelése
+    # =====================================================================
+    all_results = []
+
+    for jid in junction_ids:
+        jdf = full_df[full_df['junction'] == jid]
+        jdf_valid = jdf[jdf['VehCount'] > 0]
+
+        for metric_name in ['TotalWaitingTime', 'TotalCO2']:
+            raw_vals = jdf_valid[metric_name].values
+
+            for method_name, method_fn in methods:
+                rewards, params, vals_pos = method_fn(raw_vals)
+                if rewards is None:
+                    continue
+
+                # --- Metrikák ---
+                r_range = float(np.percentile(rewards, 90) - np.percentile(rewards, 10))
+                r_std = float(np.std(rewards))
+                r_mean = float(np.mean(rewards))
+                useful_pct = float(np.mean((rewards >= 0.15) & (rewards <= 0.85)) * 100)
+                sat_low = float(np.mean(rewards < 0.15) * 100)
+                sat_high = float(np.mean(rewards > 0.85) * 100)
+
+                # Anderson-Darling teszt (csak sigmoid-jellegűeknél van értelme)
+                ad_stat = None
+                if method_name in ['log-sigmoid', 'linear-sigmoid', 'sqrt-sigmoid', 'box-cox-sigmoid']:
+                    try:
+                        ad_result = sp_stats.anderson(rewards, dist='norm')
+                        ad_stat = float(ad_result.statistic)
+                    except Exception:
+                        pass
+
+                all_results.append({
+                    'junction': jid,
+                    'metric': metric_name,
+                    'method': method_name,
+                    'reward_range': r_range,
+                    'reward_std': r_std,
+                    'reward_mean': r_mean,
+                    'useful_pct': useful_pct,
+                    'saturated_low_pct': sat_low,
+                    'saturated_high_pct': sat_high,
+                    'ad_statistic': ad_stat,
+                })
+
+    results_df = pd.DataFrame(all_results)
+    results_df.to_csv(os.path.join(output_dir, 'normalization_methods_comparison.csv'), index=False)
+    print(f"  normalization_methods_comparison.csv mentve")
+
+    # =====================================================================
+    # Összefoglaló tábla — módszerenként átlagolt eredmények
+    # =====================================================================
+    print(f"\n{'=' * 100}")
+    print(f"  MODSZEREK ATLAGOS TELJESITMENYE (mindket metrikara, minden junction-re)")
+    print(f"{'=' * 100}")
+
+    print(f"\n{'Módszer':20} {'R_range':>10} {'R_std':>10} {'Hasznos%':>10} "
+          f"{'Sat_low%':>10} {'Sat_high%':>10} {'R_mean':>10}")
+    print("-" * 85)
+
+    method_order = ['log-sigmoid', 'linear-sigmoid', 'sqrt-sigmoid', 'quantile', 'min-max', 'box-cox-sigmoid']
+    method_scores = {}
+
+    for method in method_order:
+        mdf = results_df[results_df['method'] == method]
+        if len(mdf) == 0:
+            continue
+        r_range = mdf['reward_range'].mean()
+        r_std = mdf['reward_std'].mean()
+        useful = mdf['useful_pct'].mean()
+        sat_low = mdf['saturated_low_pct'].mean()
+        sat_high = mdf['saturated_high_pct'].mean()
+        r_mean = mdf['reward_mean'].mean()
+
+        # Összesített pontszám: range + std + useful% normalizálva
+        score = r_range * 0.3 + r_std * 0.3 + (useful / 100) * 0.4
+        method_scores[method] = score
+
+        print(f"{method:20} {r_range:10.4f} {r_std:10.4f} {useful:10.1f} "
+              f"{sat_low:10.1f} {sat_high:10.1f} {r_mean:10.4f}")
+
+    # Rangsor
+    print(f"\n--- RANGSOR (0.3*range + 0.3*std + 0.4*useful%) ---")
+    sorted_methods = sorted(method_scores.items(), key=lambda x: x[1], reverse=True)
+    for rank, (method, score) in enumerate(sorted_methods, 1):
+        marker = " <<<< BEST" if rank == 1 else ""
+        print(f"  {rank}. {method:20} score={score:.4f}{marker}")
+
+    # =====================================================================
+    # Per-junction legjobb módszer
+    # =====================================================================
+    print(f"\n{'=' * 100}")
+    print(f"  PER-JUNCTION LEGJOBB MODSZER")
+    print(f"{'=' * 100}")
+
+    print(f"\n{'Junction':15} {'Wait_best':20} {'Wait_range':>10} {'CO2_best':20} {'CO2_range':>10}")
+    print("-" * 80)
+
+    best_methods_per_junction = {}
+
+    for jid in junction_ids:
+        best = {}
+        for metric in ['TotalWaitingTime', 'TotalCO2']:
+            mdf = results_df[(results_df['junction'] == jid) & (results_df['metric'] == metric)]
+            if len(mdf) == 0:
+                continue
+            # Legjobb = legnagyobb reward range + hasznos%
+            mdf = mdf.copy()
+            mdf['score'] = mdf['reward_range'] * 0.4 + mdf['reward_std'] * 0.3 + (mdf['useful_pct'] / 100) * 0.3
+            best_row = mdf.loc[mdf['score'].idxmax()]
+            best[metric] = {
+                'method': best_row['method'],
+                'range': best_row['reward_range'],
+                'useful_pct': best_row['useful_pct'],
+                'score': best_row['score'],
+            }
+
+        best_methods_per_junction[jid] = best
+
+        w_best = best.get('TotalWaitingTime', {}).get('method', 'N/A')
+        w_range = best.get('TotalWaitingTime', {}).get('range', 0)
+        c_best = best.get('TotalCO2', {}).get('method', 'N/A')
+        c_range = best.get('TotalCO2', {}).get('range', 0)
+        print(f"{jid:15} {w_best:20} {w_range:10.4f} {c_best:20} {c_range:10.4f}")
+
+    # Konszenzus: melyik módszer nyer a legtöbbször?
+    wait_wins = {}
+    co2_wins = {}
+    for jid, best in best_methods_per_junction.items():
+        if 'TotalWaitingTime' in best:
+            m = best['TotalWaitingTime']['method']
+            wait_wins[m] = wait_wins.get(m, 0) + 1
+        if 'TotalCO2' in best:
+            m = best['TotalCO2']['method']
+            co2_wins[m] = co2_wins.get(m, 0) + 1
+
+    print(f"\n--- KONSZENZUS (hány junction-nél nyer) ---")
+    print(f"  TotalWaitingTime:")
+    for m, cnt in sorted(wait_wins.items(), key=lambda x: x[1], reverse=True):
+        print(f"    {m:20} {cnt:3d}/{len(junction_ids)} junction")
+    print(f"  TotalCO2:")
+    for m, cnt in sorted(co2_wins.items(), key=lambda x: x[1], reverse=True):
+        print(f"    {m:20} {cnt:3d}/{len(junction_ids)} junction")
+
+    # =====================================================================
+    # Ábra: módszerek összehasonlítása
+    # =====================================================================
+    fig, axes = plt.subplots(2, 3, figsize=(22, 12))
+    fig.suptitle('Normalization Methods Comparison (per Junction)', fontsize=16)
+
+    for metric_idx, metric in enumerate(['TotalWaitingTime', 'TotalCO2']):
+        mdf = results_df[results_df['metric'] == metric]
+
+        # 1. Reward range per method (boxplot)
+        ax = axes[metric_idx, 0]
+        box_data = [mdf[mdf['method'] == m]['reward_range'].values for m in method_order if m in mdf['method'].values]
+        box_labels = [m for m in method_order if m in mdf['method'].values]
+        bp = ax.boxplot(box_data, tick_labels=box_labels, showfliers=True, patch_artist=True)
+        colors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948']
+        for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
+        ax.set_ylabel('Reward Range (p90-p10)')
+        ax.set_title(f'{metric}\nReward Range by Method')
+        ax.tick_params(axis='x', rotation=30)
+        ax.grid(True, alpha=0.3)
+
+        # 2. Hasznos% per method (boxplot)
+        ax = axes[metric_idx, 1]
+        box_data = [mdf[mdf['method'] == m]['useful_pct'].values for m in method_order if m in mdf['method'].values]
+        bp = ax.boxplot(box_data, tick_labels=box_labels, showfliers=True, patch_artist=True)
+        for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
+        ax.set_ylabel('Useful Zone % [0.15-0.85]')
+        ax.set_title(f'{metric}\nSigmoid Useful Coverage')
+        ax.axhline(60, color='green', ls='--', alpha=0.5, label='Target (60%)')
+        ax.tick_params(axis='x', rotation=30)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+        # 3. Per-junction heatmap (reward range)
+        ax = axes[metric_idx, 2]
+        pivot = mdf.pivot_table(index='junction', columns='method', values='reward_range', aggfunc='mean')
+        pivot = pivot.reindex(columns=[m for m in method_order if m in pivot.columns])
+        im = ax.imshow(pivot.values, cmap='YlOrRd', aspect='auto')
+        ax.set_xticks(range(len(pivot.columns)))
+        ax.set_xticklabels(pivot.columns, rotation=30, ha='right', fontsize=8)
+        ax.set_yticks(range(len(pivot.index)))
+        ax.set_yticklabels(pivot.index, fontsize=7)
+        ax.set_title(f'{metric}\nReward Range Heatmap')
+        # Annotáció: legjobb per junction
+        for i in range(len(pivot.index)):
+            row_vals = pivot.values[i]
+            best_idx = np.nanargmax(row_vals)
+            for j in range(len(pivot.columns)):
+                val = row_vals[j]
+                if not np.isnan(val):
+                    weight = 'bold' if j == best_idx else 'normal'
+                    color = 'white' if val > 0.5 else 'black'
+                    ax.text(j, i, f'{val:.2f}', ha='center', va='center',
+                            fontsize=6, fontweight=weight, color=color)
+        fig.colorbar(im, ax=ax, shrink=0.6)
+
+    plt.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'normalization_methods_comparison.png'), dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"\n  normalization_methods_comparison.png mentve")
+
+    # =====================================================================
+    # Per-junction reward eloszlás a top 3 módszerrel
+    # =====================================================================
+    top3_methods = [m for m, _ in sorted_methods[:3]]
+    top3_colors = {'log-sigmoid': 'blue', 'linear-sigmoid': 'orange', 'sqrt-sigmoid': 'green',
+                   'quantile': 'red', 'min-max': 'purple', 'box-cox-sigmoid': 'brown'}
+
+    n_cols = 5
+    n_rows = (len(junction_ids) + n_cols - 1) // n_cols
+
+    for metric_name in ['TotalWaitingTime', 'TotalCO2']:
+        fig, axes_grid = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3.5 * n_rows))
+        if n_rows == 1:
+            axes_grid = axes_grid.reshape(1, -1)
+        fig.suptitle(f'Top-3 Methods: {metric_name} Reward Distribution per Junction', fontsize=14)
+
+        for idx, jid in enumerate(junction_ids):
+            row, col = idx // n_cols, idx % n_cols
+            ax = axes_grid[row, col]
+
+            jdf = full_df[full_df['junction'] == jid]
+            jdf_valid = jdf[jdf['VehCount'] > 0]
+            raw_vals = jdf_valid[metric_name].values
+
+            plotted = False
+            for method_name, method_fn in methods:
+                if method_name not in top3_methods:
+                    continue
+                rewards, _, _ = method_fn(raw_vals)
+                if rewards is None:
+                    continue
+                ax.hist(rewards, bins=30, alpha=0.4, density=True,
+                        label=method_name, color=top3_colors.get(method_name, 'gray'))
+                plotted = True
+
+            if plotted:
+                ax.axvline(0.15, color='black', ls=':', lw=0.8, alpha=0.5)
+                ax.axvline(0.85, color='black', ls=':', lw=0.8, alpha=0.5)
+                ax.set_xlim(0, 1)
+                ax.set_title(jid, fontsize=9)
+                if idx == 0:
+                    ax.legend(fontsize=6)
+
+        for idx in range(len(junction_ids), n_rows * n_cols):
+            row, col = idx // n_cols, idx % n_cols
+            axes_grid[row, col].set_visible(False)
+
+        plt.tight_layout()
+        fname = f'normalization_top3_{metric_name.lower()}.png'
+        fig.savefig(os.path.join(output_dir, fname), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  {fname} mentve")
+
+    # Végső ajánlás
+    best_method = sorted_methods[0][0]
+    print(f"\n{'=' * 80}")
+    print(f"  AJANLAS")
+    print(f"{'=' * 80}")
+    print(f"  Globálisan legjobb módszer: {best_method} (score={sorted_methods[0][1]:.4f})")
+    print(f"  Második legjobb:            {sorted_methods[1][0]} (score={sorted_methods[1][1]:.4f})")
+    if sorted_methods[0][1] - sorted_methods[1][1] < 0.01:
+        print(f"  MEGJEGYZÉS: Az első két módszer nagyon közel van — mindkettő használható.")
+    print(f"\n  A junction_reward_params.json-ban a '{best_method}' módszer paramétereit érdemes használni.")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Per-junction metric collection and normalization calibration')
     parser.add_argument('--skip-simulation', action='store_true',
@@ -941,6 +1351,9 @@ def main():
 
     # Illeszkedés-ellenőrzés
     check_fit_quality(OUTPUT_DIR)
+
+    # Normalizációs módszerek összehasonlítása
+    compare_normalization_methods(OUTPUT_DIR)
 
 
 if __name__ == "__main__":
