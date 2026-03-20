@@ -1087,11 +1087,13 @@ def reward_selection_analysis(output_dir):
             print(f"    {rm:25} avg|r| = {state_reward_corr[rm]:.3f}  ({strength})")
 
         # --- 5b. State redundancia (state változók egymás között) ---
-        print(f"\n  --- State változók közötti korreláció ---")
+        print(f"\n  --- 5b. State változók függetlensége ---")
         state_only = state_cols[:6]
         state_df = df_valid[state_only].dropna()
         if len(state_df) > 50:
+            # Globális Pearson korreláció
             state_corr = state_df.corr(method='pearson')
+            print(f"\n  GLOBÁLIS Pearson korreláció:")
             print(f"  {'':18}", end="")
             for sc in state_only:
                 print(f" {sc[:9]:>10}", end="")
@@ -1105,12 +1107,101 @@ def reward_selection_analysis(output_dir):
                     line += f" {r:+8.3f}{marker}"
                 print(line)
 
-            print(f"\n  * = |r| > 0.85 (redundáns state változók)")
+            print(f"\n  * = |r| > 0.85 (redundáns)")
             for i, s1 in enumerate(state_only):
                 for s2 in state_only[i+1:]:
                     r = abs(state_corr.loc[s1, s2])
                     if r > 0.85:
-                        print(f"    REDUNDÁNS STATE: {s1} ↔ {s2} (|r| = {r:.3f})")
+                        print(f"    REDUNDÁNS: {s1} ↔ {s2} (|r| = {r:.3f})")
+
+            # Parciális korreláció — flow_level kiszűrése
+            # r_partial(A,B|C) = (r_AB - r_AC * r_BC) / sqrt((1 - r_AC²)(1 - r_BC²))
+            print(f"\n  PARCIÁLIS korreláció (flow_level kiszűrve):")
+            print(f"  (Ha a globális magas de a parciális alacsony → csak a forgalom mozgatja együtt)")
+            if 'flow_level' in df_valid.columns:
+                state_with_flow = df_valid[state_only + ['flow_level']].dropna()
+                flow_corrs = {}
+                for sc in state_only:
+                    r_fc, _ = stats.pearsonr(state_with_flow['flow_level'].values,
+                                             state_with_flow[sc].values)
+                    flow_corrs[sc] = r_fc
+
+                print(f"  {'':18}", end="")
+                for sc in state_only:
+                    print(f" {sc[:9]:>10}", end="")
+                print()
+                print("  " + "-" * (18 + 11 * len(state_only)))
+
+                partial_corr = {}
+                for sc1 in state_only:
+                    line = f"  {sc1:18}"
+                    partial_corr[sc1] = {}
+                    for sc2 in state_only:
+                        if sc1 == sc2:
+                            line += f" {'1.000':>10}"
+                            partial_corr[sc1][sc2] = 1.0
+                            continue
+                        r_ab = state_corr.loc[sc1, sc2]
+                        r_ac = flow_corrs[sc1]
+                        r_bc = flow_corrs[sc2]
+                        denom = np.sqrt((1 - r_ac**2) * (1 - r_bc**2))
+                        if denom > 1e-9:
+                            r_partial = (r_ab - r_ac * r_bc) / denom
+                        else:
+                            r_partial = r_ab
+                        partial_corr[sc1][sc2] = r_partial
+                        # Jelölés: ha globálisan magas de parciálisan alacsony → ↓
+                        if abs(r_ab) > 0.85 and abs(r_partial) < 0.5:
+                            marker = " ↓"  # flow_level okozta a korrelációt
+                        elif abs(r_partial) > 0.85:
+                            marker = " *"  # valódi redundancia
+                        else:
+                            marker = "  "
+                        line += f" {r_partial:+8.3f}{marker}"
+                    print(line)
+
+                print(f"\n  * = |r_partial| > 0.85 (valódi redundancia, flow szűrése után is fennáll)")
+                print(f"  ↓ = globálisan |r| > 0.85, de parciálisan |r| < 0.5 (CSAK a forgalom mozgatta)")
+
+            # VIF (Variance Inflation Factor) — multikollinearitás mérése
+            # VIF_j = 1 / (1 - R²_j), ahol R²_j = az j-edik változó R² értéke
+            # a többi változóból regresszálva
+            print(f"\n  VIF (Variance Inflation Factor):")
+            print(f"  VIF = 1/(1-R²): VIF > 10 → erős multikollinearitás, VIF > 5 → közepes")
+            from numpy.linalg import lstsq
+
+            state_arr = state_df.values
+            state_means = state_arr.mean(axis=0)
+            state_stds = state_arr.std(axis=0)
+            state_stds[state_stds == 0] = 1.0
+            state_norm = (state_arr - state_means) / state_stds
+
+            print(f"  {'State változó':20} {'VIF':>8} {'Értékelés':>15}")
+            print("  " + "-" * 45)
+            vif_results = {}
+            for j, sc in enumerate(state_only):
+                # y = j-edik oszlop, X = többi oszlop
+                y = state_norm[:, j]
+                X = np.delete(state_norm, j, axis=1)
+                X = np.column_stack([X, np.ones(len(X))])  # intercept
+                coeffs, residuals, _, _ = lstsq(X, y, rcond=None)
+                y_pred = X @ coeffs
+                ss_res = np.sum((y - y_pred) ** 2)
+                ss_tot = np.sum((y - y.mean()) ** 2)
+                r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+                vif = 1 / (1 - r2) if r2 < 0.9999 else 9999.0
+                vif_results[sc] = vif
+                verdict = "ERŐS MULTIKOL" if vif > 10 else "KÖZEPES" if vif > 5 else "OK"
+                print(f"  {sc:20} {vif:8.2f} {verdict:>15}")
+
+            # Javaslat state-re a VIF alapján
+            print(f"\n  Javasolt state változók (VIF < 10):")
+            good_states = [sc for sc, v in vif_results.items() if v < 10]
+            high_vif_states = [sc for sc, v in vif_results.items() if v >= 10]
+            for sc in good_states:
+                print(f"    ✓ {sc} (VIF = {vif_results[sc]:.2f})")
+            for sc in high_vif_states:
+                print(f"    ✗ {sc} (VIF = {vif_results[sc]:.2f}) — redundáns, elhagyható")
 
         # --- 5c. Mutual Information approximáció ---
         # MI ≈ -0.5 * log(1 - r²) a normális eloszlás esetén (Gaussi MI)
