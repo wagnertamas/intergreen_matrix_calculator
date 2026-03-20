@@ -950,8 +950,11 @@ def compare_normalization_methods(output_dir):
     def sigmoid(z):
         return 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
 
+    # =================================================================
+    # 1. LOG-SIGMOID (jelenlegi módszer)
+    #    R = 1 - sigmoid((log(x) - mu) / std)
+    # =================================================================
     def method_log_sigmoid(vals):
-        """Jelenlegi módszer: log-sigmoid."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
@@ -961,8 +964,11 @@ def compare_normalization_methods(output_dir):
         params = {'mu': mu, 'std': std}
         return rewards, params, vals_pos
 
+    # =================================================================
+    # 2. LINEAR-SIGMOID
+    #    R = 1 - sigmoid((x - mu) / std)
+    # =================================================================
     def method_linear_sigmoid(vals):
-        """Lineáris sigmoid (nincs log transzformáció)."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
@@ -971,8 +977,11 @@ def compare_normalization_methods(output_dir):
         params = {'mu': mu, 'std': std}
         return rewards, params, vals_pos
 
+    # =================================================================
+    # 3. SQRT-SIGMOID
+    #    R = 1 - sigmoid((sqrt(x) - mu) / std)
+    # =================================================================
     def method_sqrt_sigmoid(vals):
-        """Sqrt + sigmoid."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
@@ -982,20 +991,25 @@ def compare_normalization_methods(output_dir):
         params = {'mu': mu, 'std': std}
         return rewards, params, vals_pos
 
+    # =================================================================
+    # 4. QUANTILE (empirikus CDF)
+    #    R = 1 - F_empirikus(x)
+    # =================================================================
     def method_quantile(vals):
-        """Empirikus CDF (quantile-based)."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
-        # Empirikus CDF: rangsor / N → reward = 1 - rank/N
         sorted_vals = np.sort(vals_pos)
         ranks = np.searchsorted(sorted_vals, vals_pos, side='right')
         rewards = 1.0 - ranks / len(vals_pos)
         params = {'p5': np.percentile(vals_pos, 5), 'p95': np.percentile(vals_pos, 95)}
         return rewards, params, vals_pos
 
+    # =================================================================
+    # 5. MIN-MAX (p5-p95 clipped)
+    #    R = clip(1 - (x - p5) / (p95 - p5), 0, 1)
+    # =================================================================
     def method_minmax(vals):
-        """Min-max normalizáció (p5-p95)."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
@@ -1008,8 +1022,11 @@ def compare_normalization_methods(output_dir):
         params = {'p5': p5, 'p95': p95}
         return rewards, params, vals_pos
 
+    # =================================================================
+    # 6. BOX-COX + SIGMOID
+    #    R = 1 - sigmoid((boxcox(x, lambda) - mu) / std)
+    # =================================================================
     def method_boxcox_sigmoid(vals):
-        """Box-Cox optimális transzformáció + sigmoid."""
         vals_pos = vals[vals > 0]
         if len(vals_pos) < 10:
             return None, None, None
@@ -1022,13 +1039,196 @@ def compare_normalization_methods(output_dir):
         except Exception:
             return None, None, None
 
+    # =================================================================
+    # 7. TANH (Z-score)
+    #    z = (x - mu) / std, R = (1 - tanh(z)) / 2  →  [0, 1]
+    # =================================================================
+    def method_tanh_zscore(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        mu, std = np.mean(vals_pos), np.std(vals_pos)
+        z = (vals_pos - mu) / (std + 1e-9)
+        rewards = (1.0 - np.tanh(z)) / 2.0
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 8. LOG-TANH (log transzformáció + tanh)
+    #    z = (log(x) - mu) / std, R = (1 - tanh(z)) / 2
+    # =================================================================
+    def method_log_tanh(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        log_v = np.log(vals_pos + 1e-5)
+        mu, std = np.mean(log_v), np.std(log_v)
+        z = (log_v - mu) / (std + 1e-9)
+        rewards = (1.0 - np.tanh(z)) / 2.0
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 9. ALGEBRAIC
+    #    R = 1 - z / sqrt(1 + z^2),  z = (x - mu) / std,  → [0, 1]
+    # =================================================================
+    def method_algebraic(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        mu, std = np.mean(vals_pos), np.std(vals_pos)
+        z = (vals_pos - mu) / (std + 1e-9)
+        # algebraic sigmoid: z / sqrt(1 + z^2) → [-1, 1], shift to [0, 1]
+        rewards = (1.0 - z / np.sqrt(1.0 + z**2)) / 2.0
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 10. LOG-ALGEBRAIC
+    #    z = (log(x) - mu) / std, R = (1 - z/sqrt(1+z^2)) / 2
+    # =================================================================
+    def method_log_algebraic(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        log_v = np.log(vals_pos + 1e-5)
+        mu, std = np.mean(log_v), np.std(log_v)
+        z = (log_v - mu) / (std + 1e-9)
+        rewards = (1.0 - z / np.sqrt(1.0 + z**2)) / 2.0
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 11. ROBUST IQR
+    #    z = (x - median) / IQR,  R = 1 - sigmoid(z)
+    # =================================================================
+    def method_robust_iqr(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        median = np.median(vals_pos)
+        q25 = np.percentile(vals_pos, 25)
+        q75 = np.percentile(vals_pos, 75)
+        iqr = q75 - q25
+        if iqr < 1e-9:
+            return None, None, None
+        z = (vals_pos - median) / iqr
+        rewards = 1.0 - sigmoid(z)
+        params = {'median': median, 'q25': q25, 'q75': q75}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 12. LOG-ROBUST IQR
+    #    z = (log(x) - median_log) / IQR_log,  R = 1 - sigmoid(z)
+    # =================================================================
+    def method_log_robust_iqr(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        log_v = np.log(vals_pos + 1e-5)
+        median = np.median(log_v)
+        q25 = np.percentile(log_v, 25)
+        q75 = np.percentile(log_v, 75)
+        iqr = q75 - q25
+        if iqr < 1e-9:
+            return None, None, None
+        z = (log_v - median) / iqr
+        rewards = 1.0 - sigmoid(z)
+        params = {'median': median, 'q25': q25, 'q75': q75}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 13. RANK GAUSS (rank → inverse normal CDF → z-score)
+    #    R = 1 - sigmoid(z)  ahol z = Phi^{-1}(rank/N)
+    # =================================================================
+    def method_rank_gauss(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        n = len(vals_pos)
+        sorted_vals = np.sort(vals_pos)
+        ranks = np.searchsorted(sorted_vals, vals_pos, side='right')
+        # Ranks → (0, 1) tartomány (elkerülve a 0 és 1 széleket)
+        u = (ranks - 0.5) / n
+        u = np.clip(u, 1e-6, 1 - 1e-6)
+        # Inverse normal CDF → z-score
+        z = sp_stats.norm.ppf(u)
+        rewards = 1.0 - sigmoid(z)
+        params = {'n_samples': n}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 14. CLIPPED 95% MIN-MAX
+    #    clip to [p2.5, p97.5], then min-max → [0, 1]
+    # =================================================================
+    def method_clipped95_minmax(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        p2_5 = np.percentile(vals_pos, 2.5)
+        p97_5 = np.percentile(vals_pos, 97.5)
+        if p97_5 - p2_5 < 1e-9:
+            return None, None, None
+        clipped = np.clip(vals_pos, p2_5, p97_5)
+        normalized = (clipped - p2_5) / (p97_5 - p2_5)
+        rewards = 1.0 - normalized
+        params = {'p2.5': p2_5, 'p97.5': p97_5}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 15. HARMONIC (1/x alapú)
+    #    R = x_min / x  (alacsony érték = jó → magas reward)
+    # =================================================================
+    def method_harmonic(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        p5 = np.percentile(vals_pos, 5)
+        if p5 < 1e-9:
+            p5 = np.min(vals_pos[vals_pos > 0])
+        rewards = np.clip(p5 / (vals_pos + 1e-9), 0, 1)
+        params = {'p5': p5}
+        return rewards, params, vals_pos
+
+    # =================================================================
+    # 16. LOG-NORMAL CDF
+    #    R = 1 - Phi((log(x) - mu) / std)  — analitikus lognormál CDF
+    # =================================================================
+    def method_lognormal_cdf(vals):
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None, None, None
+        log_v = np.log(vals_pos + 1e-5)
+        mu, std = np.mean(log_v), np.std(log_v)
+        # Normális CDF a log értékekre
+        rewards = 1.0 - sp_stats.norm.cdf(log_v, loc=mu, scale=std + 1e-9)
+        params = {'mu': mu, 'std': std}
+        return rewards, params, vals_pos
+
     methods = [
+        # Jelenlegi
         ('log-sigmoid', method_log_sigmoid),
+        # Sigmoid variánsok
         ('linear-sigmoid', method_linear_sigmoid),
         ('sqrt-sigmoid', method_sqrt_sigmoid),
-        ('quantile', method_quantile),
-        ('min-max', method_minmax),
         ('box-cox-sigmoid', method_boxcox_sigmoid),
+        # Tanh variánsok
+        ('tanh-zscore', method_tanh_zscore),
+        ('log-tanh', method_log_tanh),
+        # Algebraic variánsok
+        ('algebraic', method_algebraic),
+        ('log-algebraic', method_log_algebraic),
+        # Robust (IQR-based)
+        ('robust-iqr', method_robust_iqr),
+        ('log-robust-iqr', method_log_robust_iqr),
+        # Rank-based
+        ('quantile', method_quantile),
+        ('rank-gauss', method_rank_gauss),
+        ('lognormal-cdf', method_lognormal_cdf),
+        # Range-based
+        ('min-max', method_minmax),
+        ('clipped95-minmax', method_clipped95_minmax),
+        ('harmonic', method_harmonic),
     ]
 
     # =====================================================================
@@ -1093,7 +1293,7 @@ def compare_normalization_methods(output_dir):
           f"{'Sat_low%':>10} {'Sat_high%':>10} {'R_mean':>10}")
     print("-" * 85)
 
-    method_order = ['log-sigmoid', 'linear-sigmoid', 'sqrt-sigmoid', 'quantile', 'min-max', 'box-cox-sigmoid']
+    method_order = [m[0] for m in methods]
     method_scores = {}
 
     for method in method_order:
@@ -1178,64 +1378,45 @@ def compare_normalization_methods(output_dir):
         print(f"    {m:20} {cnt:3d}/{len(junction_ids)} junction")
 
     # =====================================================================
-    # Ábra: módszerek összehasonlítása
+    # Ábra 1: Összefoglaló bar chart — módszerenként (2 metrika)
     # =====================================================================
-    fig, axes = plt.subplots(2, 3, figsize=(22, 12))
-    fig.suptitle('Normalization Methods Comparison (per Junction)', fontsize=16)
+    n_methods = len([m for m in method_order if m in results_df['method'].values])
+    fig, axes = plt.subplots(2, 2, figsize=(24, 14))
+    fig.suptitle('Normalization Methods Comparison — 16 Methods', fontsize=16)
 
     for metric_idx, metric in enumerate(['TotalWaitingTime', 'TotalCO2']):
         mdf = results_df[results_df['metric'] == metric]
+        present_methods = [m for m in method_order if m in mdf['method'].values]
 
-        # 1. Reward range per method (boxplot)
+        # 1. Reward range bar chart (átlag + szórás)
         ax = axes[metric_idx, 0]
-        box_data = [mdf[mdf['method'] == m]['reward_range'].values for m in method_order if m in mdf['method'].values]
-        box_labels = [m for m in method_order if m in mdf['method'].values]
-        bp = ax.boxplot(box_data, tick_labels=box_labels, showfliers=True, patch_artist=True)
-        colors = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948']
-        for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
-            patch.set_facecolor(color)
-            patch.set_alpha(0.7)
+        x = np.arange(len(present_methods))
+        means = [mdf[mdf['method'] == m]['reward_range'].mean() for m in present_methods]
+        stds = [mdf[mdf['method'] == m]['reward_range'].std() for m in present_methods]
+        bars = ax.bar(x, means, yerr=stds, capsize=3, alpha=0.8, color='steelblue', edgecolor='navy')
+        # Legjobb zöldre
+        best_idx = np.argmax(means)
+        bars[best_idx].set_facecolor('#2ca02c')
+        ax.set_xticks(x)
+        ax.set_xticklabels(present_methods, rotation=45, ha='right', fontsize=7)
         ax.set_ylabel('Reward Range (p90-p10)')
-        ax.set_title(f'{metric}\nReward Range by Method')
-        ax.tick_params(axis='x', rotation=30)
-        ax.grid(True, alpha=0.3)
+        ax.set_title(f'{metric} — Reward Range')
+        ax.grid(True, alpha=0.3, axis='y')
 
-        # 2. Hasznos% per method (boxplot)
+        # 2. Hasznos% bar chart
         ax = axes[metric_idx, 1]
-        box_data = [mdf[mdf['method'] == m]['useful_pct'].values for m in method_order if m in mdf['method'].values]
-        bp = ax.boxplot(box_data, tick_labels=box_labels, showfliers=True, patch_artist=True)
-        for patch, color in zip(bp['boxes'], colors[:len(bp['boxes'])]):
-            patch.set_facecolor(color)
-            patch.set_alpha(0.7)
+        means = [mdf[mdf['method'] == m]['useful_pct'].mean() for m in present_methods]
+        stds = [mdf[mdf['method'] == m]['useful_pct'].std() for m in present_methods]
+        bars = ax.bar(x, means, yerr=stds, capsize=3, alpha=0.8, color='darkorange', edgecolor='brown')
+        best_idx = np.argmax(means)
+        bars[best_idx].set_facecolor('#2ca02c')
+        ax.set_xticks(x)
+        ax.set_xticklabels(present_methods, rotation=45, ha='right', fontsize=7)
         ax.set_ylabel('Useful Zone % [0.15-0.85]')
-        ax.set_title(f'{metric}\nSigmoid Useful Coverage')
-        ax.axhline(60, color='green', ls='--', alpha=0.5, label='Target (60%)')
-        ax.tick_params(axis='x', rotation=30)
+        ax.set_title(f'{metric} — Sigmoid Coverage')
+        ax.axhline(60, color='red', ls='--', alpha=0.5, label='Min target (60%)')
         ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        # 3. Per-junction heatmap (reward range)
-        ax = axes[metric_idx, 2]
-        pivot = mdf.pivot_table(index='junction', columns='method', values='reward_range', aggfunc='mean')
-        pivot = pivot.reindex(columns=[m for m in method_order if m in pivot.columns])
-        im = ax.imshow(pivot.values, cmap='YlOrRd', aspect='auto')
-        ax.set_xticks(range(len(pivot.columns)))
-        ax.set_xticklabels(pivot.columns, rotation=30, ha='right', fontsize=8)
-        ax.set_yticks(range(len(pivot.index)))
-        ax.set_yticklabels(pivot.index, fontsize=7)
-        ax.set_title(f'{metric}\nReward Range Heatmap')
-        # Annotáció: legjobb per junction
-        for i in range(len(pivot.index)):
-            row_vals = pivot.values[i]
-            best_idx = np.nanargmax(row_vals)
-            for j in range(len(pivot.columns)):
-                val = row_vals[j]
-                if not np.isnan(val):
-                    weight = 'bold' if j == best_idx else 'normal'
-                    color = 'white' if val > 0.5 else 'black'
-                    ax.text(j, i, f'{val:.2f}', ha='center', va='center',
-                            fontsize=6, fontweight=weight, color=color)
-        fig.colorbar(im, ax=ax, shrink=0.6)
+        ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
     fig.savefig(os.path.join(output_dir, 'normalization_methods_comparison.png'), dpi=200, bbox_inches='tight')
@@ -1243,11 +1424,80 @@ def compare_normalization_methods(output_dir):
     print(f"\n  normalization_methods_comparison.png mentve")
 
     # =====================================================================
-    # Per-junction reward eloszlás a top 3 módszerrel
+    # Ábra 2: Heatmap — összes módszer × összes junction
     # =====================================================================
-    top3_methods = [m for m, _ in sorted_methods[:3]]
-    top3_colors = {'log-sigmoid': 'blue', 'linear-sigmoid': 'orange', 'sqrt-sigmoid': 'green',
-                   'quantile': 'red', 'min-max': 'purple', 'box-cox-sigmoid': 'brown'}
+    for metric in ['TotalWaitingTime', 'TotalCO2']:
+        mdf = results_df[results_df['metric'] == metric]
+        pivot = mdf.pivot_table(index='junction', columns='method', values='reward_range', aggfunc='mean')
+        pivot = pivot.reindex(columns=[m for m in method_order if m in pivot.columns])
+
+        fig, ax = plt.subplots(figsize=(max(18, len(pivot.columns) * 1.2), 10))
+        im = ax.imshow(pivot.values, cmap='YlOrRd', aspect='auto')
+        ax.set_xticks(range(len(pivot.columns)))
+        ax.set_xticklabels(pivot.columns, rotation=45, ha='right', fontsize=8)
+        ax.set_yticks(range(len(pivot.index)))
+        ax.set_yticklabels(pivot.index, fontsize=8)
+        ax.set_title(f'{metric} — Reward Range per Junction × Method', fontsize=14)
+        # Annotáció
+        for i in range(len(pivot.index)):
+            row_vals = pivot.values[i]
+            best_idx = np.nanargmax(row_vals)
+            for j in range(len(pivot.columns)):
+                val = row_vals[j]
+                if not np.isnan(val):
+                    weight = 'bold' if j == best_idx else 'normal'
+                    color = 'white' if val > 0.55 else 'black'
+                    ax.text(j, i, f'{val:.2f}', ha='center', va='center',
+                            fontsize=5.5, fontweight=weight, color=color)
+        fig.colorbar(im, ax=ax, shrink=0.6)
+        plt.tight_layout()
+        fname = f'normalization_heatmap_{metric.lower()}.png'
+        fig.savefig(os.path.join(output_dir, fname), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  {fname} mentve")
+
+    # =====================================================================
+    # Ábra 3: Score scatter — range vs useful% (trade-off megjelenítés)
+    # =====================================================================
+    fig, axes_sc = plt.subplots(1, 2, figsize=(18, 8))
+    fig.suptitle('Method Trade-off: Reward Range vs Useful Zone Coverage', fontsize=14)
+    for metric_idx, metric in enumerate(['TotalWaitingTime', 'TotalCO2']):
+        ax = axes_sc[metric_idx]
+        mdf = results_df[results_df['metric'] == metric]
+        present_methods = [m for m in method_order if m in mdf['method'].values]
+        cmap = plt.cm.tab20(np.linspace(0, 1, len(present_methods)))
+        for i, m in enumerate(present_methods):
+            sub = mdf[mdf['method'] == m]
+            ax.scatter(sub['useful_pct'].mean(), sub['reward_range'].mean(),
+                       s=150, color=cmap[i], edgecolors='black', linewidths=0.8,
+                       label=m, zorder=5)
+            # Error bars
+            ax.errorbar(sub['useful_pct'].mean(), sub['reward_range'].mean(),
+                        xerr=sub['useful_pct'].std(), yerr=sub['reward_range'].std(),
+                        color=cmap[i], alpha=0.4, capsize=3, zorder=4)
+        ax.set_xlabel('Useful Zone % [0.15-0.85]')
+        ax.set_ylabel('Reward Range (p90-p10)')
+        ax.set_title(metric)
+        ax.legend(fontsize=7, loc='best', ncol=2)
+        ax.grid(True, alpha=0.3)
+        # Ideális sarok jelölése
+        ax.annotate('IDEAL', xy=(100, 0.8), fontsize=10, color='green', alpha=0.5,
+                     ha='center', va='center')
+    plt.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'normalization_tradeoff.png'), dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"  normalization_tradeoff.png mentve")
+
+    # =====================================================================
+    # Per-junction reward eloszlás a top 5 módszerrel
+    # =====================================================================
+    top_n = min(5, len(sorted_methods))
+    top_methods = [m for m, _ in sorted_methods[:top_n]]
+    # Színek dinamikusan
+    all_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                  '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                  '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94']
+    method_color_map = {m: all_colors[i % len(all_colors)] for i, m in enumerate(method_order)}
 
     n_cols = 5
     n_rows = (len(junction_ids) + n_cols - 1) // n_cols
@@ -1256,7 +1506,7 @@ def compare_normalization_methods(output_dir):
         fig, axes_grid = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3.5 * n_rows))
         if n_rows == 1:
             axes_grid = axes_grid.reshape(1, -1)
-        fig.suptitle(f'Top-3 Methods: {metric_name} Reward Distribution per Junction', fontsize=14)
+        fig.suptitle(f'Top-{top_n} Methods: {metric_name} Reward Distribution per Junction', fontsize=14)
 
         for idx, jid in enumerate(junction_ids):
             row, col = idx // n_cols, idx % n_cols
@@ -1268,13 +1518,13 @@ def compare_normalization_methods(output_dir):
 
             plotted = False
             for method_name, method_fn in methods:
-                if method_name not in top3_methods:
+                if method_name not in top_methods:
                     continue
                 rewards, _, _ = method_fn(raw_vals)
                 if rewards is None:
                     continue
-                ax.hist(rewards, bins=30, alpha=0.4, density=True,
-                        label=method_name, color=top3_colors.get(method_name, 'gray'))
+                ax.hist(rewards, bins=30, alpha=0.35, density=True,
+                        label=method_name, color=method_color_map.get(method_name, 'gray'))
                 plotted = True
 
             if plotted:
@@ -1283,14 +1533,14 @@ def compare_normalization_methods(output_dir):
                 ax.set_xlim(0, 1)
                 ax.set_title(jid, fontsize=9)
                 if idx == 0:
-                    ax.legend(fontsize=6)
+                    ax.legend(fontsize=5)
 
         for idx in range(len(junction_ids), n_rows * n_cols):
             row, col = idx // n_cols, idx % n_cols
             axes_grid[row, col].set_visible(False)
 
         plt.tight_layout()
-        fname = f'normalization_top3_{metric_name.lower()}.png'
+        fname = f'normalization_top{top_n}_{metric_name.lower()}.png'
         fig.savefig(os.path.join(output_dir, fname), dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  {fname} mentve")
