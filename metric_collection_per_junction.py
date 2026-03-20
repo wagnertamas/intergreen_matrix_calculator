@@ -1557,6 +1557,375 @@ def compare_normalization_methods(output_dir):
     print(f"\n  A junction_reward_params.json-ban a '{best_method}' módszer paramétereit érdemes használni.")
 
 
+def analyze_metric_selection(output_dir):
+    """
+    Melyik metrikák a legjobbak a reward-hoz?
+
+    1. Per-junction PCA: melyik metrikák hordozzák a legtöbb információt
+    2. Per-junction korreláció mátrix: redundancia vizsgálat
+    3. Metrika-kombináció teszt: különböző reward-képletek összehasonlítása
+       (TotalWait+CO2, AvgWait+CO2, Wait+Queue, Wait+Speed, stb.)
+
+    Cél: megtalálni azt a 2-3 metrikát, ami a legjobb reward jelet adja.
+    """
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    print("\n" + "=" * 80)
+    print("  METRIKA SZELEKCIÓ — MELYIK METRIKÁK A LEGJOBBAK A REWARD-HOZ?")
+    print("=" * 80)
+
+    # --- CSV-k betöltése ---
+    csv_files = [f for f in os.listdir(output_dir) if f.endswith('.csv') and '_flow' in f]
+    if not csv_files:
+        print("[ERROR] Nincsenek CSV fajlok!")
+        return
+
+    all_data = []
+    for csv_file in csv_files:
+        df = pd.read_csv(os.path.join(output_dir, csv_file))
+        flow_level = int(csv_file.split('_flow')[1].split('_')[0])
+        df['flow_level'] = flow_level
+        jid = csv_file.split('_flow')[0]
+        df['junction'] = jid
+        all_data.append(df)
+
+    full_df = pd.concat(all_data, ignore_index=True)
+    junction_ids = sorted(full_df['junction'].unique())
+
+    metric_cols = ['TotalTravelTime', 'AvgTravelTime',
+                   'TotalTravelTime_Raw', 'AvgTravelTime_Raw',
+                   'TotalWaitingTime', 'AvgWaitingTime',
+                   'TotalCO2', 'AvgCO2', 'VehCount',
+                   'AvgSpeed', 'AvgOccupancy', 'QueueLength']
+
+    def sigmoid(z):
+        return 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
+
+    def log_sigmoid_reward(vals):
+        """Log-sigmoid reward egy metrikára (lokális params)."""
+        vals_pos = vals[vals > 0]
+        if len(vals_pos) < 10:
+            return None
+        log_v = np.log(vals_pos + 1e-5)
+        mu, std = np.mean(log_v), np.std(log_v)
+        return 1.0 - sigmoid((log_v - mu) / (std + 1e-9))
+
+    # =====================================================================
+    # 1. PER-JUNCTION PCA
+    # =====================================================================
+    print(f"\n--- 1. PER-JUNCTION PCA (PC1+PC2 variancia, top loadings) ---\n")
+
+    epsilon = 1e-5
+    pca_results = []
+
+    print(f"{'Junction':15} {'PC1%':>8} {'PC2%':>8} {'PC1+2%':>8} {'PC1 top-3 loadings':>50}")
+    print("-" * 95)
+
+    for jid in junction_ids:
+        jdf = full_df[(full_df['junction'] == jid) & (full_df['VehCount'] > 0)].copy()
+        if len(jdf) < 50:
+            continue
+
+        available_cols = [c for c in metric_cols if c in jdf.columns]
+        df_log = np.log(jdf[available_cols].clip(lower=epsilon) + epsilon)
+        scaler = StandardScaler()
+        data_scaled = scaler.fit_transform(df_log)
+
+        pca = PCA()
+        pca.fit(data_scaled)
+        ev = pca.explained_variance_ratio_ * 100
+
+        # Top-3 loading a PC1-en
+        loadings_pc1 = pca.components_[0]
+        top3_idx = np.argsort(np.abs(loadings_pc1))[-3:][::-1]
+        top3_str = ", ".join([f"{available_cols[i]}({loadings_pc1[i]:+.3f})" for i in top3_idx])
+
+        print(f"{jid:15} {ev[0]:8.1f} {ev[1]:8.1f} {ev[0]+ev[1]:8.1f} {top3_str:>50}")
+
+        pca_results.append({
+            'junction': jid,
+            'pc1_var': ev[0], 'pc2_var': ev[1],
+            'pc1_top1': available_cols[top3_idx[0]],
+            'pc1_top2': available_cols[top3_idx[1]],
+            'pc1_top3': available_cols[top3_idx[2]],
+        })
+
+    # =====================================================================
+    # 2. KORRELÁCIÓS MÁTRIX — GLOBÁLIS + PER-JUNCTION ÁTLAG
+    # =====================================================================
+    print(f"\n--- 2. KORRELÁCIÓS MÁTRIX (globális, log-transzformált) ---\n")
+
+    df_all_valid = full_df[full_df['VehCount'] > 0].copy()
+    available_cols = [c for c in metric_cols if c in df_all_valid.columns]
+    df_log_all = np.log(df_all_valid[available_cols].clip(lower=epsilon) + epsilon)
+    corr_global = df_log_all.corr()
+
+    # A reward szempontjából fontos: melyek korrelálnak erősen egymással?
+    # Ha két metrika korr > 0.9, redundánsak
+    print(f"  Erős korrelációk (|r| > 0.85):")
+    pairs_shown = set()
+    for i, c1 in enumerate(available_cols):
+        for j, c2 in enumerate(available_cols):
+            if i >= j:
+                continue
+            r = corr_global.loc[c1, c2]
+            if abs(r) > 0.85:
+                pair = tuple(sorted([c1, c2]))
+                if pair not in pairs_shown:
+                    pairs_shown.add(pair)
+                    print(f"    {c1:25} ↔ {c2:25} r={r:+.3f} {'(REDUNDÁNS)' if abs(r) > 0.95 else ''}")
+
+    # Ábra: globális korreláció mátrix
+    fig, ax = plt.subplots(figsize=(14, 12))
+    mask = np.triu(np.ones_like(corr_global, dtype=bool), k=1)
+    sns.heatmap(corr_global, annot=True, fmt='.2f', cmap='RdYlBu_r', ax=ax,
+                square=True, vmin=-1, vmax=1, mask=mask,
+                annot_kws={'fontsize': 7})
+    ax.set_title('Global Metric Correlation Matrix (log-transformed, per-junction data)', fontsize=13)
+    plt.tight_layout()
+    fig.savefig(os.path.join(output_dir, 'metric_correlation_global.png'), dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"  metric_correlation_global.png mentve")
+
+    # =====================================================================
+    # 3. METRIKA-KOMBINÁCIÓ TESZT
+    # =====================================================================
+    print(f"\n--- 3. METRIKA-KOMBINÁCIÓ TESZT ---")
+    print(f"  Minden kombináció log-sigmoid normalizációval, lokális MU/STD-vel")
+    print(f"  Értékelés: reward range (p90-p10), std, hasznos zóna%\n")
+
+    # Reward-hoz használható metrikák (minimize = alacsonyabb jobb)
+    # AvgSpeed: maximize (magasabb jobb → reward = sigmoid, nem 1-sigmoid)
+    minimize_metrics = ['TotalWaitingTime', 'AvgWaitingTime', 'TotalCO2', 'AvgCO2',
+                        'TotalTravelTime', 'QueueLength', 'AvgOccupancy']
+    maximize_metrics = ['AvgSpeed']
+
+    # Metrika-kombinációk definíciója
+    combinations = [
+        # Jelenlegi
+        ('TotalWait + TotalCO2 (jelenlegi)', ['TotalWaitingTime', 'TotalCO2'], [0.5, 0.5]),
+        # Avg variánsok
+        ('AvgWait + AvgCO2', ['AvgWaitingTime', 'AvgCO2'], [0.5, 0.5]),
+        ('AvgWait + TotalCO2', ['AvgWaitingTime', 'TotalCO2'], [0.5, 0.5]),
+        ('TotalWait + AvgCO2', ['TotalWaitingTime', 'AvgCO2'], [0.5, 0.5]),
+        # Queue bevonása
+        ('TotalWait + Queue', ['TotalWaitingTime', 'QueueLength'], [0.5, 0.5]),
+        ('TotalWait + CO2 + Queue', ['TotalWaitingTime', 'TotalCO2', 'QueueLength'], [0.4, 0.3, 0.3]),
+        # Speed bevonása
+        ('TotalWait + Speed', ['TotalWaitingTime', 'AvgSpeed'], [0.5, 0.5]),
+        ('TotalWait + CO2 + Speed', ['TotalWaitingTime', 'TotalCO2', 'AvgSpeed'], [0.4, 0.3, 0.3]),
+        # Travel time
+        ('TotalTT + TotalCO2', ['TotalTravelTime', 'TotalCO2'], [0.5, 0.5]),
+        ('TotalWait + TotalTT', ['TotalWaitingTime', 'TotalTravelTime'], [0.5, 0.5]),
+        # Occupancy
+        ('TotalWait + Occupancy', ['TotalWaitingTime', 'AvgOccupancy'], [0.5, 0.5]),
+        # Egyes metrikák önállóan
+        ('TotalWait ONLY', ['TotalWaitingTime'], [1.0]),
+        ('TotalCO2 ONLY', ['TotalCO2'], [1.0]),
+        ('Queue ONLY', ['QueueLength'], [1.0]),
+        ('AvgSpeed ONLY', ['AvgSpeed'], [1.0]),
+        # Szélesebb kombinációk
+        ('Wait + CO2 + Queue + Speed', ['TotalWaitingTime', 'TotalCO2', 'QueueLength', 'AvgSpeed'], [0.3, 0.25, 0.25, 0.2]),
+    ]
+
+    combo_results = []
+
+    for combo_name, metric_list, weights in combinations:
+        combo_scores = []
+
+        for jid in junction_ids:
+            jdf = full_df[(full_df['junction'] == jid) & (full_df['VehCount'] > 0)].copy()
+            if len(jdf) < 50:
+                continue
+
+            # Check all metrics available
+            if not all(m in jdf.columns for m in metric_list):
+                continue
+
+            # Per-metric reward számítás
+            metric_rewards = []
+            valid_mask = np.ones(len(jdf), dtype=bool)
+
+            for m in metric_list:
+                vals = jdf[m].values
+                pos_mask = vals > 0
+                valid_mask &= pos_mask
+
+            if valid_mask.sum() < 50:
+                continue
+
+            combined_reward = np.zeros(valid_mask.sum())
+
+            for m, w in zip(metric_list, weights):
+                vals = jdf[m].values[valid_mask]
+                log_v = np.log(vals + 1e-5)
+                mu, std = np.mean(log_v), np.std(log_v)
+                z = (log_v - mu) / (std + 1e-9)
+
+                if m in maximize_metrics:
+                    # Magasabb jobb → reward = sigmoid(z)
+                    r = sigmoid(z)
+                else:
+                    # Alacsonyabb jobb → reward = 1 - sigmoid(z)
+                    r = 1.0 - sigmoid(z)
+
+                combined_reward += w * r
+
+            # Metrikák
+            r_range = float(np.percentile(combined_reward, 90) - np.percentile(combined_reward, 10))
+            r_std = float(np.std(combined_reward))
+            r_mean = float(np.mean(combined_reward))
+            useful_pct = float(np.mean((combined_reward >= 0.15) & (combined_reward <= 0.85)) * 100)
+
+            combo_scores.append({
+                'junction': jid,
+                'reward_range': r_range,
+                'reward_std': r_std,
+                'reward_mean': r_mean,
+                'useful_pct': useful_pct,
+            })
+
+        if combo_scores:
+            cdf = pd.DataFrame(combo_scores)
+            combo_results.append({
+                'combination': combo_name,
+                'metrics': '+'.join(metric_list),
+                'weights': str(weights),
+                'avg_range': cdf['reward_range'].mean(),
+                'avg_std': cdf['reward_std'].mean(),
+                'avg_useful_pct': cdf['useful_pct'].mean(),
+                'min_useful_pct': cdf['useful_pct'].min(),
+                'avg_mean': cdf['reward_mean'].mean(),
+                'n_junctions': len(cdf),
+            })
+
+    # Eredmények kiírása
+    if combo_results:
+        combo_df = pd.DataFrame(combo_results)
+        combo_df['score'] = combo_df['avg_range'] * 0.3 + combo_df['avg_std'] * 0.3 + (combo_df['avg_useful_pct'] / 100) * 0.4
+        combo_df = combo_df.sort_values('score', ascending=False).reset_index(drop=True)
+        combo_df.to_csv(os.path.join(output_dir, 'metric_combinations_comparison.csv'), index=False)
+
+        print(f"\n{'Rank':>4} {'Kombináció':40} {'R_range':>10} {'R_std':>10} {'Useful%':>10} "
+              f"{'Min_U%':>8} {'Score':>8}")
+        print("-" * 95)
+
+        for idx, row in combo_df.iterrows():
+            marker = " <<<" if idx == 0 else ""
+            print(f"{idx+1:4d} {row['combination']:40} {row['avg_range']:10.4f} {row['avg_std']:10.4f} "
+                  f"{row['avg_useful_pct']:10.1f} {row['min_useful_pct']:8.1f} {row['score']:8.4f}{marker}")
+
+        # Ábra: kombináció összehasonlítás
+        fig, axes = plt.subplots(1, 3, figsize=(24, 8))
+        fig.suptitle('Metric Combination Comparison for Reward Function', fontsize=15)
+
+        n_combos = len(combo_df)
+        x = np.arange(n_combos)
+        labels = [row['combination'] for _, row in combo_df.iterrows()]
+
+        # Score bar chart
+        ax = axes[0]
+        colors_bar = ['#2ca02c' if i == 0 else '#4e79a7' for i in range(n_combos)]
+        ax.barh(x, combo_df['score'].values, color=colors_bar, alpha=0.8, edgecolor='navy')
+        ax.set_yticks(x)
+        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_xlabel('Combined Score')
+        ax.set_title('Overall Score (0.3*range + 0.3*std + 0.4*useful%)')
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        # Range bar chart
+        ax = axes[1]
+        ax.barh(x, combo_df['avg_range'].values, color='steelblue', alpha=0.8)
+        ax.set_yticks(x)
+        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_xlabel('Avg Reward Range (p90-p10)')
+        ax.set_title('Reward Differentiability')
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        # Useful% bar chart
+        ax = axes[2]
+        ax.barh(x, combo_df['avg_useful_pct'].values, color='darkorange', alpha=0.8)
+        ax.axvline(60, color='red', ls='--', lw=1, label='Min target')
+        ax.set_yticks(x)
+        ax.set_yticklabels(labels, fontsize=7)
+        ax.set_xlabel('Avg Useful Zone %')
+        ax.set_title('Sigmoid Coverage [0.15-0.85]')
+        ax.invert_yaxis()
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'metric_combinations_comparison.png'), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"\n  metric_combinations_comparison.png mentve")
+
+        # Trade-off scatter
+        fig, ax = plt.subplots(figsize=(12, 8))
+        scatter = ax.scatter(combo_df['avg_useful_pct'], combo_df['avg_range'],
+                            s=combo_df['score'] * 500, c=combo_df['score'],
+                            cmap='RdYlGn', edgecolors='black', linewidths=0.8, zorder=5)
+        for idx, row in combo_df.iterrows():
+            ax.annotate(row['combination'], (row['avg_useful_pct'], row['avg_range']),
+                       fontsize=6, ha='center', va='bottom',
+                       xytext=(0, 8), textcoords='offset points')
+        ax.set_xlabel('Useful Zone % [0.15-0.85]', fontsize=12)
+        ax.set_ylabel('Avg Reward Range (p90-p10)', fontsize=12)
+        ax.set_title('Metric Combination Trade-off\n(bubble size = overall score)', fontsize=14)
+        ax.grid(True, alpha=0.3)
+        fig.colorbar(scatter, label='Score')
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'metric_combinations_tradeoff.png'), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  metric_combinations_tradeoff.png mentve")
+
+        # Végső ajánlás
+        best = combo_df.iloc[0]
+        second = combo_df.iloc[1]
+        current = combo_df[combo_df['combination'].str.contains('jelenlegi')]
+
+        print(f"\n{'=' * 80}")
+        print(f"  METRIKA SZELEKCIO AJANLAS")
+        print(f"{'=' * 80}")
+        print(f"  Legjobb kombináció:   {best['combination']}")
+        print(f"    Range: {best['avg_range']:.4f}, Useful%: {best['avg_useful_pct']:.1f}%, Score: {best['score']:.4f}")
+        print(f"  Második legjobb:      {second['combination']}")
+        print(f"    Range: {second['avg_range']:.4f}, Useful%: {second['avg_useful_pct']:.1f}%, Score: {second['score']:.4f}")
+        if len(current) > 0:
+            cur = current.iloc[0]
+            cur_rank = combo_df.index[combo_df['combination'] == cur['combination']].tolist()[0] + 1
+            print(f"  Jelenlegi módszer:    {cur['combination']} (#{cur_rank})")
+            print(f"    Range: {cur['avg_range']:.4f}, Useful%: {cur['avg_useful_pct']:.1f}%, Score: {cur['score']:.4f}")
+            if cur_rank > 1:
+                improvement = (best['score'] - cur['score']) / cur['score'] * 100
+                print(f"  Lehetséges javulás:   {improvement:+.1f}% a legjobb kombóval")
+
+    # =====================================================================
+    # 4. PCA LOADING ÖSSZEFOGLALÓ — mely metrikák a legfontosabbak?
+    # =====================================================================
+    if pca_results:
+        pca_df = pd.DataFrame(pca_results)
+        print(f"\n--- 4. PCA PC1 LEGGYAKORIBB TOP LOADING METRIKÁK ---")
+        from collections import Counter
+        top1_counts = Counter(pca_df['pc1_top1'].values)
+        print(f"  Mely metrika a PC1 #1 loading a legtöbb junction-nél?")
+        for m, cnt in top1_counts.most_common():
+            print(f"    {m:25} {cnt:3d}/{len(pca_df)} junction ({cnt/len(pca_df)*100:.0f}%)")
+
+        # Top-3 összesítés
+        all_tops = list(pca_df['pc1_top1'].values) + list(pca_df['pc1_top2'].values) + list(pca_df['pc1_top3'].values)
+        top_all_counts = Counter(all_tops)
+        print(f"\n  Mely metrika jelenik meg a PC1 top-3-ban?")
+        for m, cnt in top_all_counts.most_common():
+            print(f"    {m:25} {cnt:3d}/{len(pca_df)*3} hely ({cnt/(len(pca_df)*3)*100:.0f}%)")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Per-junction metric collection and normalization calibration')
     parser.add_argument('--skip-simulation', action='store_true',
@@ -1604,6 +1973,9 @@ def main():
 
     # Normalizációs módszerek összehasonlítása
     compare_normalization_methods(OUTPUT_DIR)
+
+    # Metrika szelekció — melyik metrikák a legjobbak a reward-hoz?
+    analyze_metric_selection(OUTPUT_DIR)
 
 
 if __name__ == "__main__":
