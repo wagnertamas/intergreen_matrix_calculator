@@ -164,20 +164,30 @@ def run_simulation(flow_max, episode_idx, output_dir):
         else:
             junction_phases[jid] = 1
 
+    # Előző fázis tárolás (state-hez)
+    prev_phase = {jid: 0 for jid in junction_ids}
+
     total_steps = (DURATION - WARMUP) // DELTA_TIME
 
     for step_i in range(total_steps):
         # Random jelzőlámpa akció
+        current_phase = {}
         for jid in junction_ids:
             phase = random.randint(0, junction_phases[jid] - 1)
             traci.trafficlight.setPhase(jid, phase)
+            current_phase[jid] = phase
 
         # Akkumulálás delta_time lépésen
         acc = {jid: {
             'tt': 0.0, 'tt_raw': 0.0, 'waiting': 0.0, 'co2': 0.0,
             'veh': 0, 'speed': 0.0, 'halted': 0, 'occ': 0.0,
             'valid_tt': 0, 'valid_tt_raw': 0, 'valid_speed': 0,
-            'steps': 0
+            'steps': 0,
+            # Detektor-szintű state akkumulátorok
+            'det_occ': defaultdict(float),   # per-detektor occupancy
+            'det_veh': defaultdict(int),     # per-detektor vehicle count
+            'det_speed': defaultdict(float), # per-detektor speed
+            'det_speed_valid': defaultdict(int),
         } for jid in junction_ids}
 
         for dt_step in range(DELTA_TIME):
@@ -208,7 +218,15 @@ def run_simulation(flow_max, episode_idx, output_dir):
 
                     acc[jid]['halted'] += traci.lane.getLastStepHaltingNumber(lane)
 
+                # Detektor-szintű state gyűjtés
                 for det in dets:
+                    acc[jid]['det_occ'][det] += traci.inductionloop.getLastStepOccupancy(det)
+                    acc[jid]['det_veh'][det] += traci.inductionloop.getLastStepVehicleNumber(det)
+                    det_speed = traci.inductionloop.getLastStepMeanSpeed(det)
+                    if det_speed >= 0:
+                        acc[jid]['det_speed'][det] += det_speed
+                        acc[jid]['det_speed_valid'][det] += 1
+                    # Occupancy összes (régi logika kompatibilitás)
                     acc[jid]['occ'] += traci.inductionloop.getLastStepOccupancy(det)
 
         # Átlagolás
@@ -230,8 +248,22 @@ def run_simulation(flow_max, episode_idx, output_dir):
             avg_halted = a['halted'] / s
             avg_occ = (a['occ'] / s) / max(len(junction_dets[jid]), 1)
 
-            metrics[jid].append({
+            # Per-detektor state értékek
+            dets = junction_dets[jid]
+            det_occ_vals = []
+            det_veh_vals = []
+            det_speed_vals = []
+            for det in dets:
+                det_occ_vals.append(a['det_occ'][det] / s)
+                det_veh_vals.append(a['det_veh'][det] / s)
+                sv = a['det_speed_valid'][det]
+                det_speed_vals.append(a['det_speed'][det] / sv if sv > 0 else 0.0)
+
+            row = {
                 'step': step_i,
+                'phase': current_phase[jid],
+                'prev_phase': prev_phase[jid],
+                # --- Reward metrikák (sáv-alapú, mint eddig) ---
                 'TotalTravelTime': avg_tt_total,
                 'AvgTravelTime': avg_tt_total / max(a['valid_tt']/s, 1) if a['valid_tt'] > 0 else 0.0,
                 'TotalTravelTime_Raw': avg_tt_raw_total,
@@ -244,7 +276,26 @@ def run_simulation(flow_max, episode_idx, output_dir):
                 'AvgSpeed': avg_speed,
                 'AvgOccupancy': avg_occ,
                 'QueueLength': avg_halted,
-            })
+                # --- State metrikák (detektor-szintű, aggregált) ---
+                'det_occ_mean': np.mean(det_occ_vals) if det_occ_vals else 0.0,
+                'det_occ_max': max(det_occ_vals) if det_occ_vals else 0.0,
+                'det_veh_sum': sum(det_veh_vals),
+                'det_veh_mean': np.mean(det_veh_vals) if det_veh_vals else 0.0,
+                'det_speed_mean': np.mean(det_speed_vals) if det_speed_vals else 0.0,
+                'det_speed_min': min(det_speed_vals) if det_speed_vals else 0.0,
+                'n_detectors': len(dets),
+            }
+            # Per-detektor értékek (d0_occ, d0_veh, d0_speed, d1_occ, ...)
+            for di, det in enumerate(dets):
+                row[f'd{di}_occ'] = det_occ_vals[di]
+                row[f'd{di}_veh'] = det_veh_vals[di]
+                row[f'd{di}_speed'] = det_speed_vals[di]
+
+            metrics[jid].append(row)
+
+        # Fázis frissítés
+        for jid in junction_ids:
+            prev_phase[jid] = current_phase[jid]
 
         if (step_i + 1) % 50 == 0:
             print(f"    Step {step_i+1}/{total_steps}")
@@ -981,7 +1032,127 @@ def reward_selection_analysis(output_dir):
                   f"{nr['avg_eta2']:8.4f} {1-nr['avg_eta2']:8.4f} {status:>8}")
 
     # =====================================================================
-    # 5. ÁBRÁK
+    # 5. STATE ↔ REWARD KONZISZTENCIA
+    # =====================================================================
+    print("\n" + "=" * 100)
+    print("  5. STATE ↔ REWARD KONZISZTENCIA")
+    print("     Az ágens state-je (detektor-szintű) mennyire predikálja a reward-ot?")
+    print("     Ha a korreláció gyenge → az ágens a state-ből nem tudja megtanulni a reward-ot.")
+    print("=" * 100)
+
+    # State változók: detektor-szintű aggregáltak + fázis
+    state_cols = ['det_occ_mean', 'det_occ_max', 'det_veh_sum', 'det_veh_mean',
+                  'det_speed_mean', 'det_speed_min', 'phase', 'prev_phase']
+
+    # Ellenőrzés: vannak-e detektor oszlopok az adatban?
+    has_det_data = all(col in full_df.columns for col in state_cols[:6])
+
+    if has_det_data:
+        # Reward jelöltek: a szűrőn átmenők + jelenlegi
+        reward_metrics_to_test = candidate_metrics.copy()
+
+        print(f"\n  State változók: {', '.join(state_cols)}")
+        print(f"  Reward jelöltek: {', '.join(reward_metrics_to_test)}")
+
+        # --- 5a. State ↔ Reward korreláció ---
+        print(f"\n  --- Pearson korreláció: |state| vs |reward metrika| ---")
+        print(f"  {'':20}", end="")
+        for sc in state_cols[:6]:
+            print(f" {sc[:10]:>11}", end="")
+        print()
+        print("  " + "-" * (20 + 12 * 6))
+
+        state_reward_corr = {}
+        for rm in reward_metrics_to_test:
+            line = f"  {rm:20}"
+            corrs = []
+            for sc in state_cols[:6]:
+                valid = df_valid[[sc, rm]].dropna()
+                valid = valid[(valid[sc] != 0) | (valid[rm] != 0)]  # legalább az egyik nem 0
+                if len(valid) > 50:
+                    r, p = stats.pearsonr(valid[sc].values, valid[rm].values)
+                    corrs.append(abs(r))
+                    marker = "**" if abs(r) > 0.5 else "* " if abs(r) > 0.3 else "  "
+                    line += f" {r:+9.3f}{marker}"
+                else:
+                    corrs.append(0.0)
+                    line += f" {'N/A':>11}"
+            print(line)
+            state_reward_corr[rm] = np.mean(corrs)
+
+        print(f"\n  ** = |r| > 0.5 (erős),  * = |r| > 0.3 (közepes)")
+        print(f"\n  Átlagos |korreláció| a state változókkal:")
+        for rm in sorted(state_reward_corr.keys(), key=lambda x: -state_reward_corr[x]):
+            strength = "ERŐS" if state_reward_corr[rm] > 0.4 else "KÖZEPES" if state_reward_corr[rm] > 0.25 else "GYENGE"
+            print(f"    {rm:25} avg|r| = {state_reward_corr[rm]:.3f}  ({strength})")
+
+        # --- 5b. State redundancia (state változók egymás között) ---
+        print(f"\n  --- State változók közötti korreláció ---")
+        state_only = state_cols[:6]
+        state_df = df_valid[state_only].dropna()
+        if len(state_df) > 50:
+            state_corr = state_df.corr(method='pearson')
+            print(f"  {'':18}", end="")
+            for sc in state_only:
+                print(f" {sc[:9]:>10}", end="")
+            print()
+            print("  " + "-" * (18 + 11 * len(state_only)))
+            for sc1 in state_only:
+                line = f"  {sc1:18}"
+                for sc2 in state_only:
+                    r = state_corr.loc[sc1, sc2]
+                    marker = " *" if abs(r) > 0.85 and sc1 != sc2 else "  "
+                    line += f" {r:+8.3f}{marker}"
+                print(line)
+
+            print(f"\n  * = |r| > 0.85 (redundáns state változók)")
+            for i, s1 in enumerate(state_only):
+                for s2 in state_only[i+1:]:
+                    r = abs(state_corr.loc[s1, s2])
+                    if r > 0.85:
+                        print(f"    REDUNDÁNS STATE: {s1} ↔ {s2} (|r| = {r:.3f})")
+
+        # --- 5c. Mutual Information approximáció ---
+        # MI ≈ -0.5 * log(1 - r²) a normális eloszlás esetén (Gaussi MI)
+        print(f"\n  --- Gaussi Mutual Information: state → reward metrika ---")
+        print(f"  MI ≈ -0.5 * ln(1 - r²)  [nats]")
+        print(f"  {'Reward metrika':25} {'Σ MI (összes state)':>20} {'Max MI (legjobb state)':>25}")
+        print("  " + "-" * 75)
+
+        mi_scores = {}
+        for rm in reward_metrics_to_test:
+            total_mi = 0.0
+            max_mi = 0.0
+            max_mi_state = ""
+            for sc in state_cols[:6]:
+                valid = df_valid[[sc, rm]].dropna()
+                valid = valid[(valid[sc] != 0) | (valid[rm] != 0)]
+                if len(valid) > 50:
+                    r, _ = stats.pearsonr(valid[sc].values, valid[rm].values)
+                    r2 = min(r**2, 0.9999)  # numerikus stabilitás
+                    mi = -0.5 * np.log(1 - r2)
+                    total_mi += mi
+                    if mi > max_mi:
+                        max_mi = mi
+                        max_mi_state = sc
+            mi_scores[rm] = total_mi
+            print(f"  {rm:25} {total_mi:20.4f} {max_mi:10.4f} ({max_mi_state})")
+
+        # --- 5d. Javaslat ---
+        print(f"\n  --- STATE↔REWARD JAVASLAT ---")
+        # Rendezés MI szerint
+        sorted_mi = sorted(mi_scores.items(), key=lambda x: -x[1])
+        print(f"  A state legtöbb információt hordoz ezekről a reward metrikákról:")
+        for i, (rm, mi) in enumerate(sorted_mi[:5]):
+            flag = " ← JELENLEGI" if rm in ('TotalWaitingTime', 'TotalCO2') else ""
+            print(f"    {i+1}. {rm:25} MI = {mi:.4f}{flag}")
+
+    else:
+        print("\n  [SKIP] Nincs detektor-szintű adat a CSV-kben.")
+        print("  Futtasd újra a szimulációt (--skip-simulation NÉLKÜL)!")
+
+    # =====================================================================
+    # 6. ÁBRÁK
     # =====================================================================
 
     # Ábra 1: Korreláció mátrix
@@ -1101,6 +1272,58 @@ def reward_selection_analysis(output_dir):
         plt.close()
         print(f"  reward_normalization_comparison.png mentve")
 
+    # Ábra 4: State ↔ Reward heatmap
+    if has_det_data and state_reward_corr:
+        fig, axes = plt.subplots(1, 2, figsize=(18, 7))
+
+        # 4a. State ↔ Reward korreláció heatmap
+        ax = axes[0]
+        sr_matrix = []
+        for rm in reward_metrics_to_test:
+            row_vals = []
+            for sc in state_cols[:6]:
+                valid = df_valid[[sc, rm]].dropna()
+                valid = valid[(valid[sc] != 0) | (valid[rm] != 0)]
+                if len(valid) > 50:
+                    r, _ = stats.pearsonr(valid[sc].values, valid[rm].values)
+                    row_vals.append(r)
+                else:
+                    row_vals.append(0.0)
+            sr_matrix.append(row_vals)
+        sr_matrix = np.array(sr_matrix)
+        im = ax.imshow(sr_matrix, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
+        ax.set_xticks(range(len(state_cols[:6])))
+        ax.set_xticklabels([s[:12] for s in state_cols[:6]], rotation=45, ha='right', fontsize=9)
+        ax.set_yticks(range(len(reward_metrics_to_test)))
+        ax.set_yticklabels(reward_metrics_to_test, fontsize=9)
+        for i in range(len(reward_metrics_to_test)):
+            for j in range(len(state_cols[:6])):
+                val = sr_matrix[i, j]
+                color = 'white' if abs(val) > 0.5 else 'black'
+                ax.text(j, i, f'{val:.2f}', ha='center', va='center', fontsize=8, color=color)
+        fig.colorbar(im, ax=ax, shrink=0.8)
+        ax.set_title('State → Reward Correlation (Pearson r)', fontsize=12)
+
+        # 4b. MI bar chart
+        ax = axes[1]
+        sorted_mi_items = sorted(mi_scores.items(), key=lambda x: -x[1])
+        mi_names = [x[0] for x in sorted_mi_items]
+        mi_vals = [x[1] for x in sorted_mi_items]
+        colors_mi = ['#2ecc71' if n in ('TotalWaitingTime', 'TotalCO2') else '#3498db' for n in mi_names]
+        y = np.arange(len(mi_names))
+        ax.barh(y, mi_vals, color=colors_mi, alpha=0.8)
+        ax.set_yticks(y)
+        ax.set_yticklabels(mi_names, fontsize=10)
+        ax.set_xlabel('Gaussian Mutual Information (nats)')
+        ax.set_title('State → Reward: Total MI\n(green = current reward metrics)', fontsize=12)
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'reward_state_consistency.png'), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  reward_state_consistency.png mentve")
+
     # =====================================================================
     # ÖSSZEFOGLALÓ
     # =====================================================================
@@ -1144,6 +1367,18 @@ def reward_selection_analysis(output_dir):
         norm_df = pd.DataFrame(norm_results)
         norm_df.to_csv(os.path.join(output_dir, 'reward_normalization_results.csv'), index=False)
         print(f"  reward_normalization_results.csv mentve")
+
+    # State↔Reward összefoglaló
+    if has_det_data and state_reward_corr:
+        print(f"\n  State↔Reward konzisztencia:")
+        best_sr = max(state_reward_corr.items(), key=lambda x: x[1])
+        worst_sr = min(state_reward_corr.items(), key=lambda x: x[1])
+        print(f"    Legerősebb state↔reward: {best_sr[0]} (avg|r| = {best_sr[1]:.3f})")
+        print(f"    Leggyengébb state↔reward: {worst_sr[0]} (avg|r| = {worst_sr[1]:.3f})")
+        if best_sr[0] in ('TotalWaitingTime', 'TotalCO2'):
+            print(f"    ✓ A jelenlegi reward metrika erős state-kapcsolattal bír")
+        else:
+            print(f"    ⚠ A state-ből jobban predikálható: {best_sr[0]}")
 
 
 def main():
