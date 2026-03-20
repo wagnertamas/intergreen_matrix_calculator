@@ -1256,14 +1256,21 @@ def compare_normalization_methods(output_dir):
                 sat_low = float(np.mean(rewards < 0.15) * 100)
                 sat_high = float(np.mean(rewards > 0.85) * 100)
 
-                # Anderson-Darling teszt (csak sigmoid-jellegűeknél van értelme)
-                ad_stat = None
-                if method_name in ['log-sigmoid', 'linear-sigmoid', 'sqrt-sigmoid', 'box-cox-sigmoid']:
-                    try:
-                        ad_result = sp_stats.anderson(rewards, dist='norm')
-                        ad_stat = float(ad_result.statistic)
-                    except Exception:
-                        pass
+                # Monotonitás: reward vs flow level
+                # vals_pos a method_fn-ből jött — az jdf_valid-ból szűrt pozitív értékek
+                # A flow_level infó a jdf_valid-ban van, de a vals_pos indexelése eltérhet
+                # Ezért a full jdf_valid-on számolunk
+                mono_corr = 0.0
+                flow_vals = jdf_valid['flow_level'].values
+                raw_metric = jdf_valid[metric_name].values
+                pos_mask = raw_metric > 0
+                if pos_mask.sum() == len(rewards):
+                    flow_for_rewards = flow_vals[pos_mask]
+                    unique_flows_m = sorted(set(flow_for_rewards))
+                    if len(unique_flows_m) >= 3:
+                        from scipy.stats import spearmanr as _spearmanr
+                        flow_r_means = [np.mean(rewards[flow_for_rewards == fl]) for fl in unique_flows_m]
+                        mono_corr, _ = _spearmanr(unique_flows_m, flow_r_means)
 
                 all_results.append({
                     'junction': jid,
@@ -1275,7 +1282,7 @@ def compare_normalization_methods(output_dir):
                     'useful_pct': useful_pct,
                     'saturated_low_pct': sat_low,
                     'saturated_high_pct': sat_high,
-                    'ad_statistic': ad_stat,
+                    'monotonicity_corr': mono_corr,
                 })
 
     results_df = pd.DataFrame(all_results)
@@ -1289,9 +1296,12 @@ def compare_normalization_methods(output_dir):
     print(f"  MODSZEREK ATLAGOS TELJESITMENYE (mindket metrikara, minden junction-re)")
     print(f"{'=' * 100}")
 
-    print(f"\n{'Módszer':20} {'R_range':>10} {'R_std':>10} {'Hasznos%':>10} "
-          f"{'Sat_low%':>10} {'Sat_high%':>10} {'R_mean':>10}")
-    print("-" * 85)
+    print(f"\n  SCORING: 25% range + 20% std + 25% useful% + 30% monotonitás")
+    print(f"  Monotonitás = Spearman(flow_level, mean_reward): -1 = tökéletes csökkenés\n")
+
+    print(f"{'Módszer':20} {'R_range':>8} {'R_std':>8} {'Use%':>6} "
+          f"{'Mono_r':>8} {'R_mean':>8} {'Score':>8}")
+    print("-" * 72)
 
     method_order = [m[0] for m in methods]
     method_scores = {}
@@ -1303,19 +1313,18 @@ def compare_normalization_methods(output_dir):
         r_range = mdf['reward_range'].mean()
         r_std = mdf['reward_std'].mean()
         useful = mdf['useful_pct'].mean()
-        sat_low = mdf['saturated_low_pct'].mean()
-        sat_high = mdf['saturated_high_pct'].mean()
         r_mean = mdf['reward_mean'].mean()
+        mono = mdf['monotonicity_corr'].mean() if 'monotonicity_corr' in mdf.columns else 0.0
 
-        # Összesített pontszám: range + std + useful% normalizálva
-        score = r_range * 0.3 + r_std * 0.3 + (useful / 100) * 0.4
+        mono_norm = (-mono + 1) / 2  # [-1,+1] → [0,1]
+        score = r_range * 0.25 + r_std * 0.20 + (useful / 100) * 0.25 + mono_norm * 0.30
         method_scores[method] = score
 
-        print(f"{method:20} {r_range:10.4f} {r_std:10.4f} {useful:10.1f} "
-              f"{sat_low:10.1f} {sat_high:10.1f} {r_mean:10.4f}")
+        print(f"{method:20} {r_range:8.4f} {r_std:8.4f} {useful:6.1f} "
+              f"{mono:+8.3f} {r_mean:8.4f} {score:8.4f}")
 
     # Rangsor
-    print(f"\n--- RANGSOR (0.3*range + 0.3*std + 0.4*useful%) ---")
+    print(f"\n--- RANGSOR (25% range + 20% std + 25% useful% + 30% monotonitás) ---")
     sorted_methods = sorted(method_scores.items(), key=lambda x: x[1], reverse=True)
     for rank, (method, score) in enumerate(sorted_methods, 1):
         marker = " <<<< BEST" if rank == 1 else ""
@@ -1339,9 +1348,10 @@ def compare_normalization_methods(output_dir):
             mdf = results_df[(results_df['junction'] == jid) & (results_df['metric'] == metric)]
             if len(mdf) == 0:
                 continue
-            # Legjobb = legnagyobb reward range + hasznos%
+            # Legjobb = scoring konzisztens a globálissal
             mdf = mdf.copy()
-            mdf['score'] = mdf['reward_range'] * 0.4 + mdf['reward_std'] * 0.3 + (mdf['useful_pct'] / 100) * 0.3
+            mono_n = (-mdf['monotonicity_corr'] + 1) / 2
+            mdf['score'] = mdf['reward_range'] * 0.25 + mdf['reward_std'] * 0.20 + (mdf['useful_pct'] / 100) * 0.25 + mono_n * 0.30
             best_row = mdf.loc[mdf['score'].idxmax()]
             best[metric] = {
                 'method': best_row['method'],
@@ -1776,11 +1786,27 @@ def analyze_metric_selection(output_dir):
 
                 combined_reward += w * r
 
-            # Metrikák
+            # --- Metrikák ---
             r_range = float(np.percentile(combined_reward, 90) - np.percentile(combined_reward, 10))
             r_std = float(np.std(combined_reward))
             r_mean = float(np.mean(combined_reward))
             useful_pct = float(np.mean((combined_reward >= 0.15) & (combined_reward <= 0.85)) * 100)
+
+            # --- Monotonitás: a reward csökken-e a forgalom növekedésével? ---
+            # Ez a fizikai konzisztencia teszt: nagyobb forgalom → rosszabb → alacsonyabb reward
+            flow_vals = jdf['flow_level'].values[valid_mask]
+            unique_flows = sorted(set(flow_vals))
+            if len(unique_flows) >= 3:
+                flow_means = [np.mean(combined_reward[flow_vals == fl]) for fl in unique_flows]
+                # Spearman korreláció: flow ↑ → reward ↓ → negatív korreláció = jó
+                from scipy.stats import spearmanr
+                mono_corr, _ = spearmanr(unique_flows, flow_means)
+                # Monoton decrease check: hány egymást követő pár csökken?
+                n_decreasing = sum(1 for i in range(len(flow_means)-1) if flow_means[i] > flow_means[i+1])
+                mono_pct = n_decreasing / (len(flow_means) - 1) * 100
+            else:
+                mono_corr = 0.0
+                mono_pct = 0.0
 
             combo_scores.append({
                 'junction': jid,
@@ -1788,6 +1814,8 @@ def analyze_metric_selection(output_dir):
                 'reward_std': r_std,
                 'reward_mean': r_mean,
                 'useful_pct': useful_pct,
+                'monotonicity_corr': mono_corr,   # Spearman: -1 = tökéletes csökkenés
+                'monotonicity_pct': mono_pct,      # % csökkenő lépések
             })
 
         if combo_scores:
@@ -1801,24 +1829,55 @@ def analyze_metric_selection(output_dir):
                 'avg_useful_pct': cdf['useful_pct'].mean(),
                 'min_useful_pct': cdf['useful_pct'].min(),
                 'avg_mean': cdf['reward_mean'].mean(),
+                'avg_mono_corr': cdf['monotonicity_corr'].mean(),
+                'avg_mono_pct': cdf['monotonicity_pct'].mean(),
                 'n_junctions': len(cdf),
             })
 
     # Eredmények kiírása
     if combo_results:
         combo_df = pd.DataFrame(combo_results)
-        combo_df['score'] = combo_df['avg_range'] * 0.3 + combo_df['avg_std'] * 0.3 + (combo_df['avg_useful_pct'] / 100) * 0.4
+
+        # =====================================================================
+        # SCORING — az RL szempontból fontos szempontok:
+        #
+        #   1. DIFFERENCIÁLHATÓSÁG (25%): reward_range — az ágens képes-e
+        #      megkülönböztetni a jó/rossz akciókat? Nagyobb range = több tér.
+        #
+        #   2. JEL ERŐSSÉG (20%): reward_std — mennyire szóródik a reward?
+        #      Ha kicsi, minden "egyformának" tűnik az ágensnek.
+        #
+        #   3. SIGMOID COVERAGE (25%): useful_pct [0.15-0.85] — a saturált
+        #      zónákban a gradiens ≈ 0, az ágens „vak". 100% = nincs vak zóna.
+        #
+        #   4. MONOTONITÁS (30%): mono_corr — a reward fizikailag konzisztens-e?
+        #      Nagyobb forgalom → rosszabb → alacsonyabb reward. Ez a LEGFONTOSABB
+        #      mert ha nem monoton, az ágens "jutalmat kap" a rossz helyzetért.
+        #      Spearman korreláció: -1 = tökéletes, 0 = nincs összefüggés.
+        #      Normalizáljuk [0,1]-re: score = (-mono_corr + 1) / 2
+        # =====================================================================
+        mono_score = (-combo_df['avg_mono_corr'] + 1) / 2  # [-1,+1] → [0,1]
+        combo_df['score'] = (
+            combo_df['avg_range'] * 0.25 +
+            combo_df['avg_std'] * 0.20 +
+            (combo_df['avg_useful_pct'] / 100) * 0.25 +
+            mono_score * 0.30
+        )
         combo_df = combo_df.sort_values('score', ascending=False).reset_index(drop=True)
         combo_df.to_csv(os.path.join(output_dir, 'metric_combinations_comparison.csv'), index=False)
 
-        print(f"\n{'Rank':>4} {'Kombináció':40} {'R_range':>10} {'R_std':>10} {'Useful%':>10} "
-              f"{'Min_U%':>8} {'Score':>8}")
-        print("-" * 95)
+        print(f"\n  SCORING: 25% range + 20% std + 25% useful% + 30% monotonitás")
+        print(f"  Monotonitás = Spearman(flow_level, mean_reward): -1 = tökéletes csökkenés\n")
+
+        print(f"{'Rank':>4} {'Kombináció':40} {'R_range':>8} {'R_std':>8} {'Use%':>6} "
+              f"{'Mono_r':>8} {'Mono%':>7} {'Score':>7}")
+        print("-" * 100)
 
         for idx, row in combo_df.iterrows():
             marker = " <<<" if idx == 0 else ""
-            print(f"{idx+1:4d} {row['combination']:40} {row['avg_range']:10.4f} {row['avg_std']:10.4f} "
-                  f"{row['avg_useful_pct']:10.1f} {row['min_useful_pct']:8.1f} {row['score']:8.4f}{marker}")
+            print(f"{idx+1:4d} {row['combination']:40} {row['avg_range']:8.4f} {row['avg_std']:8.4f} "
+                  f"{row['avg_useful_pct']:6.1f} {row['avg_mono_corr']:+8.3f} "
+                  f"{row['avg_mono_pct']:7.1f} {row['score']:7.4f}{marker}")
 
         # Ábra: kombináció összehasonlítás
         fig, axes = plt.subplots(1, 3, figsize=(24, 8))
@@ -1835,7 +1894,7 @@ def analyze_metric_selection(output_dir):
         ax.set_yticks(x)
         ax.set_yticklabels(labels, fontsize=7)
         ax.set_xlabel('Combined Score')
-        ax.set_title('Overall Score (0.3*range + 0.3*std + 0.4*useful%)')
+        ax.set_title('Overall Score (25%range + 20%std + 25%useful + 30%monotonicity)')
         ax.invert_yaxis()
         ax.grid(True, alpha=0.3, axis='x')
 
