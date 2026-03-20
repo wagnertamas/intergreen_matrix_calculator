@@ -557,6 +557,346 @@ def analyze_per_junction(output_dir):
         print(f"    Valtozas: {pct:+.1f}%")
 
 
+def check_fit_quality(output_dir):
+    """
+    Illeszkedés-ellenőrzés: mennyire felel meg a log-sigmoid normalizáció az adatoknak.
+
+    Vizsgálatok:
+      1. Log-normalitás teszt (Anderson-Darling + ferdeség/csúcsosság)
+      2. Sigmoid lefedettség (reward hány %-a esik a hasznos [0.15-0.85] zónába)
+      3. QQ-plotok junction-önként
+      4. Összefoglaló: melyik junction problémás
+    """
+    from scipy import stats
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    print("\n" + "=" * 80)
+    print("  ILLESZKEDÉS-ELLENŐRZÉS (GOODNESS-OF-FIT)")
+    print("=" * 80)
+
+    # --- CSV-k betöltése ---
+    csv_files = [f for f in os.listdir(output_dir) if f.endswith('.csv') and '_flow' in f]
+    if not csv_files:
+        print("[ERROR] Nincsenek CSV fajlok!")
+        return
+
+    all_data = []
+    for csv_file in csv_files:
+        df = pd.read_csv(os.path.join(output_dir, csv_file))
+        flow_level = int(csv_file.split('_flow')[1].split('_')[0])
+        df['flow_level'] = flow_level
+        jid = csv_file.split('_flow')[0]
+        df['junction'] = jid
+        all_data.append(df)
+
+    full_df = pd.concat(all_data, ignore_index=True)
+    junction_ids = sorted(full_df['junction'].unique())
+
+    # --- Junction reward params betöltése ---
+    params_path = os.path.join(DATA_DIR, "junction_reward_params.json")
+    if not os.path.exists(params_path):
+        params_path = os.path.join(output_dir, "junction_reward_params.json")
+    with open(params_path) as f:
+        junction_params = json.load(f)
+
+    # =====================================================================
+    # 1. LOG-NORMALITÁS TESZT
+    # =====================================================================
+    print(f"\n--- 1. LOG-NORMALITAS TESZT (Anderson-Darling) ---")
+    print(f"  H0: log(metrika) normális eloszlást követ")
+    print(f"  Ha a statisztika < kritikus érték (5%), elfogadjuk H0-t\n")
+
+    print(f"{'Junction':15} {'Metrika':20} {'AD stat':>10} {'Crit(5%)':>10} {'Ferdeség':>10} "
+          f"{'Csúcsosság':>10} {'Verdict':>10}")
+    print("-" * 100)
+
+    fit_results = []
+
+    for jid in junction_ids:
+        jdf = full_df[full_df['junction'] == jid]
+        jdf_valid = jdf[jdf['VehCount'] > 0]
+
+        for metric_name, col in [('TotalWaitingTime', 'TotalWaitingTime'), ('TotalCO2', 'TotalCO2')]:
+            vals = jdf_valid[col].values
+            vals_pos = vals[vals > 0]
+
+            if len(vals_pos) < 50:
+                continue
+
+            log_vals = np.log(vals_pos + 1e-5)
+
+            # Anderson-Darling teszt
+            ad_result = stats.anderson(log_vals, dist='norm')
+            ad_stat = ad_result.statistic
+            # 5%-os szignifikanciaszint (index 2)
+            ad_crit_5pct = ad_result.critical_values[2]
+            passed = ad_stat < ad_crit_5pct
+
+            # Ferdeség és csúcsosság
+            skewness = float(stats.skew(log_vals))
+            kurtosis = float(stats.kurtosis(log_vals))  # excess kurtosis (norm = 0)
+
+            verdict = "OK" if passed else "FAIL"
+            # Enyhe ferdeség/csúcsosság is elfogadható a sigmoid-hoz
+            if not passed and abs(skewness) < 0.5 and abs(kurtosis) < 1.0:
+                verdict = "MARGINAL"
+
+            print(f"{jid:15} {metric_name:20} {ad_stat:10.3f} {ad_crit_5pct:10.3f} "
+                  f"{skewness:+10.3f} {kurtosis:+10.3f} {verdict:>10}")
+
+            fit_results.append({
+                'junction': jid,
+                'metric': metric_name,
+                'ad_statistic': ad_stat,
+                'ad_critical_5pct': ad_crit_5pct,
+                'ad_passed': passed,
+                'skewness': skewness,
+                'kurtosis': kurtosis,
+                'verdict': verdict,
+                'n_samples': len(vals_pos),
+            })
+
+    # =====================================================================
+    # 2. SIGMOID LEFEDETTSÉG
+    # =====================================================================
+    print(f"\n--- 2. SIGMOID LEFEDETTSEG ---")
+    print(f"  Hasznos zóna: reward ∈ [0.15, 0.85] (ahol a sigmoid gradiens informatív)")
+    print(f"  Telített zóna: reward < 0.15 vagy > 0.85 (ahol a gradiens ≈ 0)\n")
+
+    print(f"{'Junction':15} {'Hasznos%':>10} {'Telített%':>10} {'<0.15%':>8} {'>0.85%':>8} "
+          f"{'R_mean':>8} {'R_std':>8} {'Verdict':>10}")
+    print("-" * 95)
+
+    coverage_results = []
+
+    for jid in junction_ids:
+        jdf = full_df[full_df['junction'] == jid]
+        mask_pos = (jdf['TotalWaitingTime'].values > 0) & (jdf['TotalCO2'].values > 0)
+        w_pos = jdf['TotalWaitingTime'].values[mask_pos]
+        c_pos = jdf['TotalCO2'].values[mask_pos]
+
+        if len(w_pos) < 10:
+            continue
+
+        p = junction_params[jid]
+        rewards = np.array([calc_reward(w, c, p['MU_WAIT'], p['STD_WAIT'], p['MU_CO2'], p['STD_CO2'])
+                            for w, c in zip(w_pos, c_pos)])
+
+        useful_pct = np.mean((rewards >= 0.15) & (rewards <= 0.85)) * 100
+        saturated_low = np.mean(rewards < 0.15) * 100
+        saturated_high = np.mean(rewards > 0.85) * 100
+        saturated_total = saturated_low + saturated_high
+        r_mean = np.mean(rewards)
+        r_std = np.std(rewards)
+
+        # Verdict: jó ha >60% hasznos, problémás ha <40%
+        if useful_pct >= 60:
+            verdict = "JO"
+        elif useful_pct >= 40:
+            verdict = "ELFOGADHATO"
+        else:
+            verdict = "GYENGE"
+
+        print(f"{jid:15} {useful_pct:10.1f} {saturated_total:10.1f} {saturated_low:8.1f} "
+              f"{saturated_high:8.1f} {r_mean:8.3f} {r_std:8.3f} {verdict:>10}")
+
+        coverage_results.append({
+            'junction': jid,
+            'useful_pct': useful_pct,
+            'saturated_low_pct': saturated_low,
+            'saturated_high_pct': saturated_high,
+            'reward_mean': r_mean,
+            'reward_std': r_std,
+            'verdict': verdict,
+        })
+
+    # =====================================================================
+    # 3. QQ-PLOTOK
+    # =====================================================================
+    print(f"\n--- 3. QQ-PLOTOK generálása ---")
+
+    n_junctions = len(junction_ids)
+    n_cols = 5
+    n_rows = (n_junctions + n_cols - 1) // n_cols
+
+    for metric_name, col in [('TotalWaitingTime', 'TotalWaitingTime'), ('TotalCO2', 'TotalCO2')]:
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows))
+        if n_rows == 1:
+            axes = axes.reshape(1, -1)
+        fig.suptitle(f'QQ-Plot: log({metric_name}) vs Normal — per Junction', fontsize=14)
+
+        for idx, jid in enumerate(junction_ids):
+            row, col_idx = idx // n_cols, idx % n_cols
+            ax = axes[row, col_idx]
+
+            jdf = full_df[full_df['junction'] == jid]
+            jdf_valid = jdf[jdf['VehCount'] > 0]
+            vals = jdf_valid[col].values
+            vals_pos = vals[vals > 0]
+
+            if len(vals_pos) < 50:
+                ax.set_title(f'{jid}\n(insufficient)', fontsize=9)
+                continue
+
+            log_vals = np.log(vals_pos + 1e-5)
+
+            # QQ-plot
+            (osm_vals, fit_line), (slope, intercept, r) = stats.probplot(log_vals, dist='norm')
+            ax.scatter(osm_vals, sorted(log_vals), s=1, alpha=0.3, color='steelblue')
+            # Fit line
+            x_line = np.array([osm_vals[0], osm_vals[-1]])
+            ax.plot(x_line, slope * x_line + intercept, 'r-', lw=1.5)
+
+            # R² és AD stat keresése
+            fit_row = [r for r in fit_results if r['junction'] == jid and r['metric'] == metric_name]
+            ad_info = f"AD={fit_row[0]['ad_statistic']:.1f}" if fit_row else ""
+            verdict = fit_row[0]['verdict'] if fit_row else ""
+
+            ax.set_title(f'{jid}\nR²={r**2:.4f} {ad_info} [{verdict}]', fontsize=8)
+            ax.set_xlabel('Theoretical', fontsize=7)
+            ax.set_ylabel('Observed', fontsize=7)
+            ax.tick_params(labelsize=6)
+
+        for idx in range(len(junction_ids), n_rows * n_cols):
+            row, col_idx = idx // n_cols, idx % n_cols
+            axes[row, col_idx].set_visible(False)
+
+        plt.tight_layout()
+        fname = f'fit_qq_{metric_name.lower()}.png'
+        fig.savefig(os.path.join(output_dir, fname), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  {fname} mentve")
+
+    # =====================================================================
+    # 4. SIGMOID LEFEDETTSÉG ÁBRA
+    # =====================================================================
+    if coverage_results:
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3.5 * n_rows))
+        if n_rows == 1:
+            axes = axes.reshape(1, -1)
+        fig.suptitle('Sigmoid Coverage per Junction (Local params)\nGreen = useful [0.15-0.85], Red = saturated',
+                     fontsize=14)
+
+        for idx, jid in enumerate(junction_ids):
+            row, col_idx = idx // n_cols, idx % n_cols
+            ax = axes[row, col_idx]
+
+            jdf = full_df[full_df['junction'] == jid]
+            mask_pos = (jdf['TotalWaitingTime'].values > 0) & (jdf['TotalCO2'].values > 0)
+            w_pos = jdf['TotalWaitingTime'].values[mask_pos]
+            c_pos = jdf['TotalCO2'].values[mask_pos]
+
+            if len(w_pos) < 10:
+                ax.set_title(f'{jid}\n(insufficient)', fontsize=9)
+                continue
+
+            p = junction_params[jid]
+            rewards = np.array([calc_reward(w, c, p['MU_WAIT'], p['STD_WAIT'], p['MU_CO2'], p['STD_CO2'])
+                                for w, c in zip(w_pos, c_pos)])
+
+            # Hisztogram színezéssel
+            bins = np.linspace(0, 1, 41)
+            n_vals, bin_edges, patches = ax.hist(rewards, bins=bins, density=True, alpha=0.8)
+            for patch, left_edge in zip(patches, bin_edges[:-1]):
+                center = left_edge + (bin_edges[1] - bin_edges[0]) / 2
+                if 0.15 <= center <= 0.85:
+                    patch.set_facecolor('#2ca02c')  # zöld — hasznos
+                else:
+                    patch.set_facecolor('#d62728')  # piros — telített
+
+            ax.axvline(0.15, color='black', ls=':', lw=1, alpha=0.7)
+            ax.axvline(0.85, color='black', ls=':', lw=1, alpha=0.7)
+
+            cov_row = [c for c in coverage_results if c['junction'] == jid]
+            useful = cov_row[0]['useful_pct'] if cov_row else 0
+            verdict = cov_row[0]['verdict'] if cov_row else ''
+            ax.set_title(f'{jid}\nHasznos: {useful:.0f}% [{verdict}]', fontsize=9)
+            ax.set_xlim(0, 1)
+
+        for idx in range(len(junction_ids), n_rows * n_cols):
+            row, col_idx = idx // n_cols, idx % n_cols
+            axes[row, col_idx].set_visible(False)
+
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'fit_sigmoid_coverage.png'), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  fit_sigmoid_coverage.png mentve")
+
+    # =====================================================================
+    # 5. ÖSSZEFOGLALÓ
+    # =====================================================================
+    print(f"\n{'=' * 80}")
+    print("  ILLESZKEDÉS ÖSSZEFOGLALÓ")
+    print(f"{'=' * 80}")
+
+    if fit_results:
+        fit_df = pd.DataFrame(fit_results)
+        fit_df.to_csv(os.path.join(output_dir, 'fit_quality_results.csv'), index=False)
+        print(f"  fit_quality_results.csv mentve")
+
+        # Anderson-Darling összefoglaló
+        for metric in ['TotalWaitingTime', 'TotalCO2']:
+            mdf = fit_df[fit_df['metric'] == metric]
+            n_ok = (mdf['verdict'] == 'OK').sum()
+            n_marg = (mdf['verdict'] == 'MARGINAL').sum()
+            n_fail = (mdf['verdict'] == 'FAIL').sum()
+            print(f"\n  {metric}:")
+            print(f"    Log-normalitás OK:       {n_ok}/{len(mdf)}")
+            print(f"    Log-normalitás MARGINAL: {n_marg}/{len(mdf)}")
+            print(f"    Log-normalitás FAIL:     {n_fail}/{len(mdf)}")
+            print(f"    Átlag ferdeség:  {mdf['skewness'].mean():+.3f}  (ideális: 0)")
+            print(f"    Átlag csúcsosság: {mdf['kurtosis'].mean():+.3f}  (ideális: 0)")
+
+    if coverage_results:
+        cov_df = pd.DataFrame(coverage_results)
+        n_jo = (cov_df['verdict'] == 'JO').sum()
+        n_elf = (cov_df['verdict'] == 'ELFOGADHATO').sum()
+        n_gyenge = (cov_df['verdict'] == 'GYENGE').sum()
+        print(f"\n  Sigmoid lefedettség (lokális paraméterekkel):")
+        print(f"    JÓ (>60% hasznos):        {n_jo}/{len(cov_df)}")
+        print(f"    ELFOGADHATÓ (40-60%):      {n_elf}/{len(cov_df)}")
+        print(f"    GYENGE (<40%):             {n_gyenge}/{len(cov_df)}")
+        print(f"    Átlag hasznos%: {cov_df['useful_pct'].mean():.1f}%")
+        print(f"    Min hasznos%:   {cov_df['useful_pct'].min():.1f}% ({cov_df.loc[cov_df['useful_pct'].idxmin(), 'junction']})")
+        print(f"    Max hasznos%:   {cov_df['useful_pct'].max():.1f}% ({cov_df.loc[cov_df['useful_pct'].idxmax(), 'junction']})")
+
+        if n_gyenge > 0:
+            print(f"\n  FIGYELEM: {n_gyenge} junction(ök)nél gyenge a sigmoid lefedettség!")
+            print(f"  Érintett junction-ök:")
+            for _, row in cov_df[cov_df['verdict'] == 'GYENGE'].iterrows():
+                print(f"    {row['junction']}: hasznos={row['useful_pct']:.1f}%, "
+                      f"mean_R={row['reward_mean']:.3f}, std_R={row['reward_std']:.3f}")
+            print(f"  → Ezeknél érdemes lehet kézi STD skálázás vagy másféle normalizáció.")
+
+    # --- Végső konklúzió ---
+    print(f"\n{'=' * 80}")
+    print("  KONKLUZIO")
+    print(f"{'=' * 80}")
+    if fit_results and coverage_results:
+        fit_df = pd.DataFrame(fit_results)
+        cov_df = pd.DataFrame(coverage_results)
+
+        total_ad_ok = ((fit_df['verdict'] == 'OK') | (fit_df['verdict'] == 'MARGINAL')).sum()
+        total_ad = len(fit_df)
+        avg_useful = cov_df['useful_pct'].mean()
+
+        print(f"  Log-normalitás:    {total_ad_ok}/{total_ad} metrika-junction pár OK/MARGINAL "
+              f"({total_ad_ok/total_ad*100:.0f}%)")
+        print(f"  Sigmoid hasznos%:  átlag {avg_useful:.1f}%")
+
+        if total_ad_ok / total_ad >= 0.7 and avg_useful >= 50:
+            print(f"\n  ✓ A log-sigmoid normalizáció MEGFELELŐ a per-junction adatokra.")
+            print(f"    A lokális MU/STD paraméterek használhatók.")
+        elif total_ad_ok / total_ad >= 0.5 and avg_useful >= 40:
+            print(f"\n  ~ A log-sigmoid normalizáció ELFOGADHATÓ, de van tér a javításra.")
+            print(f"    Javaslat: STD paraméterek finomhangolása a gyengébb junction-öknél.")
+        else:
+            print(f"\n  ✗ A log-sigmoid normalizáció PROBLÉMÁS néhány junction-nél.")
+            print(f"    Javaslat: alternatív normalizáció vizsgálata (pl. quantile, adaptive).")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Per-junction metric collection and normalization calibration')
     parser.add_argument('--skip-simulation', action='store_true',
@@ -598,6 +938,9 @@ def main():
 
     # Elemzés
     analyze_per_junction(OUTPUT_DIR)
+
+    # Illeszkedés-ellenőrzés
+    check_fit_quality(OUTPUT_DIR)
 
 
 if __name__ == "__main__":
