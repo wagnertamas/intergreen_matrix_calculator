@@ -1,13 +1,9 @@
 # =============================================================================
 # SUMO RL Training Configuration
 # =============================================================================
-# Két módban használható:
-#   1. Lokális:  python main_headless.py --config training_config.yaml
-#   2. Docker:   docker-compose up (az /app/data/ útvonalakat használja)
-#
-# A fájl útvonalakat a futási környezet dönti el:
-#   - Lokálisan: a relatív "data/" prefix működik
-#   - Dockerben: az /app/data/ abszolút útvonalak kellenek
+# Használat:
+#   python main_headless.py --config training_config.yaml
+#   python main_headless.py --junction R1C1_C --algorithm ppo --reward-mode speed_throughput
 # =============================================================================
 
 # --- Hálózati fájlok ---
@@ -16,11 +12,23 @@ logic_file: data/traffic_lights.json
 detector_file: data/detectors.add.xml
 
 # --- WandB ---
-project_name: sumo-rl-single
+project_name: sumo-rl-catalogue
 wandb_api_key: ""   # Használd a WANDB_API_KEY env változót inkább!
 
 # --- Tanítási paraméterek ---
 total_timesteps: 100000
+
+# --- RL algoritmus ---
+# Támogatott: qrdqn, dqn, ppo, a2c
+# Off-policy (qrdqn, dqn): replay buffer, epsilon-greedy
+# On-policy (ppo, a2c): rollout buffer, policy gradient
+algorithm: qrdqn
+
+# --- Reward mód ---
+# speed_throughput: AvgSpeed + Throughput (log-tanh) ← legjobb η²
+# halt_ratio:       HaltRatio (log-tanh) ← legrobusztusabb
+# co2_speedstd:     TotalCO2 + SpeedStd (log-tanh)
+reward_mode: speed_throughput
 
 # --- Környezeti beállítások ---
 env_kwargs:
@@ -40,6 +48,9 @@ hyperparams:
   layer_size: 64
   train_freq: 4
   gradient_steps: 1
+  # PPO specifikus (csak PPO-nál használt)
+  n_steps: 2048
+  n_epochs: 10
   # Early stopping
   es_enabled: true
   es_patience: 20

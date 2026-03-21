@@ -8,7 +8,7 @@ JUNCTION-ÖNKÉNT végzi el.
 
 Kimenet:
   metric_pca_per_junction/
-    ├── junction_reward_params.json   ← A LÉNYEGAlak: {jid: {MU_WAIT, STD_WAIT, MU_CO2, STD_CO2}}
+    ├── junction_reward_params.json   ← A LÉNYEG: {global: {...}, per_junction: {jid: {MU_SPEED, STD_SPEED, MU_THROUGHPUT, STD_THROUGHPUT}}}
     ├── junction_comparison.png       ← Heatmap + bar chart összehasonlítás
     ├── junction_reward_ranges.png    ← Per-junction reward eloszlás (saját vs globális params)
     ├── per_junction_summary.csv      ← Részletes tábla
@@ -41,31 +41,37 @@ FLOW_MAX_LEVELS = [200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100]
 DURATION = 3600       # 1 óra szimuláció
 DELTA_TIME = 5        # lépésméret (sec)
 WARMUP = 100          # warmup (sec)
-EPISODES_PER_LEVEL = 3  # ismétlések forgalmi szintenként
+EPISODES_PER_LEVEL = 3  # ismétlések forgalmi szintenként (random kontroll)
+ACTUATED_EPISODES = 1   # ismétlések forgalmi szintenként (actuated kontroll)
 MAX_REALISTIC_TT = 1000  # travel time szűrő
 
-# --- Globális referencia (a korábbi 21-junction aggregált PCA-ból) ---
+# --- Globális referencia (AvgSpeed + Throughput, log-tanh normalizáció) ---
+# Ezek az értékek az analyze_per_junction() futtatásakor frissülnek.
 GLOBAL_PARAMS = {
-    'MU_WAIT': 4.584800,
-    'STD_WAIT': 1.824900,
-    'MU_CO2': 10.870600,
-    'STD_CO2': 0.962900,
+    'MU_SPEED': None,       # log(AvgSpeed) median — kalibrációnál töltődik
+    'STD_SPEED': None,      # log(AvgSpeed) IQR-based STD
+    'MU_THROUGHPUT': None,  # log(Throughput) median
+    'STD_THROUGHPUT': None, # log(Throughput) IQR-based STD
 }
 
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "metric_pca_per_junction")
 
 
-def run_simulation(flow_max, episode_idx, output_dir):
+def run_simulation(flow_max, episode_idx, output_dir, control_mode="random"):
     """
     Egy szimulációs epizód futtatása.
     PONTOSAN UGYANAZ mint metric_collection_test.py — teljes hálózaton fut,
     minden junction-re gyűjt metrikát.
+
+    control_mode:
+        "random"   — random jelzőlámpa fázisválasztás (eredeti viselkedés)
+        "actuated" — SUMO beépített actuated kontroller (reálisabb baseline)
     """
 
-    import traci
+    import libsumo as traci
     import sumolib
 
-    route_file = os.path.join(SCRIPT_DIR, f"_metric_pj_{flow_max}_{episode_idx}.rou.xml")
+    route_file = os.path.join(SCRIPT_DIR, f"_metric_pj_{flow_max}_{episode_idx}_{control_mode}.rou.xml")
 
     # --- Forgalom generálás (lane-szintű) ---
     net = sumolib.net.readNet(NET_FILE)
@@ -120,8 +126,8 @@ def run_simulation(flow_max, episode_idx, output_dir):
                     f'from="{from_e}" to="{to_e}" departLane="{lane_idx}" />\n')
         f.write('</routes>\n')
 
-    # --- SUMO indítás ---
-    traci.start(["sumo", "-n", NET_FILE, "-r", route_file, "-a", DETECTOR_FILE,
+    # --- SUMO indítás (libsumo — nincs socket, in-process) ---
+    traci.load(["-n", NET_FILE, "-r", route_file, "-a", DETECTOR_FILE,
         "--no-step-log", "true", "--ignore-route-errors", "true",
         "--no-warnings", "true", "--xml-validation", "never", "--random", "true"])
 
@@ -164,18 +170,53 @@ def run_simulation(flow_max, episode_idx, output_dir):
         else:
             junction_phases[jid] = 1
 
+    # --- Actuated mód beállítása ---
+    if control_mode == "actuated":
+        for jid in junction_ids:
+            programs = traci.trafficlight.getAllProgramLogics(jid)
+            if programs:
+                orig = programs[0]
+                # Actuated program: min/max zöld idő a fázisonkénti duration alapján
+                act_phases = []
+                for ph in orig.phases:
+                    # Actuated fázisok: minDur = duration*0.5, maxDur = duration*1.5
+                    min_dur = max(5.0, ph.duration * 0.5)
+                    max_dur = max(min_dur + 5.0, ph.duration * 1.5)
+                    act_phases.append(traci.trafficlight.Phase(
+                        ph.duration, ph.state, min_dur, max_dur
+                    ))
+                act_logic = traci.trafficlight.Logic(
+                    "actuated_calib",  # programID
+                    3,                 # type: 3 = actuated
+                    0,                 # currentPhaseIndex
+                    act_phases,        # phases
+                    {                  # parameters
+                        "detector-gap": "2.0",
+                        "passing-time": "1.5",
+                        "max-gap": "3.0",
+                    }
+                )
+                traci.trafficlight.setProgramLogic(jid, act_logic)
+                traci.trafficlight.setProgram(jid, "actuated_calib")
+        print(f"      [ACTUATED] Jelzolampa programok atallitva actuated modra")
+
     # Előző fázis tárolás (state-hez)
     prev_phase = {jid: 0 for jid in junction_ids}
 
     total_steps = (DURATION - WARMUP) // DELTA_TIME
 
     for step_i in range(total_steps):
-        # Random jelzőlámpa akció
+        # Jelzőlámpa vezérlés: random VAGY actuated (nincs beavatkozás)
         current_phase = {}
-        for jid in junction_ids:
-            phase = random.randint(0, junction_phases[jid] - 1)
-            traci.trafficlight.setPhase(jid, phase)
-            current_phase[jid] = phase
+        if control_mode == "random":
+            for jid in junction_ids:
+                phase = random.randint(0, junction_phases[jid] - 1)
+                traci.trafficlight.setPhase(jid, phase)
+                current_phase[jid] = phase
+        else:
+            # Actuated: a SUMO maga kezeli, csak kiolvassuk az aktuális fázist
+            for jid in junction_ids:
+                current_phase[jid] = traci.trafficlight.getPhase(jid)
 
         # Akkumulálás delta_time lépésen
         acc = {jid: {
@@ -183,6 +224,9 @@ def run_simulation(flow_max, episode_idx, output_dir):
             'veh': 0, 'speed': 0.0, 'halted': 0, 'occ': 0.0,
             'valid_tt': 0, 'valid_tt_raw': 0, 'valid_speed': 0,
             'steps': 0,
+            # Új metrikák
+            'lane_speeds': [],       # per-sub-step lane átlagsebességek (SpeedStd-hez)
+            'throughput': 0,         # detektoron áthaladó járművek (kumulált darabszám)
             # Detektor-szintű state akkumulátorok
             'det_occ': defaultdict(float),   # per-detektor occupancy
             'det_veh': defaultdict(int),     # per-detektor vehicle count
@@ -197,6 +241,8 @@ def run_simulation(flow_max, episode_idx, output_dir):
                 lanes = junction_lanes[jid]
                 dets = junction_dets[jid]
                 acc[jid]['steps'] += 1
+
+                sub_step_speeds = []  # sávsebességek ebben az 1s sub-step-ben
 
                 for lane in lanes:
                     tt = traci.lane.getTraveltime(lane)
@@ -215,13 +261,19 @@ def run_simulation(flow_max, episode_idx, output_dir):
                     if speed >= 0:
                         acc[jid]['speed'] += speed
                         acc[jid]['valid_speed'] += 1
+                        sub_step_speeds.append(speed)
 
                     acc[jid]['halted'] += traci.lane.getLastStepHaltingNumber(lane)
 
-                # Detektor-szintű state gyűjtés
+                # Sub-step sávsebességeket gyűjtjük a SpeedStd-hez
+                acc[jid]['lane_speeds'].extend(sub_step_speeds)
+
+                # Detektor-szintű state + throughput gyűjtés
                 for det in dets:
                     acc[jid]['det_occ'][det] += traci.inductionloop.getLastStepOccupancy(det)
-                    acc[jid]['det_veh'][det] += traci.inductionloop.getLastStepVehicleNumber(det)
+                    det_veh_count = traci.inductionloop.getLastStepVehicleNumber(det)
+                    acc[jid]['det_veh'][det] += det_veh_count
+                    acc[jid]['throughput'] += det_veh_count  # áthaladó járművek
                     det_speed = traci.inductionloop.getLastStepMeanSpeed(det)
                     if det_speed >= 0:
                         acc[jid]['det_speed'][det] += det_speed
@@ -248,6 +300,20 @@ def run_simulation(flow_max, episode_idx, output_dir):
             avg_halted = a['halted'] / s
             avg_occ = (a['occ'] / s) / max(len(junction_dets[jid]), 1)
 
+            # --- Új közlekedési metrikák ---
+            # Throughput: járművek / DELTA_TIME sec (detektorokon áthaladó)
+            # Összesen ennyi jármű haladt át DELTA_TIME másodperc alatt
+            throughput = a['throughput']
+
+            # SpeedStd: sávsebesség szórás a DELTA_TIME-on belül
+            # A lane_speeds lista tartalmazza az összes (sub-step × lane) sebességet
+            # Magas szórás = stop-and-go dinamika (van aki áll, van aki megy)
+            speed_std = float(np.std(a['lane_speeds'])) if len(a['lane_speeds']) > 1 else 0.0
+
+            # HaltRatio: álló járművek aránya (0-1 tartomány)
+            # halted / total_veh, mindkettő kumulált a DELTA_TIME-on
+            halt_ratio = a['halted'] / a['veh'] if a['veh'] > 0 else 0.0
+
             # Per-detektor state értékek
             dets = junction_dets[jid]
             det_occ_vals = []
@@ -261,6 +327,7 @@ def run_simulation(flow_max, episode_idx, output_dir):
 
             row = {
                 'step': step_i,
+                'control_mode': control_mode,
                 'phase': current_phase[jid],
                 'prev_phase': prev_phase[jid],
                 # --- Reward metrikák (sáv-alapú, mint eddig) ---
@@ -276,6 +343,10 @@ def run_simulation(flow_max, episode_idx, output_dir):
                 'AvgSpeed': avg_speed,
                 'AvgOccupancy': avg_occ,
                 'QueueLength': avg_halted,
+                # --- Új közlekedési metrikák ---
+                'Throughput': throughput,
+                'SpeedStd': speed_std,
+                'HaltRatio': halt_ratio,
                 # --- State metrikák (detektor-szintű, aggregált) ---
                 'det_occ_mean': np.mean(det_occ_vals) if det_occ_vals else 0.0,
                 'det_occ_max': max(det_occ_vals) if det_occ_vals else 0.0,
@@ -298,7 +369,7 @@ def run_simulation(flow_max, episode_idx, output_dir):
             prev_phase[jid] = current_phase[jid]
 
         if (step_i + 1) % 50 == 0:
-            print(f"    Step {step_i+1}/{total_steps}")
+            print(f"    Step {step_i+1}/{total_steps} [{control_mode}]")
 
     traci.close()
 
@@ -308,25 +379,33 @@ def run_simulation(flow_max, episode_idx, output_dir):
     # CSV mentés
     for jid in junction_ids:
         df = pd.DataFrame(metrics[jid])
-        csv_path = os.path.join(output_dir, f"{jid}_flow{flow_max}_ep{episode_idx}.csv")
+        csv_path = os.path.join(output_dir, f"{jid}_flow{flow_max}_ep{episode_idx}_{control_mode}.csv")
         df.to_csv(csv_path, index=False)
 
     return metrics
 
 
-def calc_reward(wait, co2, mu_w, std_w, mu_c, std_c):
-    """Log-sigmoid reward számítás (azonos a sumo_rl_environment.py logikával)."""
-    z_wait = (np.log(wait + 1e-5) - mu_w) / (std_w + 1e-9)
-    z_co2 = (np.log(co2 + 1e-5) - mu_c) / (std_c + 1e-9)
-    r_wait = 1.0 - 1.0 / (1.0 + np.exp(-z_wait))
-    r_co2 = 1.0 - 1.0 / (1.0 + np.exp(-z_co2))
-    return (r_wait + r_co2) / 2.0
+def calc_reward_log_tanh(speed, throughput, mu_s, std_s, mu_t, std_t):
+    """Log-tanh reward: AvgSpeed + Throughput kombináció.
+    AvgSpeed: magasabb = jobb → R = (1 + tanh) / 2
+    Throughput: magasabb = jobb → R = (1 + tanh) / 2"""
+    z_s = (np.log(speed + 1e-5) - mu_s) / (std_s + 1e-9)
+    r_speed = (1.0 + np.tanh(z_s)) / 2.0  # magasabb speed → magasabb reward
+
+    z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
+    r_throughput = (1.0 + np.tanh(z_t)) / 2.0  # magasabb throughput → magasabb reward
+
+    return (r_speed + r_throughput) / 2.0
 
 
 def analyze_per_junction(output_dir):
     """
-    Per-junction elemzés: MU/STD számítás, összehasonlítás a globálissal,
-    junction_reward_params.json kiírása.
+    Per-junction elemzés: AvgSpeed + Throughput log-tanh normalizáció.
+
+    Minden junction-re kiszámolja a lokális MU/STD paramétereket (median/IQR
+    alapú robusztus becslés), majd összehasonlítja a globális paraméterekkel.
+
+    Reward: calc_reward_log_tanh(AvgSpeed, Throughput, mu_s, std_s, mu_t, std_t)
     """
     import matplotlib
     matplotlib.use('Agg')
@@ -334,6 +413,7 @@ def analyze_per_junction(output_dir):
 
     print("\n" + "=" * 80)
     print("  PER-JUNCTION NORMALIZACIOS PARAMETER KALIBRACIO")
+    print("  Reward: AvgSpeed + Throughput | Normalizacio: log-tanh")
     print("=" * 80)
 
     # --- CSV-k betöltése ---
@@ -345,11 +425,21 @@ def analyze_per_junction(output_dir):
     all_data = []
     for csv_file in csv_files:
         df = pd.read_csv(os.path.join(output_dir, csv_file))
+        # Ellenőrzés: szükséges oszlopok megléte
+        if 'AvgSpeed' not in df.columns or 'Throughput' not in df.columns:
+            print(f"  [SKIP] {csv_file} — hiányzó AvgSpeed/Throughput oszlop")
+            continue
         flow_level = int(csv_file.split('_flow')[1].split('_')[0])
         df['flow_level'] = flow_level
-        # Junction ID: mindent a _flow előtt
         jid = csv_file.split('_flow')[0]
         df['junction'] = jid
+        if 'control_mode' not in df.columns:
+            if '_random.csv' in csv_file:
+                df['control_mode'] = 'random'
+            elif '_actuated.csv' in csv_file:
+                df['control_mode'] = 'actuated'
+            else:
+                df['control_mode'] = 'random'
         all_data.append(df)
 
     full_df = pd.concat(all_data, ignore_index=True)
@@ -358,13 +448,52 @@ def analyze_per_junction(output_dir):
     print(f"\nOsszes adatpont: {len(full_df)}")
     print(f"Junction-ok szama: {len(junction_ids)}")
     print(f"Junction-ok: {', '.join(junction_ids)}")
+    if 'control_mode' in full_df.columns:
+        mode_counts = full_df['control_mode'].value_counts()
+        print(f"Control mode eloszlas:")
+        for mode, cnt in mode_counts.items():
+            pct = 100.0 * cnt / len(full_df)
+            print(f"  {mode}: {cnt} adatpont ({pct:.1f}%)")
+
+    # --- Robusztus paraméter becslés (median/IQR) ---
+    def robust_log_params(values, min_std=0.1):
+        """Log-transzformált median és IQR-alapú STD becslés."""
+        pos = values[values > 0]
+        if len(pos) < 10:
+            return None, None
+        log_vals = np.log(pos + 1e-5)
+        mu = float(np.median(log_vals))
+        iqr = float(np.percentile(log_vals, 75) - np.percentile(log_vals, 25))
+        std = max(iqr / 1.3489, min_std)  # IQR/1.3489 ≈ STD normális eloszlásnál
+        return mu, std
+
+    # --- Globális paraméterek kiszámítása (minden junction aggregálva) ---
+    valid_global = full_df[full_df['VehCount'] > 0].copy()
+    glob_mu_s, glob_std_s = robust_log_params(valid_global['AvgSpeed'].values)
+    glob_mu_t, glob_std_t = robust_log_params(valid_global['Throughput'].values)
+
+    if glob_mu_s is None or glob_mu_t is None:
+        print("[ERROR] Nem eleg globalis adat a parameterbecsleshez!")
+        return
+
+    # GLOBAL_PARAMS frissítése
+    GLOBAL_PARAMS['MU_SPEED'] = round(glob_mu_s, 6)
+    GLOBAL_PARAMS['STD_SPEED'] = round(glob_std_s, 6)
+    GLOBAL_PARAMS['MU_THROUGHPUT'] = round(glob_mu_t, 6)
+    GLOBAL_PARAMS['STD_THROUGHPUT'] = round(glob_std_t, 6)
+
+    print(f"\n  Globalis parameterek (log-space, median/IQR):")
+    print(f"    MU_SPEED:      {glob_mu_s:.6f}")
+    print(f"    STD_SPEED:     {glob_std_s:.6f}")
+    print(f"    MU_THROUGHPUT: {glob_mu_t:.6f}")
+    print(f"    STD_THROUGHPUT:{glob_std_t:.6f}")
 
     # --- Per-junction paraméterek ---
     junction_params = {}
     summary_rows = []
 
-    print(f"\n{'Junction':15} {'MU_WAIT':>10} {'STD_WAIT':>10} {'MU_CO2':>10} {'STD_CO2':>10} "
-          f"{'dMU_W':>8} {'dMU_C':>8} {'N':>8}")
+    print(f"\n{'Junction':15} {'MU_SPD':>10} {'STD_SPD':>10} {'MU_THR':>10} {'STD_THR':>10} "
+          f"{'dMU_S':>8} {'dMU_T':>8} {'N':>8}")
     print("-" * 95)
 
     for jid in junction_ids:
@@ -375,83 +504,86 @@ def analyze_per_junction(output_dir):
             print(f"{jid:15} {'SKIP — no data':>50}")
             continue
 
-        # TotalWaitingTime paraméterek
-        wait_vals = jdf_valid['TotalWaitingTime'].values
-        wait_pos = wait_vals[wait_vals > 0]
-        if len(wait_pos) > 10:
-            log_wait = np.log(wait_pos + 1e-5)
-            mu_wait = float(np.mean(log_wait))
-            std_wait = float(np.std(log_wait))
-        else:
-            mu_wait = GLOBAL_PARAMS['MU_WAIT']
-            std_wait = GLOBAL_PARAMS['STD_WAIT']
+        # AvgSpeed paraméterek
+        mu_s, std_s = robust_log_params(jdf_valid['AvgSpeed'].values)
+        if mu_s is None:
+            mu_s, std_s = glob_mu_s, glob_std_s
 
-        # TotalCO2 paraméterek
-        co2_vals = jdf_valid['TotalCO2'].values
-        co2_pos = co2_vals[co2_vals > 0]
-        if len(co2_pos) > 10:
-            log_co2 = np.log(co2_pos + 1e-5)
-            mu_co2 = float(np.mean(log_co2))
-            std_co2 = float(np.std(log_co2))
-        else:
-            mu_co2 = GLOBAL_PARAMS['MU_CO2']
-            std_co2 = GLOBAL_PARAMS['STD_CO2']
+        # Throughput paraméterek
+        mu_t, std_t = robust_log_params(jdf_valid['Throughput'].values)
+        if mu_t is None:
+            mu_t, std_t = glob_mu_t, glob_std_t
 
         junction_params[jid] = {
-            'MU_WAIT': round(mu_wait, 6),
-            'STD_WAIT': round(std_wait, 6),
-            'MU_CO2': round(mu_co2, 6),
-            'STD_CO2': round(std_co2, 6),
+            'MU_SPEED': round(mu_s, 6),
+            'STD_SPEED': round(std_s, 6),
+            'MU_THROUGHPUT': round(mu_t, 6),
+            'STD_THROUGHPUT': round(std_t, 6),
         }
 
-        d_mu_w = mu_wait - GLOBAL_PARAMS['MU_WAIT']
-        d_mu_c = mu_co2 - GLOBAL_PARAMS['MU_CO2']
+        d_mu_s = mu_s - glob_mu_s
+        d_mu_t = mu_t - glob_mu_t
 
-        print(f"{jid:15} {mu_wait:10.4f} {std_wait:10.4f} {mu_co2:10.4f} {std_co2:10.4f} "
-              f"{d_mu_w:+8.4f} {d_mu_c:+8.4f} {len(jdf_valid):8d}")
+        print(f"{jid:15} {mu_s:10.4f} {std_s:10.4f} {mu_t:10.4f} {std_t:10.4f} "
+              f"{d_mu_s:+8.4f} {d_mu_t:+8.4f} {len(jdf_valid):8d}")
 
-        # --- Reward range összehasonlítás ---
-        mask_pos = (jdf_valid['TotalWaitingTime'].values > 0) & (jdf_valid['TotalCO2'].values > 0)
-        w_pos = jdf_valid['TotalWaitingTime'].values[mask_pos]
-        c_pos = jdf_valid['TotalCO2'].values[mask_pos]
+        # --- Reward összehasonlítás: global vs local params ---
+        speed_vals = jdf_valid['AvgSpeed'].values
+        thr_vals = jdf_valid['Throughput'].values
+        mask_pos = (speed_vals > 0) & (thr_vals > 0)
+        spd_pos = speed_vals[mask_pos]
+        thr_pos = thr_vals[mask_pos]
 
-        if len(w_pos) > 10:
-            rewards_global = np.array([calc_reward(w, c,
-                GLOBAL_PARAMS['MU_WAIT'], GLOBAL_PARAMS['STD_WAIT'],
-                GLOBAL_PARAMS['MU_CO2'], GLOBAL_PARAMS['STD_CO2'])
-                for w, c in zip(w_pos, c_pos)])
-            rewards_local = np.array([calc_reward(w, c, mu_wait, std_wait, mu_co2, std_co2)
-                for w, c in zip(w_pos, c_pos)])
+        if len(spd_pos) > 10:
+            # Vektorizált reward számítás — global paraméterekkel
+            rewards_global = calc_reward_log_tanh(
+                spd_pos, thr_pos, glob_mu_s, glob_std_s, glob_mu_t, glob_std_t)
+
+            # Vektorizált reward számítás — local paraméterekkel
+            rewards_local = calc_reward_log_tanh(
+                spd_pos, thr_pos, mu_s, std_s, mu_t, std_t)
 
             summary_rows.append({
                 'junction': jid,
-                'MU_WAIT': mu_wait, 'STD_WAIT': std_wait,
-                'MU_CO2': mu_co2, 'STD_CO2': std_co2,
-                'dMU_WAIT': d_mu_w, 'dMU_CO2': d_mu_c,
+                'MU_SPEED': mu_s, 'STD_SPEED': std_s,
+                'MU_THROUGHPUT': mu_t, 'STD_THROUGHPUT': std_t,
+                'dMU_SPEED': d_mu_s, 'dMU_THROUGHPUT': d_mu_t,
                 'N_valid': len(jdf_valid),
-                'median_wait': float(np.median(wait_pos)) if len(wait_pos) > 0 else 0,
-                'median_co2': float(np.median(co2_pos)) if len(co2_pos) > 0 else 0,
+                'median_speed': float(np.median(spd_pos)),
+                'median_throughput': float(np.median(thr_pos)),
                 'reward_global_mean': float(np.mean(rewards_global)),
                 'reward_global_std': float(np.std(rewards_global)),
+                'reward_global_iqr': float(np.percentile(rewards_global, 75) - np.percentile(rewards_global, 25)),
                 'reward_global_range': float(np.percentile(rewards_global, 90) - np.percentile(rewards_global, 10)),
                 'reward_local_mean': float(np.mean(rewards_local)),
                 'reward_local_std': float(np.std(rewards_local)),
+                'reward_local_iqr': float(np.percentile(rewards_local, 75) - np.percentile(rewards_local, 25)),
                 'reward_local_range': float(np.percentile(rewards_local, 90) - np.percentile(rewards_local, 10)),
             })
 
     # --- JSON kiírás ---
+    # A JSON formátum: globális + per-junction paraméterek
+    output_json = {
+        'reward_function': 'AvgSpeed + Throughput, log-tanh normalization',
+        'global': {
+            'MU_SPEED': round(glob_mu_s, 6),
+            'STD_SPEED': round(glob_std_s, 6),
+            'MU_THROUGHPUT': round(glob_mu_t, 6),
+            'STD_THROUGHPUT': round(glob_std_t, 6),
+        },
+        'per_junction': junction_params,
+    }
     json_path = os.path.join(DATA_DIR, "junction_reward_params.json")
     with open(json_path, 'w') as f:
-        json.dump(junction_params, f, indent=2)
+        json.dump(output_json, f, indent=2)
     print(f"\n{'=' * 80}")
     print(f"  junction_reward_params.json mentve: {json_path}")
     print(f"  {len(junction_params)} junction parameterei")
     print(f"{'=' * 80}")
 
-    # Másolat az output mappába is
     json_copy = os.path.join(output_dir, "junction_reward_params.json")
     with open(json_copy, 'w') as f:
-        json.dump(junction_params, f, indent=2)
+        json.dump(output_json, f, indent=2)
 
     # --- Summary CSV ---
     if summary_rows:
@@ -459,125 +591,77 @@ def analyze_per_junction(output_dir):
         summary_df.to_csv(os.path.join(output_dir, 'per_junction_summary.csv'), index=False)
         print(f"  per_junction_summary.csv mentve")
 
-    # --- Ábra 1: Heatmap — MU/STD eltérés a globálistól ---
+    # --- Ábra: junction_comparison.png — 4 panel ---
     if summary_rows:
         sdf = pd.DataFrame(summary_rows).set_index('junction')
 
-        fig, axes = plt.subplots(2, 2, figsize=(20, 14))
-        fig.suptitle('Per-Junction Normalization Parameters vs Global', fontsize=16, y=1.02)
+        fig, axes = plt.subplots(4, 1, figsize=(16, 20))
+        fig.suptitle('Per-Junction Normalization: Global vs Local (AvgSpeed + Throughput, log-tanh)',
+                      fontsize=15, fontweight='bold')
 
-        # 1a. MU_WAIT bar chart
-        ax = axes[0, 0]
         jids = sdf.index.tolist()
         x = np.arange(len(jids))
-        ax.bar(x, sdf['MU_WAIT'].values, color='steelblue', alpha=0.8)
-        ax.axhline(GLOBAL_PARAMS['MU_WAIT'], color='red', ls='--', lw=2, label=f"Global: {GLOBAL_PARAMS['MU_WAIT']:.2f}")
-        ax.set_xticks(x)
-        ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
-        ax.set_ylabel('MU_WAIT')
-        ax.set_title('MU_WAIT per Junction')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        # 1b. MU_CO2 bar chart
-        ax = axes[0, 1]
-        ax.bar(x, sdf['MU_CO2'].values, color='darkorange', alpha=0.8)
-        ax.axhline(GLOBAL_PARAMS['MU_CO2'], color='red', ls='--', lw=2, label=f"Global: {GLOBAL_PARAMS['MU_CO2']:.2f}")
-        ax.set_xticks(x)
-        ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
-        ax.set_ylabel('MU_CO2')
-        ax.set_title('MU_CO2 per Junction')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-
-        # 1c. Reward range comparison
-        ax = axes[1, 0]
         width = 0.35
-        ax.bar(x - width/2, sdf['reward_global_range'].values, width, label='Global params', color='blue', alpha=0.7)
-        ax.bar(x + width/2, sdf['reward_local_range'].values, width, label='Local params', color='red', alpha=0.7)
+
+        # Panel 1: MU eltérések a globálistól
+        ax = axes[0]
+        ax.bar(x - width/2, sdf['dMU_SPEED'].values, width,
+               label=r'$\Delta$ MU_SPEED', color='#2980b9', alpha=0.85)
+        ax.bar(x + width/2, sdf['dMU_THROUGHPUT'].values, width,
+               label=r'$\Delta$ MU_THROUGHPUT', color='#e67e22', alpha=0.85)
+        ax.axhline(0, color='black', ls='-', lw=1)
+        ax.set_xticks(x)
+        ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
+        ax.set_ylabel('Deviation from Global (log-space)')
+        ax.set_title('MU Parameter Deviation (Local - Global)', fontsize=12)
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3, axis='y')
+
+        # Panel 2: Reward range (p90-p10) összehasonlítás
+        ax = axes[1]
+        ax.bar(x - width/2, sdf['reward_global_range'].values, width,
+               label='Global params', color='#3498db', alpha=0.85)
+        ax.bar(x + width/2, sdf['reward_local_range'].values, width,
+               label='Local params', color='#e74c3c', alpha=0.85)
         ax.set_xticks(x)
         ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
         ax.set_ylabel('Reward Range (p90 - p10)')
-        ax.set_title('Reward Range: Global vs Local Normalization')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+        ax.set_title('Reward Dynamic Range: Global vs Local Normalization', fontsize=12)
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3, axis='y')
 
-        # 1d. Eltérés heatmap
-        ax = axes[1, 1]
-        delta_data = sdf[['dMU_WAIT', 'dMU_CO2']].copy()
-        delta_data.columns = ['Delta MU_WAIT', 'Delta MU_CO2']
-        im = ax.imshow(delta_data.values.T, cmap='RdBu_r', aspect='auto',
-                       vmin=-max(abs(delta_data.values.min()), abs(delta_data.values.max())),
-                       vmax=max(abs(delta_data.values.min()), abs(delta_data.values.max())))
-        ax.set_xticks(range(len(jids)))
+        # Panel 3: Reward IQR összehasonlítás
+        ax = axes[2]
+        ax.bar(x - width/2, sdf['reward_global_iqr'].values, width,
+               label='Global params', color='#3498db', alpha=0.85)
+        ax.bar(x + width/2, sdf['reward_local_iqr'].values, width,
+               label='Local params', color='#e74c3c', alpha=0.85)
+        ax.set_xticks(x)
         ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
-        ax.set_yticks([0, 1])
-        ax.set_yticklabels(['Delta MU_WAIT', 'Delta MU_CO2'])
-        ax.set_title('Deviation from Global Parameters')
-        # Annotáció
-        for i in range(2):
-            for j in range(len(jids)):
-                val = delta_data.values[j, i]
-                color = 'white' if abs(val) > 0.5 else 'black'
-                ax.text(j, i, f'{val:+.2f}', ha='center', va='center',
-                        fontsize=7, color=color, fontweight='bold')
-        fig.colorbar(im, ax=ax, shrink=0.6)
+        ax.set_ylabel('Reward IQR (p75 - p25)')
+        ax.set_title('Reward IQR: Global vs Local Normalization', fontsize=12)
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3, axis='y')
+
+        # Panel 4: Improvement %
+        ax = axes[3]
+        improvement = ((sdf['reward_local_range'] / sdf['reward_global_range'].clip(lower=1e-6)) - 1) * 100
+        colors_imp = ['#2ecc71' if v > 0 else '#e74c3c' for v in improvement.values]
+        ax.bar(x, improvement.values, color=colors_imp, alpha=0.85)
+        ax.axhline(0, color='black', ls='-', lw=1)
+        ax.set_xticks(x)
+        ax.set_xticklabels(jids, rotation=45, ha='right', fontsize=8)
+        ax.set_ylabel('Improvement (%)')
+        ax.set_title('Local vs Global: Reward Range Improvement per Junction', fontsize=12)
+        ax.grid(True, alpha=0.3, axis='y')
+        for i, v in enumerate(improvement.values):
+            ax.text(i, v + (1 if v >= 0 else -3), f'{v:+.0f}%',
+                    ha='center', va='bottom' if v >= 0 else 'top', fontsize=7, fontweight='bold')
 
         plt.tight_layout()
         fig.savefig(os.path.join(output_dir, 'junction_comparison.png'), dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  junction_comparison.png mentve")
-
-    # --- Ábra 2: Per-junction reward eloszlás ---
-    if summary_rows and len(junction_ids) > 0:
-        n_junctions = len(junction_ids)
-        n_cols = 5
-        n_rows = (n_junctions + n_cols - 1) // n_cols
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 3.5 * n_rows))
-        if n_rows == 1:
-            axes = axes.reshape(1, -1)
-        fig.suptitle('Reward Distribution per Junction (Global vs Local params)', fontsize=14)
-
-        for idx, jid in enumerate(junction_ids):
-            row, col = idx // n_cols, idx % n_cols
-            ax = axes[row, col]
-
-            jdf = full_df[full_df['junction'] == jid].copy()
-            mask_pos = (jdf['TotalWaitingTime'].values > 0) & (jdf['TotalCO2'].values > 0)
-            w_pos = jdf['TotalWaitingTime'].values[mask_pos]
-            c_pos = jdf['TotalCO2'].values[mask_pos]
-
-            if len(w_pos) < 10:
-                ax.set_title(f'{jid}\n(insufficient data)', fontsize=9)
-                continue
-
-            p = junction_params[jid]
-            r_global = np.array([calc_reward(w, c,
-                GLOBAL_PARAMS['MU_WAIT'], GLOBAL_PARAMS['STD_WAIT'],
-                GLOBAL_PARAMS['MU_CO2'], GLOBAL_PARAMS['STD_CO2'])
-                for w, c in zip(w_pos, c_pos)])
-            r_local = np.array([calc_reward(w, c,
-                p['MU_WAIT'], p['STD_WAIT'], p['MU_CO2'], p['STD_CO2'])
-                for w, c in zip(w_pos, c_pos)])
-
-            ax.hist(r_global, bins=30, alpha=0.5, label='Global', color='blue', density=True)
-            ax.hist(r_local, bins=30, alpha=0.5, label='Local', color='red', density=True)
-            g_range = np.percentile(r_global, 90) - np.percentile(r_global, 10)
-            l_range = np.percentile(r_local, 90) - np.percentile(r_local, 10)
-            ax.set_title(f'{jid}\nG_rng={g_range:.2f} L_rng={l_range:.2f}', fontsize=9)
-            ax.set_xlim(0, 1)
-            if idx == 0:
-                ax.legend(fontsize=7)
-
-        # Üres subplot-ok elrejtése
-        for idx in range(len(junction_ids), n_rows * n_cols):
-            row, col = idx // n_cols, idx % n_cols
-            axes[row, col].set_visible(False)
-
-        plt.tight_layout()
-        fig.savefig(os.path.join(output_dir, 'junction_reward_ranges.png'), dpi=200, bbox_inches='tight')
-        plt.close()
-        print(f"  junction_reward_ranges.png mentve")
 
     # --- Összefoglaló statisztikák ---
     if summary_rows:
@@ -586,17 +670,17 @@ def analyze_per_junction(output_dir):
         print("  OSSZEFOGLALO STATISZTIKAK")
         print(f"{'=' * 80}")
 
-        print(f"\n  MU_WAIT elteresek a globalitol:")
-        print(f"    Min:  {sdf['dMU_WAIT'].min():+.4f}  ({sdf.loc[sdf['dMU_WAIT'].idxmin(), 'junction']})")
-        print(f"    Max:  {sdf['dMU_WAIT'].max():+.4f}  ({sdf.loc[sdf['dMU_WAIT'].idxmax(), 'junction']})")
-        print(f"    Mean: {sdf['dMU_WAIT'].mean():+.4f}")
-        print(f"    Std:  {sdf['dMU_WAIT'].std():.4f}")
+        print(f"\n  MU_SPEED elteresek a globalitol:")
+        print(f"    Min:  {sdf['dMU_SPEED'].min():+.4f}  ({sdf.loc[sdf['dMU_SPEED'].idxmin(), 'junction']})")
+        print(f"    Max:  {sdf['dMU_SPEED'].max():+.4f}  ({sdf.loc[sdf['dMU_SPEED'].idxmax(), 'junction']})")
+        print(f"    Mean: {sdf['dMU_SPEED'].mean():+.4f}")
+        print(f"    Std:  {sdf['dMU_SPEED'].std():.4f}")
 
-        print(f"\n  MU_CO2 elteresek a globalitol:")
-        print(f"    Min:  {sdf['dMU_CO2'].min():+.4f}  ({sdf.loc[sdf['dMU_CO2'].idxmin(), 'junction']})")
-        print(f"    Max:  {sdf['dMU_CO2'].max():+.4f}  ({sdf.loc[sdf['dMU_CO2'].idxmax(), 'junction']})")
-        print(f"    Mean: {sdf['dMU_CO2'].mean():+.4f}")
-        print(f"    Std:  {sdf['dMU_CO2'].std():.4f}")
+        print(f"\n  MU_THROUGHPUT elteresek a globalitol:")
+        print(f"    Min:  {sdf['dMU_THROUGHPUT'].min():+.4f}  ({sdf.loc[sdf['dMU_THROUGHPUT'].idxmin(), 'junction']})")
+        print(f"    Max:  {sdf['dMU_THROUGHPUT'].max():+.4f}  ({sdf.loc[sdf['dMU_THROUGHPUT'].idxmax(), 'junction']})")
+        print(f"    Mean: {sdf['dMU_THROUGHPUT'].mean():+.4f}")
+        print(f"    Std:  {sdf['dMU_THROUGHPUT'].std():.4f}")
 
         print(f"\n  Reward range javulas (local vs global):")
         improved = (sdf['reward_local_range'] > sdf['reward_global_range']).sum()
@@ -606,6 +690,14 @@ def analyze_per_junction(output_dir):
         print(f"    Atlagos local range:  {sdf['reward_local_range'].mean():.4f}")
         pct = (sdf['reward_local_range'].mean() / sdf['reward_global_range'].mean() - 1) * 100
         print(f"    Valtozas: {pct:+.1f}%")
+
+        print(f"\n  Reward IQR javulas (local vs global):")
+        improved_iqr = (sdf['reward_local_iqr'] > sdf['reward_global_iqr']).sum()
+        print(f"    Javult: {improved_iqr}/{total} junction")
+        print(f"    Atlagos global IQR: {sdf['reward_global_iqr'].mean():.4f}")
+        print(f"    Atlagos local IQR:  {sdf['reward_local_iqr'].mean():.4f}")
+        pct_iqr = (sdf['reward_local_iqr'].mean() / sdf['reward_global_iqr'].mean() - 1) * 100
+        print(f"    Valtozas: {pct_iqr:+.1f}%")
 
 
 
@@ -661,42 +753,166 @@ def reward_selection_analysis(output_dir):
     # =====================================================================
     # HELPER: normalizációs függvények
     # =====================================================================
-    def normalize_log_sigmoid(vals, mu, std):
-        """Log-sigmoid: R = 1 - sigmoid((log(x) - mu) / std)"""
-        z = (np.log(vals + 1e-5) - mu) / (std + 1e-9)
-        return 1.0 - 1.0 / (1.0 + np.exp(-z))
+    # =================================================================
+    # NORMALIZÁCIÓS MÓDSZEREK
+    #
+    # Két kategória:
+    #   A) PARAMETRIKUS CDF: feltételezünk egy eloszlást, illesztjük,
+    #      R = 1 - CDF(x). Statisztikailag megalapozott.
+    #      Referencia: D'Agostino & Stephens (1986) "Goodness-of-fit techniques"
+    #
+    #   B) NEM-PARAMETRIKUS: nincs eloszlási feltételezés.
+    #      - Empirikus CDF: R = 1 - F̂(x), ahol F̂ a tapasztalati CDF
+    #        Referencia: van der Vaart (1998) "Asymptotic Statistics"
+    #      - Min-max: R = 1 - (x - min) / (max - min)
+    #        Referencia: Han, Kamber & Pei (2011) "Data Mining" ch. 3
+    #
+    #   C) TRANSZFORMÁCIÓ + SQUASH: transzformálunk (log, sqrt, Box-Cox)
+    #      majd sigmoid/tanh-al [0,1]-be nyomjuk.
+    #      - Box-Cox: Box & Cox (1964) JRSS-B, 26(2), 211-252
+    #      - Log-sigmoid: gyakori RL reward shaping, pl. Ng et al. (1999)
+    #
+    # Mind a mu, std paramétert kapja (log-térben), és vals-t (nyers).
+    # =================================================================
 
-    def normalize_log_tanh(vals, mu, std):
-        """Log-tanh: R = (1 - tanh((log(x) - mu) / std)) / 2"""
-        z = (np.log(vals + 1e-5) - mu) / (std + 1e-9)
-        return (1.0 - np.tanh(z)) / 2.0
-
+    # --- A) Parametrikus CDF ---
     def normalize_lognormal_cdf(vals, mu, std):
-        """Lognormal CDF: R = 1 - Phi((log(x) - mu) / std)"""
+        """Lognormal CDF: R = 1 - Phi((log(x) - mu) / std)
+        Feltételezés: X ~ LogNormal(mu, std)
+        Ref: limpert2001 'Log-normal distributions across the sciences'"""
         z = (np.log(vals + 1e-5) - mu) / (std + 1e-9)
         return 1.0 - stats.norm.cdf(z)
 
-    def normalize_linear_sigmoid(vals, mu, std):
-        """Linear sigmoid (no log): R = 1 - sigmoid((x - exp(mu)) / (exp(mu)*std))"""
-        center = np.exp(mu)
-        scale = center * std
-        z = (vals - center) / (scale + 1e-9)
+    def normalize_gamma_cdf(vals, mu, std):
+        """Gamma CDF: R = 1 - F_gamma(x; alpha, beta)
+        Illesztés: method of moments, alpha = (mean/std)^2, beta = mean/std^2
+        Ref: Forbes et al. (2011) 'Statistical Distributions'"""
+        v = vals.clip(min=1e-5)
+        m, s = np.mean(v), np.std(v)
+        if s < 1e-9:
+            return np.full_like(vals, 0.5)
+        alpha = (m / s) ** 2
+        beta = s ** 2 / m  # scale parameter
+        return 1.0 - stats.gamma.cdf(v, a=alpha, scale=beta)
+
+    def normalize_weibull_cdf(vals, mu, std):
+        """Weibull CDF: R = exp(-(x/lambda)^k)
+        Illesztés: method of moments approximáció
+        Ref: Rinne (2008) 'The Weibull Distribution'"""
+        v = vals.clip(min=1e-5)
+        m, s = np.mean(v), np.std(v)
+        if s < 1e-9 or m < 1e-9:
+            return np.full_like(vals, 0.5)
+        cv = s / m  # coefficient of variation
+        # k approximáció: Justus et al. (1978)
+        k = max(0.5, (cv) ** (-1.086))
+        from math import lgamma
+        lam = m / (np.exp(lgamma(1 + 1.0/k)) if k > 0 else 1.0)
+        lam = max(lam, 1e-5)
+        return np.exp(-np.power(v / lam, k))
+
+    # --- B) Nem-parametrikus ---
+    def normalize_empirical_cdf(vals, mu, std):
+        """Empirikus CDF: R = 1 - rank(x) / N
+        Nem feltételez semmilyen eloszlást.
+        Ref: van der Vaart (1998) 'Asymptotic Statistics'"""
+        from scipy.stats import rankdata
+        ranks = rankdata(vals, method='average')
+        return 1.0 - ranks / (len(vals) + 1)  # +1: Hazen plotting position
+
+    def normalize_minmax(vals, mu, std):
+        """Min-max: R = 1 - (x - min) / (max - min)
+        Ref: Han, Kamber & Pei (2011) 'Data Mining' ch. 3"""
+        v_min, v_max = np.min(vals), np.max(vals)
+        if v_max - v_min < 1e-9:
+            return np.full_like(vals, 0.5)
+        return 1.0 - (vals - v_min) / (v_max - v_min)
+
+    # --- C) Transzformáció + squash ---
+    def normalize_log_sigmoid(vals, mu, std):
+        """Log-sigmoid: R = 1 - sigma((log(x) - mu) / std)
+        Log transzformáció + logisztikus squash.
+        Ref: reward shaping irodalom, pl. Ng et al. (1999) ICML"""
+        z = (np.log(vals + 1e-5) - mu) / (std + 1e-9)
         return 1.0 - 1.0 / (1.0 + np.exp(-z))
 
-    def normalize_sqrt_sigmoid(vals, mu_log, std_log):
-        """Sqrt-sigmoid: R = 1 - sigmoid((sqrt(x) - mu_sqrt) / std_sqrt)"""
-        sqrt_vals = np.sqrt(vals + 1e-5)
-        mu_s = np.mean(sqrt_vals)
-        std_s = np.std(sqrt_vals)
-        z = (sqrt_vals - mu_s) / (std_s + 1e-9)
+    def normalize_boxcox_sigmoid(vals, mu, std):
+        """Box-Cox + sigmoid: optimális lambda keresés, majd z-score + sigmoid.
+        Ref: Box & Cox (1964) JRSS-B 26(2):211-252"""
+        v = vals.clip(min=1e-5)
+        # Box-Cox lambda keresés (scipy)
+        try:
+            transformed, lam = stats.boxcox(v)
+        except Exception:
+            # Fallback: log ha boxcox nem sikerül
+            transformed = np.log(v + 1e-5)
+        mu_bc = np.mean(transformed)
+        std_bc = np.std(transformed)
+        z = (transformed - mu_bc) / (std_bc + 1e-9)
         return 1.0 - 1.0 / (1.0 + np.exp(-z))
+
+    def normalize_log_tanh(vals, mu, std):
+        """Log-tanh: R = (1 - tanh((log(x) - mu) / std)) / 2
+        Steeper transition mint sigmoid — gyorsabban szaturál."""
+        z = (np.log(vals + 1e-5) - mu) / (std + 1e-9)
+        return (1.0 - np.tanh(z)) / 2.0
+
+    # --- D) RL-specifikus módszerek ---
+    def normalize_zscore(vals, mu, std):
+        """Z-score standardizálás + sigmoid squash.
+        z = (x - mean) / std, majd sigmoid([0,1]-be).
+        Az RL-ben a running mean/std-vel frissített verzió az alap
+        (Welford-algoritmus), itt a batch statisztikát használjuk.
+        Ref: Welford (1962), Sutton & Barto (2018) ch. 2.4"""
+        v = vals.clip(min=1e-5)
+        m, s = np.mean(v), np.std(v)
+        z = (v - m) / (s + 1e-9)
+        return 1.0 - 1.0 / (1.0 + np.exp(-z))
+
+    def normalize_popart(vals, mu, std):
+        """PopArt: Preserving Outputs Precisely, while Adaptively
+        Rescaling Targets.
+        Adaptív normalizáció ami a reward skálát követi.
+        Batch esetben: z = (x - mu) / sigma, klippelve [-5, 5],
+        majd lineárisan [0, 1]-re.
+        Ref: van Hasselt et al. (2016) 'Learning values across many
+        orders of magnitude' arXiv:1602.07714"""
+        v = vals.clip(min=1e-5)
+        m, s = np.mean(v), np.std(v)
+        z = (v - m) / (s + 1e-9)
+        z_clipped = np.clip(z, -5.0, 5.0)
+        # Lineáris leképezés [-5, 5] → [0, 1], invertálva (alacsonyabb = jobb)
+        return 1.0 - (z_clipped + 5.0) / 10.0
+
+    def normalize_percentile_clip(vals, mu, std):
+        """Percentilis-alapú klippelés: robusztus min-max.
+        A szélső 2.5%-ot levágja (p2.5, p97.5), majd lineárisan [0,1]-re.
+        Robusztus kiugró értékekre.
+        Ref: Gyakori practice RL-ben, pl. OpenAI Baselines
+        VecNormalize (Dhariwal et al. 2017)"""
+        p_low = np.percentile(vals, 2.5)
+        p_high = np.percentile(vals, 97.5)
+        if p_high - p_low < 1e-9:
+            return np.full_like(vals, 0.5)
+        clipped = np.clip(vals, p_low, p_high)
+        return 1.0 - (clipped - p_low) / (p_high - p_low)
 
     NORM_METHODS = {
-        'log-sigmoid':    normalize_log_sigmoid,
-        'log-tanh':       normalize_log_tanh,
+        # Parametrikus CDF
         'lognormal-cdf':  normalize_lognormal_cdf,
-        'linear-sigmoid': normalize_linear_sigmoid,
-        'sqrt-sigmoid':   normalize_sqrt_sigmoid,
+        'gamma-cdf':      normalize_gamma_cdf,
+        'weibull-cdf':    normalize_weibull_cdf,
+        # Nem-parametrikus
+        'empirical-cdf':  normalize_empirical_cdf,
+        'min-max':        normalize_minmax,
+        # Transzformáció + squash
+        'log-sigmoid':    normalize_log_sigmoid,
+        'boxcox-sigmoid': normalize_boxcox_sigmoid,
+        'log-tanh':       normalize_log_tanh,
+        # RL-specifikus
+        'zscore-sigmoid': normalize_zscore,
+        'popart':         normalize_popart,
+        'percentile-clip': normalize_percentile_clip,
     }
 
     # =====================================================================
@@ -708,8 +924,11 @@ def reward_selection_analysis(output_dir):
     print("=" * 100)
 
     # Egyedi metrikák amiket vizsgálunk (nem per-vehicle, mert azok veszélyesek)
-    candidate_metrics = ['TotalWaitingTime', 'TotalCO2', 'AvgSpeed', 'QueueLength',
-                         'TotalTravelTime', 'AvgOccupancy']
+    candidate_metrics_all = ['TotalWaitingTime', 'TotalCO2', 'AvgSpeed', 'QueueLength',
+                             'TotalTravelTime', 'AvgOccupancy',
+                             'Throughput', 'SpeedStd', 'HaltRatio']
+    # Csak azokat tartjuk meg, amik ténylegesen vannak az adatban
+    candidate_metrics = [m for m in candidate_metrics_all if m in full_df.columns]
 
     # Globális korreláció (log-transzformált, VehCount > 0 szűrés)
     df_valid = full_df[full_df['VehCount'] > 0].copy()
@@ -728,17 +947,17 @@ def reward_selection_analysis(output_dir):
 
     print(f"\n  Pearson korreláció (log-transzformált, {len(df_valid)} adatpont):\n")
     # Header
-    header = f"{'':20}"
+    header = f"{'':22}"
     for col in candidate_metrics:
-        header += f" {col[:8]:>9}"
+        header += f" {col[:10]:>12}"
     print(header)
-    print("-" * (20 + 10 * len(candidate_metrics)))
+    print("  " + "-" * (20 + 13 * len(candidate_metrics)))
     for row_col in candidate_metrics:
-        line = f"  {row_col:18}"
+        line = f"  {row_col:20}"
         for col_col in candidate_metrics:
             r = corr_matrix.loc[row_col, col_col]
             marker = " *" if abs(r) > 0.85 and row_col != col_col else "  "
-            line += f" {r:+7.3f}{marker}"
+            line += f" {r:+8.3f}{marker}"
         print(line)
 
     print(f"\n  * = |r| > 0.85 (redundáns pár)")
@@ -792,9 +1011,6 @@ def reward_selection_analysis(output_dir):
                     continue
             all_combos.append(combo)
 
-    # Jelölés a jelenlegi módszerhez
-    current_combo = ('TotalWaitingTime', 'TotalCO2')
-
     print(f"\n  Vizsgált kombinációk: {len(all_combos)}")
     print(f"  (2-es kombókból kiszűrve a redundáns párok: |r| > 0.85)\n")
 
@@ -802,7 +1018,6 @@ def reward_selection_analysis(output_dir):
 
     for combo in all_combos:
         combo_name = " + ".join(combo)
-        is_current = combo == current_combo or (len(combo) == 2 and combo[::-1] == current_combo)
 
         # Per-junction reward számítás és aggregálás
         all_rewards = []
@@ -827,13 +1042,13 @@ def reward_selection_analysis(output_dir):
                 mu = np.mean(log_v)
                 std = np.std(log_v)
 
-                if metric == 'AvgSpeed':
-                    # Speed invertálva: magasabb speed = jobb = magasabb reward
+                if metric in ('AvgSpeed', 'Throughput'):
+                    # Speed/Throughput invertálva: magasabb = jobb = magasabb reward
                     # R = sigmoid((log(x) - mu) / std) — NEM 1-sigmoid!
                     z = (log_v - mu) / (std + 1e-9)
                     r_component = 1.0 / (1.0 + np.exp(-z))
                 else:
-                    # Waiting, CO2, Queue, TT, Occ: alacsonyabb = jobb
+                    # Waiting, CO2, Queue, TT, Occ, SpeedStd, HaltRatio: alacsonyabb = jobb
                     z = (log_v - mu) / (std + 1e-9)
                     r_component = 1.0 - 1.0 / (1.0 + np.exp(-z))
 
@@ -846,12 +1061,11 @@ def reward_selection_analysis(output_dir):
             all_flow_levels.extend(flow_levels)
 
             # Per-junction monotonitás
-            flow_groups = jdf.groupby('flow_level').apply(
-                lambda g: np.mean([
-                    np.mean(reward_components[i][g.index - jdf.index[0]])
-                    if len(g) > 0 else 0.5
-                    for i, _ in enumerate(combo)
-                ]) if len(g) > 0 else 0.5
+            # Lokális pozíció-indexelés (iloc-alapú, nem label-alapú)
+            jdf_reset = jdf.reset_index(drop=True)
+            flow_groups = jdf_reset.groupby('flow_level').apply(
+                lambda g: np.mean(rewards[g.index.values])
+                if len(g) > 0 else 0.5
             )
             if len(flow_groups) > 2:
                 rho_j, _ = stats.spearmanr(flow_groups.index, flow_groups.values)
@@ -902,24 +1116,24 @@ def reward_selection_analysis(output_dir):
             'avg_eta2': avg_eta2,
             'eta2_within': 1.0 - avg_eta2,  # within-flow proportion
             'passed': mono_ok and iqr_ok,
-            'is_current': is_current,
+            'is_current': False,
         })
 
     # --- Eredmények kiírása ---
-    print(f"\n  {'Kombináció':35} {'Mono_r':>8} {'Mono%':>6} {'IQR':>6} {'IQR%':>6} "
+    print(f"\n  {'Kombináció':40} {'Mono_r':>8} {'Mono%':>6} {'IQR':>6} {'IQR%':>6} "
           f"{'η²':>6} {'1-η²':>6} {'Szűrő':>8}")
-    print("  " + "-" * 95)
+    print("  " + "-" * 100)
 
     # Rendezés: átmenők first, azon belül eta2 ascending (alacsonyabb = jobb)
     combo_results.sort(key=lambda x: (not x['passed'], x['avg_eta2']))
 
     for cr in combo_results:
-        marker = " ← JELENLEGI" if cr['is_current'] else ""
+        marker = ""
         status = "✓ PASS" if cr['passed'] else "✗ FAIL"
         mono_flag = "" if cr['mono_ok'] else " [MONO!]"
         iqr_flag = "" if cr['iqr_ok'] else " [IQR!]"
 
-        print(f"  {cr['combo']:35} {cr['avg_monotonicity']:+8.3f} {cr['mono_pass_pct']:5.0f}% "
+        print(f"  {cr['combo']:40} {cr['avg_monotonicity']:+8.3f} {cr['mono_pass_pct']:5.0f}% "
               f"{cr['avg_iqr']:6.3f} {cr['iqr_pass_pct']:5.0f}% "
               f"{cr['avg_eta2']:6.3f} {cr['eta2_within']:6.3f} "
               f"{status}{mono_flag}{iqr_flag}{marker}")
@@ -933,11 +1147,11 @@ def reward_selection_analysis(output_dir):
 
     if passed:
         print(f"\n  --- RANGSOR (alacsonyabb η² = jobb: az ágens hatása jobban látszik) ---")
-        print(f"  {'#':>3} {'Kombináció':35} {'η²':>8} {'1-η²':>8} {'Mono_r':>8} {'IQR':>6}")
-        print("  " + "-" * 75)
+        print(f"  {'#':>3} {'Kombináció':40} {'η²':>8} {'1-η²':>8} {'Mono_r':>8} {'IQR':>6}")
+        print("  " + "-" * 80)
         for i, cr in enumerate(passed):
-            marker = " ← JELENLEGI" if cr['is_current'] else ""
-            print(f"  {i+1:3} {cr['combo']:35} {cr['avg_eta2']:8.4f} {cr['eta2_within']:8.4f} "
+            marker = ""
+            print(f"  {i+1:3} {cr['combo']:40} {cr['avg_eta2']:8.4f} {cr['eta2_within']:8.4f} "
                   f"{cr['avg_monotonicity']:+8.3f} {cr['avg_iqr']:6.3f}{marker}")
 
     # =====================================================================
@@ -948,13 +1162,10 @@ def reward_selection_analysis(output_dir):
     print("     A legjobb metrika-kombó(ka)t teszteljük különböző normalizációkkal")
     print("=" * 100)
 
-    # Top 3 átmenő kombó + jelenlegi
+    # Top 5 átmenő kombó
     test_combos = []
     if passed:
-        test_combos = [cr['combo_tuple'] for cr in passed[:3]]
-    current_in_passed = any(cr['is_current'] for cr in passed)
-    if not current_in_passed:
-        test_combos.append(current_combo)
+        test_combos = [cr['combo_tuple'] for cr in passed[:5]]
 
     norm_results = []
 
@@ -978,13 +1189,10 @@ def reward_selection_analysis(output_dir):
                     mu = np.mean(log_v)
                     std_v = np.std(log_v)
 
-                    if method_name in ['linear-sigmoid', 'sqrt-sigmoid']:
-                        r_component = norm_fn(vals, mu, std_v)
-                    else:
-                        r_component = norm_fn(vals, mu, std_v)
+                    r_component = norm_fn(vals, mu, std_v)
 
-                    if metric == 'AvgSpeed':
-                        r_component = 1.0 - r_component  # Invert for speed
+                    if metric in ('AvgSpeed', 'Throughput'):
+                        r_component = 1.0 - r_component  # Invert for speed/throughput
 
                     reward_components.append(r_component)
 
@@ -1023,13 +1231,15 @@ def reward_selection_analysis(output_dir):
                 })
 
     if norm_results:
-        print(f"\n  {'Kombináció':30} {'Módszer':18} {'Mono_r':>8} {'IQR':>6} {'η²':>8} {'1-η²':>8} {'Szűrő':>8}")
-        print("  " + "-" * 100)
+        print(f"\n  {'Kombináció':35} {'Módszer':18} {'Mono_r':>8} {'IQR':>6} {'η²':>8} {'1-η²':>8} {'Szűrő':>8}")
+        print("  " + "-" * 105)
         norm_results.sort(key=lambda x: (x['combo'], x['avg_eta2']))
         for nr in norm_results:
             status = "✓" if nr['mono_ok'] and nr['iqr_ok'] else "✗"
-            print(f"  {nr['combo']:30} {nr['method']:18} {nr['avg_mono']:+8.3f} {nr['avg_iqr']:6.3f} "
-                  f"{nr['avg_eta2']:8.4f} {1-nr['avg_eta2']:8.4f} {status:>8}")
+            mono_flag = "" if nr['mono_ok'] else " [MONO!]"
+            iqr_flag = "" if nr['iqr_ok'] else " [IQR!]"
+            print(f"  {nr['combo']:35} {nr['method']:18} {nr['avg_mono']:+8.3f} {nr['avg_iqr']:6.3f} "
+                  f"{nr['avg_eta2']:8.4f} {1-nr['avg_eta2']:8.4f} {status:>8}{mono_flag}{iqr_flag}")
 
     # =====================================================================
     # 5. STATE ↔ REWARD KONZISZTENCIA
@@ -1235,7 +1445,7 @@ def reward_selection_analysis(output_dir):
         sorted_mi = sorted(mi_scores.items(), key=lambda x: -x[1])
         print(f"  A state legtöbb információt hordoz ezekről a reward metrikákról:")
         for i, (rm, mi) in enumerate(sorted_mi[:5]):
-            flag = " ← JELENLEGI" if rm in ('TotalWaitingTime', 'TotalCO2') else ""
+            flag = ""
             print(f"    {i+1}. {rm:25} MI = {mi:.4f}{flag}")
 
     else:
@@ -1247,20 +1457,21 @@ def reward_selection_analysis(output_dir):
     # =====================================================================
 
     # Ábra 1: Korreláció mátrix
-    fig, ax = plt.subplots(figsize=(10, 8))
-    import matplotlib.colors as mcolors
+    n_met = len(candidate_metrics)
+    fig_sz = max(8, n_met * 1.2)
+    fig, ax = plt.subplots(figsize=(fig_sz, fig_sz * 0.85))
     im = ax.imshow(corr_matrix.values, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
-    ax.set_xticks(range(len(candidate_metrics)))
-    ax.set_xticklabels(candidate_metrics, rotation=45, ha='right', fontsize=10)
-    ax.set_yticks(range(len(candidate_metrics)))
-    ax.set_yticklabels(candidate_metrics, fontsize=10)
-    for i in range(len(candidate_metrics)):
-        for j in range(len(candidate_metrics)):
+    ax.set_xticks(range(n_met))
+    ax.set_xticklabels(candidate_metrics, rotation=45, ha='right', fontsize=9)
+    ax.set_yticks(range(n_met))
+    ax.set_yticklabels(candidate_metrics, fontsize=9)
+    for i in range(n_met):
+        for j in range(n_met):
             val = corr_matrix.values[i, j]
             color = 'white' if abs(val) > 0.6 else 'black'
             weight = 'bold' if abs(val) > 0.85 and i != j else 'normal'
             ax.text(j, i, f'{val:.2f}', ha='center', va='center',
-                    fontsize=9, color=color, fontweight=weight)
+                    fontsize=8, color=color, fontweight=weight)
     fig.colorbar(im, ax=ax, shrink=0.8)
     ax.set_title('Metric Correlation Matrix (log-transformed)\n* Bold = redundant (|r| > 0.85)', fontsize=13)
     plt.tight_layout()
@@ -1268,75 +1479,110 @@ def reward_selection_analysis(output_dir):
     plt.close()
     print(f"\n  reward_correlation_matrix.png mentve")
 
-    # Ábra 2: Kombináció szűrés eredménye
+    # Ábra 2: Top 20 kombináció — η² + monotonitás + IQR
     if combo_results:
-        fig, axes = plt.subplots(1, 3, figsize=(20, 7))
-
-        # Rendezés: passed first, eta2 ascending
         sorted_cr = sorted(combo_results, key=lambda x: (not x['passed'], x['avg_eta2']))
-        names = [cr['combo'] for cr in sorted_cr]
-        colors = ['#2ecc71' if cr['passed'] else '#e74c3c' for cr in sorted_cr]
-        current_idx = next((i for i, cr in enumerate(sorted_cr) if cr['is_current']), None)
+        show_cr = sorted_cr[:20]
+        names = [cr['combo'] for cr in show_cr]
+        n_show = len(names)
 
-        y_pos = np.arange(len(names))
+        fig, axes = plt.subplots(1, 3, figsize=(24, max(8, n_show * 0.45)))
+        colors = ['#2ecc71' if cr['passed'] else '#e74c3c' for cr in show_cr]
+        y_pos = np.arange(n_show)
 
-        # 2a. η² (lower = better)
         ax = axes[0]
-        bars = ax.barh(y_pos, [cr['avg_eta2'] for cr in sorted_cr], color=colors, alpha=0.8)
-        if current_idx is not None:
-            bars[current_idx].set_edgecolor('blue')
-            bars[current_idx].set_linewidth(3)
+        ax.barh(y_pos, [cr['avg_eta2'] for cr in show_cr], color=colors, alpha=0.8)
+        for i, cr in enumerate(show_cr):
+            ax.text(cr['avg_eta2'] + 0.01, i, f"{cr['avg_eta2']:.3f}", va='center', fontsize=8)
         ax.set_yticks(y_pos)
-        ax.set_yticklabels(names, fontsize=8)
-        ax.set_xlabel('η² (lower = agent effect more visible)')
-        ax.set_title('ANOVA η²\n(flow_level explained variance)')
+        ax.set_yticklabels(names, fontsize=9)
+        ax.set_xlabel('η² (lower = better)')
+        ax.set_title('ANOVA η²', fontsize=13)
         ax.invert_yaxis()
         ax.grid(True, alpha=0.3, axis='x')
 
-        # 2b. Monotonitás
         ax = axes[1]
-        mono_vals = [cr['avg_monotonicity'] for cr in sorted_cr]
-        bars = ax.barh(y_pos, mono_vals, color=colors, alpha=0.8)
-        if current_idx is not None:
-            bars[current_idx].set_edgecolor('blue')
-            bars[current_idx].set_linewidth(3)
-        ax.axvline(-0.5, color='red', ls='--', lw=2, label='Threshold (-0.5)')
+        ax.barh(y_pos, [cr['avg_monotonicity'] for cr in show_cr], color=colors, alpha=0.8)
+        ax.axvline(-0.5, color='red', ls='--', lw=2, alpha=0.7)
         ax.set_yticks(y_pos)
-        ax.set_yticklabels(names, fontsize=8)
-        ax.set_xlabel('Spearman ρ (more negative = correct)')
-        ax.set_title('Monotonicity\n(flow ↑ → reward ↓)')
+        ax.set_yticklabels([], fontsize=9)
+        ax.set_xlabel('Spearman ρ')
+        ax.set_title('Monotonicity', fontsize=13)
         ax.invert_yaxis()
-        ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3, axis='x')
 
-        # 2c. IQR
         ax = axes[2]
-        iqr_vals = [cr['avg_iqr'] for cr in sorted_cr]
-        bars = ax.barh(y_pos, iqr_vals, color=colors, alpha=0.8)
-        if current_idx is not None:
-            bars[current_idx].set_edgecolor('blue')
-            bars[current_idx].set_linewidth(3)
-        ax.axvline(0.10, color='red', ls='--', lw=2, label='Threshold (0.10)')
+        ax.barh(y_pos, [cr['avg_iqr'] for cr in show_cr], color=colors, alpha=0.8)
+        ax.axvline(0.10, color='red', ls='--', lw=2, alpha=0.7)
         ax.set_yticks(y_pos)
-        ax.set_yticklabels(names, fontsize=8)
-        ax.set_xlabel('IQR (higher = more differentiation)')
-        ax.set_title('Reward IQR\n(compression check)')
+        ax.set_yticklabels([], fontsize=9)
+        ax.set_xlabel('IQR')
+        ax.set_title('Reward IQR', fontsize=13)
         ax.invert_yaxis()
-        ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3, axis='x')
 
-        plt.suptitle('Metric Combination Selection — Green = PASS, Red = FAIL, Blue border = current',
-                      fontsize=14, y=1.02)
+        fig.suptitle(f'Top {n_show} Metric Combinations (green=PASS, red=FAIL)', fontsize=14)
         plt.tight_layout()
         fig.savefig(os.path.join(output_dir, 'reward_combo_selection.png'), dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  reward_combo_selection.png mentve")
 
-    # Ábra 3: Normalizáció összehasonlítás a top kombó(k)ra
+    # Ábra 2b: ÖSSZES kombináció
+    if combo_results:
+        sorted_cr_all = sorted(combo_results, key=lambda x: (not x['passed'], x['avg_eta2']))
+        names_all = [cr['combo'] for cr in sorted_cr_all]
+        n_all = len(names_all)
+
+        fig, axes = plt.subplots(1, 3, figsize=(26, max(10, n_all * 0.4)))
+        colors_all = ['#2ecc71' if cr['passed'] else '#e74c3c' for cr in sorted_cr_all]
+        y_all = np.arange(n_all)
+
+        ax = axes[0]
+        ax.barh(y_all, [cr['avg_eta2'] for cr in sorted_cr_all], color=colors_all, alpha=0.8)
+        for i, cr in enumerate(sorted_cr_all):
+            eta_val = cr['avg_eta2']
+            if not np.isnan(eta_val):
+                ax.text(eta_val + 0.01, i, f"{eta_val:.3f}", va='center', fontsize=7)
+        ax.set_yticks(y_all)
+        ax.set_yticklabels(names_all, fontsize=7)
+        ax.set_xlabel('η² (lower = better)')
+        ax.set_title('ANOVA η²', fontsize=13)
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        ax = axes[1]
+        mono_plot = [v if not np.isnan(v) else 0.0 for v in [cr['avg_monotonicity'] for cr in sorted_cr_all]]
+        ax.barh(y_all, mono_plot, color=colors_all, alpha=0.8)
+        ax.axvline(-0.5, color='red', ls='--', lw=2, alpha=0.7)
+        ax.set_yticks(y_all)
+        ax.set_yticklabels([], fontsize=7)
+        ax.set_xlabel('Spearman ρ')
+        ax.set_title('Monotonicity', fontsize=13)
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        ax = axes[2]
+        iqr_all = [cr['avg_iqr'] if not np.isnan(cr['avg_iqr']) else 0.0 for cr in sorted_cr_all]
+        ax.barh(y_all, iqr_all, color=colors_all, alpha=0.8)
+        ax.axvline(0.10, color='red', ls='--', lw=2, alpha=0.7)
+        ax.set_yticks(y_all)
+        ax.set_yticklabels([], fontsize=7)
+        ax.set_xlabel('IQR')
+        ax.set_title('Reward IQR', fontsize=13)
+        ax.invert_yaxis()
+        ax.grid(True, alpha=0.3, axis='x')
+
+        fig.suptitle(f'All {n_all} Metric Combinations (green=PASS, red=FAIL)', fontsize=14)
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_dir, 'reward_combo_selection_full.png'), dpi=200, bbox_inches='tight')
+        plt.close()
+        print(f"  reward_combo_selection_full.png mentve")
+
+    # Ábra 3: Normalizáció összehasonlítás — vertikális layout
     if norm_results:
         combos_in_results = sorted(set(nr['combo'] for nr in norm_results))
         n_combos = len(combos_in_results)
-        fig, axes = plt.subplots(1, n_combos, figsize=(7 * n_combos, 6))
+        fig, axes = plt.subplots(n_combos, 1, figsize=(10, 4 * n_combos))
         if n_combos == 1:
             axes = [axes]
 
@@ -1349,23 +1595,28 @@ def reward_selection_analysis(output_dir):
             colors_n = ['#2ecc71' if nr['mono_ok'] and nr['iqr_ok'] else '#e74c3c' for nr in c_results]
 
             y = np.arange(len(methods))
-            ax.barh(y, eta2s, color=colors_n, alpha=0.8)
+            bars = ax.barh(y, eta2s, color=colors_n, alpha=0.8, height=0.6)
+            for j, e in enumerate(eta2s):
+                ax.text(e + 0.005, j, f'{e:.4f}', va='center', fontsize=9)
             ax.set_yticks(y)
-            ax.set_yticklabels(methods, fontsize=10)
-            ax.set_xlabel('η²')
-            ax.set_title(f'{combo_name}')
+            ax.set_yticklabels(methods, fontsize=11)
+            ax.set_xlabel('η² (lower = better)', fontsize=10)
+            ax.set_title(f'{combo_name}', fontsize=13, fontweight='bold')
             ax.invert_yaxis()
             ax.grid(True, alpha=0.3, axis='x')
 
-        plt.suptitle('Normalization Methods — η² by Metric Combination', fontsize=14, y=1.02)
+        fig.suptitle('Normalization Methods Comparison', fontsize=15)
         plt.tight_layout()
         fig.savefig(os.path.join(output_dir, 'reward_normalization_comparison.png'), dpi=200, bbox_inches='tight')
         plt.close()
         print(f"  reward_normalization_comparison.png mentve")
 
-    # Ábra 4: State ↔ Reward heatmap
+    # Ábra 4: State ↔ Reward heatmap + MI
     if has_det_data and state_reward_corr:
-        fig, axes = plt.subplots(1, 2, figsize=(18, 7))
+        n_rewards = len(reward_metrics_to_test)
+        n_states = len(state_cols[:6])
+        fig, axes = plt.subplots(1, 2, figsize=(20, max(8, n_rewards * 0.8)),
+                                 gridspec_kw={'width_ratios': [1.3, 1]})
 
         # 4a. State ↔ Reward korreláció heatmap
         ax = axes[0]
@@ -1383,30 +1634,34 @@ def reward_selection_analysis(output_dir):
             sr_matrix.append(row_vals)
         sr_matrix = np.array(sr_matrix)
         im = ax.imshow(sr_matrix, cmap='RdBu_r', vmin=-1, vmax=1, aspect='auto')
-        ax.set_xticks(range(len(state_cols[:6])))
-        ax.set_xticklabels([s[:12] for s in state_cols[:6]], rotation=45, ha='right', fontsize=9)
-        ax.set_yticks(range(len(reward_metrics_to_test)))
-        ax.set_yticklabels(reward_metrics_to_test, fontsize=9)
-        for i in range(len(reward_metrics_to_test)):
-            for j in range(len(state_cols[:6])):
+        ax.set_xticks(range(n_states))
+        ax.set_xticklabels([s.replace('det_', '') for s in state_cols[:6]],
+                           rotation=45, ha='right', fontsize=10)
+        ax.set_yticks(range(n_rewards))
+        ax.set_yticklabels(reward_metrics_to_test, fontsize=10)
+        for i in range(n_rewards):
+            for j in range(n_states):
                 val = sr_matrix[i, j]
                 color = 'white' if abs(val) > 0.5 else 'black'
-                ax.text(j, i, f'{val:.2f}', ha='center', va='center', fontsize=8, color=color)
-        fig.colorbar(im, ax=ax, shrink=0.8)
-        ax.set_title('State → Reward Correlation (Pearson r)', fontsize=12)
+                ax.text(j, i, f'{val:.2f}', ha='center', va='center',
+                        fontsize=9, color=color, fontweight='bold' if abs(val) > 0.7 else 'normal')
+        fig.colorbar(im, ax=ax, shrink=0.7, pad=0.02)
+        ax.set_title('State → Reward Correlation (Pearson r)', fontsize=13)
 
         # 4b. MI bar chart
         ax = axes[1]
         sorted_mi_items = sorted(mi_scores.items(), key=lambda x: -x[1])
         mi_names = [x[0] for x in sorted_mi_items]
         mi_vals = [x[1] for x in sorted_mi_items]
-        colors_mi = ['#2ecc71' if n in ('TotalWaitingTime', 'TotalCO2') else '#3498db' for n in mi_names]
+        colors_mi = ['#3498db' for _ in mi_names]
         y = np.arange(len(mi_names))
-        ax.barh(y, mi_vals, color=colors_mi, alpha=0.8)
+        bars = ax.barh(y, mi_vals, color=colors_mi, alpha=0.8, height=0.6)
+        for i, v in enumerate(mi_vals):
+            ax.text(v + 0.05, i, f'{v:.2f}', va='center', fontsize=9)
         ax.set_yticks(y)
         ax.set_yticklabels(mi_names, fontsize=10)
-        ax.set_xlabel('Gaussian Mutual Information (nats)')
-        ax.set_title('State → Reward: Total MI\n(green = current reward metrics)', fontsize=12)
+        ax.set_xlabel('Gaussian Mutual Information (nats)', fontsize=10)
+        ax.set_title('State → Reward: Total MI', fontsize=13)
         ax.invert_yaxis()
         ax.grid(True, alpha=0.3, axis='x')
 
@@ -1430,13 +1685,12 @@ def reward_selection_analysis(output_dir):
         print(f"    Monotonitás = {best['avg_monotonicity']:+.3f}")
         print(f"    IQR = {best['avg_iqr']:.3f}")
 
-        current_entry = next((cr for cr in combo_results if cr['is_current']), None)
-        if current_entry:
-            print(f"\n  Jelenlegi (TotalWait + TotalCO2):")
-            print(f"    η² = {current_entry['avg_eta2']:.4f}")
-            print(f"    Monotonitás = {current_entry['avg_monotonicity']:+.3f}")
-            print(f"    IQR = {current_entry['avg_iqr']:.3f}")
-            print(f"    Szűrő: {'✓ PASS' if current_entry['passed'] else '✗ FAIL'}")
+        # Top 5 listázása
+        for i, cr in enumerate(passed[:5]):
+            if i == 0:
+                continue  # már kiírva fent
+            print(f"\n  #{i+1}: {cr['combo']}")
+            print(f"    η² = {cr['avg_eta2']:.4f}, Mono = {cr['avg_monotonicity']:+.3f}, IQR = {cr['avg_iqr']:.3f}")
 
     if norm_results:
         # Best normalization for top combo
@@ -1492,22 +1746,35 @@ def main():
         print("=" * 80)
         print(f"  Net: {NET_FILE}")
         print(f"  Flow szintek (max): {FLOW_MAX_LEVELS}")
-        print(f"  Epizodok szintenkent: {EPISODES_PER_LEVEL}")
+        print(f"  Epizodok szintenkent: {EPISODES_PER_LEVEL} random + {ACTUATED_EPISODES} actuated")
         print(f"  Idotartam: {DURATION}s, Warmup: {WARMUP}s, Delta: {DELTA_TIME}s")
         print(f"  Kimenet: {OUTPUT_DIR}")
         print("=" * 80)
 
-        total_sims = len(FLOW_MAX_LEVELS) * EPISODES_PER_LEVEL
+        total_random = len(FLOW_MAX_LEVELS) * EPISODES_PER_LEVEL
+        total_actuated = len(FLOW_MAX_LEVELS) * ACTUATED_EPISODES
+        total_sims = total_random + total_actuated
         sim_count = 0
 
+        # --- Random epizódok ---
+        print(f"\n  [1/2] RANDOM kontroll: {total_random} epizod")
         for flow_max in FLOW_MAX_LEVELS:
             for ep in range(EPISODES_PER_LEVEL):
                 sim_count += 1
                 print(f"\n--- [{sim_count}/{total_sims}] Flow max: {flow_max}/h | "
-                      f"Epizod {ep+1}/{EPISODES_PER_LEVEL} ---")
-                run_simulation(flow_max, ep, OUTPUT_DIR)
+                      f"Epizod {ep+1}/{EPISODES_PER_LEVEL} | RANDOM ---")
+                run_simulation(flow_max, ep, OUTPUT_DIR, control_mode="random")
 
-        print(f"\n  Szimulacio kesz! ({total_sims} epizod)")
+        # --- Actuated epizódok ---
+        print(f"\n  [2/2] ACTUATED kontroll: {total_actuated} epizod")
+        for flow_max in FLOW_MAX_LEVELS:
+            for ep in range(ACTUATED_EPISODES):
+                sim_count += 1
+                print(f"\n--- [{sim_count}/{total_sims}] Flow max: {flow_max}/h | "
+                      f"Epizod {ep+1}/{ACTUATED_EPISODES} | ACTUATED ---")
+                run_simulation(flow_max, ep, OUTPUT_DIR, control_mode="actuated")
+
+        print(f"\n  Szimulacio kesz! ({total_sims} epizod: {total_random} random + {total_actuated} actuated)")
     else:
         print("  --skip-simulation: Csak elemzes a meglevo CSV-kre")
 

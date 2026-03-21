@@ -43,7 +43,9 @@ class SumoRLEnvironment(gym.Env):
                  flow_range=(100, 900),
                  statistic_output_file=None,
                  single_agent_id=None,
-                 run_id=None):
+                 run_id=None,
+                 reward_mode="speed_throughput",
+                 junction_params_path=None):
 
         self.net_file = net_file
         self.logic_json_file = logic_json_file
@@ -69,6 +71,15 @@ class SumoRLEnvironment(gym.Env):
         self.traffic_duration = traffic_duration
         self.flow_range = tuple(flow_range)
         self.single_agent_id = single_agent_id
+
+        # --- Reward mód ---
+        # "speed_throughput": AvgSpeed + Throughput (log-tanh) ← LEGJOBB η²=0.120
+        # "halt_ratio":       HaltRatio (log-tanh) ← legrobusztusabb, η²=0.156
+        # "co2_speedstd":     TotalCO2 + SpeedStd (log-tanh) ← η²=0.224
+        self.reward_mode = reward_mode
+
+        # --- Per-junction normalizációs paraméterek betöltése ---
+        self.junction_reward_params = self._load_junction_params(junction_params_path)
 
         # --- Import Logic for GUI vs Headless ---
         global traci
@@ -155,6 +166,146 @@ class SumoRLEnvironment(gym.Env):
         self.is_running = False
         self._network_mapped = False  # Cache: ne mappeljünk minden epizódban
         self._cached_net = None  # sumolib network cache
+
+        # --- Háttér junction-ök (single_agent módban a nem-RL junction-ök) ---
+        if self.single_agent_id:
+            self._all_logic_junction_ids = list(self.logic_data.keys())
+            self._background_junction_ids = [
+                jid for jid in self._all_logic_junction_ids
+                if jid != self.single_agent_id
+            ]
+        else:
+            self._all_logic_junction_ids = list(self.logic_data.keys())
+            self._background_junction_ids = []
+
+    def _load_junction_params(self, params_path):
+        """Per-junction normalizációs paraméterek betöltése JSON-ból."""
+        if params_path and os.path.exists(params_path):
+            with open(params_path, 'r') as f:
+                data = json.load(f)
+            print(f"[INFO] Junction reward params loaded from {params_path}")
+            print(f"[INFO]   Reward function: {data.get('reward_function', 'unknown')}")
+            print(f"[INFO]   Per-junction count: {len(data.get('per_junction', {}))}")
+            return data
+
+        # Automatikus keresés
+        auto_paths = [
+            os.path.join(os.path.dirname(self.net_file), "junction_reward_params.json"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "junction_reward_params.json"),
+        ]
+        for p in auto_paths:
+            if os.path.exists(p):
+                with open(p, 'r') as f:
+                    data = json.load(f)
+                print(f"[INFO] Junction reward params auto-loaded from {p}")
+                return data
+
+        print(f"[WARNING] No junction_reward_params.json found. Using global defaults.")
+        return None
+
+    def _get_reward_params(self, jid):
+        """
+        Visszaadja a normalizációs paramétereket az adott junction-re.
+        Ha van per-junction adat → lokális. Különben → globális.
+        """
+        if self.junction_reward_params:
+            per_j = self.junction_reward_params.get('per_junction', {})
+            glob = self.junction_reward_params.get('global', {})
+
+            if jid in per_j:
+                return per_j[jid]
+            elif glob:
+                return glob
+
+        # Hardcoded globális fallback (a kalibráció eredményei)
+        if self.reward_mode == "speed_throughput":
+            return {
+                'MU_SPEED': 0.617003, 'STD_SPEED': 0.951352,
+                'MU_THROUGHPUT': 2.995733, 'STD_THROUGHPUT': 0.814450,
+            }
+        elif self.reward_mode == "halt_ratio":
+            return {
+                'MU_HALT': -1.20, 'STD_HALT': 1.10,
+            }
+        elif self.reward_mode == "co2_speedstd":
+            return {
+                'MU_CO2': 10.870600, 'STD_CO2': 0.962900,
+                'MU_SPEEDSTD': 1.50, 'STD_SPEEDSTD': 0.80,
+            }
+        return {}
+
+    def _compute_reward(self, agent, jid):
+        """
+        Reward számítás az aktuális reward_mode alapján.
+
+        Minden mód log-tanh normalizációt használ:
+          z = (log(x + ε) - MU) / (STD + ε)
+          r = (1 + tanh(z)) / 2    →  [0, 1]
+
+        Módok:
+          speed_throughput: (r_speed + r_throughput) / 2
+          halt_ratio:       1 - r_halt  (alacsonyabb halt → magasabb reward)
+          co2_speedstd:     (1 - r_co2 + r_speedstd) / 2
+        """
+        params = self._get_reward_params(jid)
+
+        if self.reward_mode == "speed_throughput":
+            avg_speed = agent.get_avg_speed_metric()
+            throughput = agent.get_throughput_metric()
+
+            if avg_speed == 0.0 and throughput == 0.0:
+                return 0.0
+
+            mu_s = params.get('MU_SPEED', 0.617)
+            std_s = params.get('STD_SPEED', 0.951)
+            mu_t = params.get('MU_THROUGHPUT', 2.996)
+            std_t = params.get('STD_THROUGHPUT', 0.814)
+
+            z_s = (np.log(avg_speed + 1e-5) - mu_s) / (std_s + 1e-9)
+            r_speed = (1.0 + np.tanh(z_s)) / 2.0
+
+            z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
+            r_throughput = (1.0 + np.tanh(z_t)) / 2.0
+
+            return (r_speed + r_throughput) / 2.0
+
+        elif self.reward_mode == "halt_ratio":
+            halt_ratio = agent.get_halt_ratio_metric()
+
+            if halt_ratio == 0.0 and agent.steps_measured == 0:
+                return 0.0
+
+            mu_h = params.get('MU_HALT', -1.20)
+            std_h = params.get('STD_HALT', 1.10)
+
+            z_h = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
+            r_halt = (1.0 + np.tanh(z_h)) / 2.0
+
+            return 1.0 - r_halt  # alacsonyabb halt → magasabb reward
+
+        elif self.reward_mode == "co2_speedstd":
+            avg_co2_raw = (agent.accumulated_co2 / agent.steps_measured) if agent.steps_measured > 0 else 0.0
+            speed_std = agent.get_speed_std_metric()
+
+            if avg_co2_raw == 0.0 and speed_std == 0.0:
+                return 0.0
+
+            mu_c = params.get('MU_CO2', 10.871)
+            std_c = params.get('STD_CO2', 0.963)
+            mu_ss = params.get('MU_SPEEDSTD', 1.50)
+            std_ss = params.get('STD_SPEEDSTD', 0.80)
+
+            z_co2 = (np.log(avg_co2_raw + 1e-5) - mu_c) / (std_c + 1e-9)
+            r_co2 = (1.0 + np.tanh(z_co2)) / 2.0
+
+            z_ss = (np.log(speed_std + 1e-5) - mu_ss) / (std_ss + 1e-9)
+            r_ss = (1.0 + np.tanh(z_ss)) / 2.0
+
+            # Alacsonyabb CO2 = jobb, magasabb SpeedStd = egyenletesebb
+            return ((1.0 - r_co2) + r_ss) / 2.0
+
+        # Fallback: eredeti log-sigmoid (backward compatibility)
+        return 0.0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -582,68 +733,22 @@ class SumoRLEnvironment(gym.Env):
         sim_truncated = (traci.simulation.getTime() >= self.traffic_duration)
         global_done = sim_terminated or sim_truncated
 
-        w_wait = self.reward_weights.get('waiting', 1.0)
-        w_co2  = self.reward_weights.get('co2', 1.0)
-
-        # Log-Sigmoid normalizálási paraméterek
-        # Forrás: PCA elemzés 527,747 mintából, 10 flow szint (300-1200 veh/h/lane),
-        #         3 epizód × 21 junction, RL-kompatibilis akkumulált átlagok
-        #         (delta_time substepeken gyűjtve, steps_measured-del osztva)
-        #         Lásd: metric_pca_test_v2/
-        #
-        # Metrika: TotalWaitingTime = Σ lane.getWaitingTime / steps [sec/step]
-        #   PCA PC1 loading: -0.3797 (domináns torlódási dimenzió, 48.5%)
-        #
-        # Metrika: TotalCO2 = Σ lane.getCO2Emission / steps [mg/s átlag]
-        #   PCA PC1 loading: -0.3409 (korrelál torlódással, önálló környezeti dimenzió)
-        #
-        # MEGA CATALOGUE (21 junction, 527K minta):
-        #   medián wait: 120.20 sec, medián CO2: 70,129 mg/s
-        # OSM SINGLE JUNCTION (2632893078, 63K minta):
-        #   medián wait: 14.60 sec, medián CO2: 23,246 mg/s
-        #   → LÉNYEGESEN eltérő skála, ezért külön konstansok kellenek!
-        if self.single_agent_id:
-            # OSM junction (metric_collection_osm.py alapján)
-            MU_WAIT  = 2.448600   # E[log(TotalWaitingTime)]
-            STD_WAIT = 1.858600   # Std[log(TotalWaitingTime)]
-            MU_CO2   = 9.965200   # E[log(TotalCO2)]
-            STD_CO2  = 0.738100   # Std[log(TotalCO2)]
-        else:
-            # Mega catalogue (metric_pca_test_v2/ alapján)
-            MU_WAIT  = 4.584800   # E[log(TotalWaitingTime)]
-            STD_WAIT = 1.824900   # Std[log(TotalWaitingTime)]
-            MU_CO2   = 10.870600  # E[log(TotalCO2)]
-            STD_CO2  = 0.962900   # Std[log(TotalCO2)]
-
         for jid, agent in self.agents.items():
             observations[jid] = agent.get_observation()
 
-            # WaitingTime: Σ lane waiting time / steps → átlag sec/step (= pillanatérték skála)
+            # Reward számítás a kiválasztott módszer alapján
+            rewards[jid] = self._compute_reward(agent, jid)
+
+            # Info metrikák (monitoring/debugging)
             avg_waiting = agent.get_avg_waiting_time_metric()
-            # CO2: nyers mg/s skálán (NEM /1000!), hogy a PCA paraméterek konzisztensek legyenek
             avg_co2_raw = (agent.accumulated_co2 / agent.steps_measured) if agent.steps_measured > 0 else 0.0
-
-            if avg_waiting == 0.0 and avg_co2_raw == 0.0:
-                # Üres kereszteződés: sem várakozás, sem CO2 → semleges reward (0.0)
-                rewards[jid] = 0.0
-            else:
-                z_wait = (np.log(avg_waiting + 1e-5) - MU_WAIT) / (STD_WAIT + 1e-9)
-                z_co2  = (np.log(avg_co2_raw + 1e-5) - MU_CO2)  / (STD_CO2  + 1e-9)
-
-                score_wait = 1 / (1 + np.exp(-z_wait))
-                score_co2  = 1 / (1 + np.exp(-z_co2))
-
-                r_wait = 1.0 - score_wait  # alacsony waiting → magas reward
-                r_co2  = 1.0 - score_co2   # alacsony CO2 → magas reward
-
-                # Súlyozott átlag → reward mindig [0, 1] tartományban
-                w_sum = w_wait + w_co2
-                rewards[jid] = (w_wait * r_wait + w_co2 * r_co2) / w_sum
-
             infos[jid] = {
                 "ready": agent.is_ready_for_action(),
                 "metric_waiting_time": avg_waiting,
                 "metric_co2_raw": avg_co2_raw,
+                "metric_avg_speed": agent.get_avg_speed_metric(),
+                "metric_throughput": agent.get_throughput_metric(),
+                "reward_mode": self.reward_mode,
             }
             dones[jid] = global_done
 
@@ -716,6 +821,12 @@ class TrafficAgent:
         self.accumulated_waiting_time = 0.0
         self.accumulated_co2 = 0.0
         self.accumulated_veh_count = 0
+        # Új metrikák a reward számításhoz
+        self.accumulated_speed = 0.0       # Σ lane mean speed
+        self.accumulated_speed_sq = 0.0    # Σ (lane mean speed)² — SpeedStd-hez
+        self.speed_lane_count = 0          # hány lane-en mértünk
+        self.accumulated_halting = 0       # Σ halting vehicle count
+        self.accumulated_lane_veh = 0      # Σ lane vehicle count (HaltRatio-hoz)
 
     def is_ready_for_action(self):
         return (not self.is_transitioning) and (self.min_green_timer <= 0)
@@ -809,7 +920,12 @@ class TrafficAgent:
         step_waiting = 0.0
         step_co2 = 0.0
         step_veh_count = 0
+        step_speed_sum = 0.0
+        step_speed_sq_sum = 0.0
+        step_halting = 0
+        step_lane_veh = 0
         valid_tt_lanes = 0
+        speed_lanes = 0
         MAX_REALISTIC_TT = 1000
 
         if _USE_SUBSCRIPTIONS:
@@ -824,6 +940,14 @@ class TrafficAgent:
                         step_waiting += res.get(TC_VAR_WAITING_TIME, 0.0)
                         step_co2 += res.get(TC_VAR_CO2EMISSION, 0.0)
                         step_veh_count += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                        # Kiegészítő metrikák (nincs subscription, egyedi hívás)
+                        spd = traci.lane.getMeanSpeed(lane)
+                        step_speed_sum += spd
+                        step_speed_sq_sum += spd * spd
+                        speed_lanes += 1
+                        lane_veh = traci.lane.getLastStepVehicleNumber(lane)
+                        step_halting += traci.lane.getLastStepHaltingNumber(lane)
+                        step_lane_veh += lane_veh
                         continue
                 except Exception:
                     pass
@@ -834,6 +958,12 @@ class TrafficAgent:
                 step_waiting += traci.lane.getWaitingTime(lane)
                 step_co2 += traci.lane.getCO2Emission(lane)
                 step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+                spd = traci.lane.getMeanSpeed(lane)
+                step_speed_sum += spd
+                step_speed_sq_sum += spd * spd
+                speed_lanes += 1
+                step_halting += traci.lane.getLastStepHaltingNumber(lane)
+                step_lane_veh += traci.lane.getLastStepVehicleNumber(lane)
         else:
             for lane in self.incoming_lanes:
                 tt = traci.lane.getTraveltime(lane)
@@ -843,12 +973,23 @@ class TrafficAgent:
                 step_waiting += traci.lane.getWaitingTime(lane)
                 step_co2 += traci.lane.getCO2Emission(lane)
                 step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
+                spd = traci.lane.getMeanSpeed(lane)
+                step_speed_sum += spd
+                step_speed_sq_sum += spd * spd
+                speed_lanes += 1
+                step_halting += traci.lane.getLastStepHaltingNumber(lane)
+                step_lane_veh += traci.lane.getLastStepVehicleNumber(lane)
 
         if valid_tt_lanes > 0:
             self.accumulated_travel_time += step_tt
         self.accumulated_waiting_time += step_waiting
         self.accumulated_co2 += step_co2
         self.accumulated_veh_count += step_veh_count
+        self.accumulated_speed += step_speed_sum
+        self.accumulated_speed_sq += step_speed_sq_sum
+        self.speed_lane_count += speed_lanes
+        self.accumulated_halting += step_halting
+        self.accumulated_lane_veh += step_lane_veh
 
     def get_observation(self):
         num_dets = len(self.detectors)
@@ -893,3 +1034,35 @@ class TrafficAgent:
         traci.lane.getCO2Emission() → mg/s pillanatnyi.
         Akkumulálva, /1000 → g/s, /steps → átlag."""
         return ((self.accumulated_co2 / 1000.0) / self.steps_measured) if self.steps_measured > 0 else 0.0
+
+    def get_avg_speed_metric(self):
+        """Átlagos sebesség az összes incoming lane-en [m/s].
+        traci.lane.getMeanSpeed() lane-enként, akkumulálva."""
+        if self.speed_lane_count > 0:
+            return self.accumulated_speed / self.speed_lane_count
+        return 0.0
+
+    def get_throughput_metric(self):
+        """Throughput: összes detektor vehicle count az időszakban.
+        Σ det_accumulated_flow / steps_measured → átlag vehicle/step."""
+        if self.steps_measured > 0 and self.detectors:
+            total_flow = sum(self.det_accumulated_flow.values())
+            return total_flow / self.steps_measured
+        return 0.0
+
+    def get_halt_ratio_metric(self):
+        """HaltRatio: halting vehicles / total vehicles.
+        0 = senki nem áll, 1 = mindenki áll."""
+        if self.accumulated_lane_veh > 0:
+            return self.accumulated_halting / self.accumulated_lane_veh
+        return 0.0
+
+    def get_speed_std_metric(self):
+        """Sebességszórás az incoming lane-ek átlagai között [m/s].
+        Var(speed) = E[speed²] - E[speed]², majd sqrt."""
+        if self.speed_lane_count > 1:
+            mean_spd = self.accumulated_speed / self.speed_lane_count
+            mean_sq = self.accumulated_speed_sq / self.speed_lane_count
+            variance = max(0.0, mean_sq - mean_spd * mean_spd)
+            return float(np.sqrt(variance))
+        return 0.0

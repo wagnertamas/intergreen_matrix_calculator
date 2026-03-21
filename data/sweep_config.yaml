@@ -2,12 +2,12 @@
 # WandB Bayesian Sweep Configuration
 # =============================================================================
 # Használat:
-#   wandb sweep data/sweep_config.yaml --project <projekt>
-#   wandb agent <entity>/<project>/<sweep_id>
+#   # Egy junction sweep
+#   wandb sweep data/sweep_config.yaml --project sumo-rl-catalogue
+#   SWEEP_JUNCTION=R1C1_C wandb agent <entity>/<project>/<sweep_id>
 #
-# A sweep_runner.py automatikusan betölti a training_config.yaml-t
-# a fájl útvonalakhoz és a default hiperparaméterekhez.
-# A sweep paraméterek FELÜLÍRJÁK a config default értékeit.
+#   # Algoritmus is sweep paraméter
+#   SWEEP_JUNCTION=R1C1_C SWEEP_REWARD_MODE=speed_throughput wandb agent ...
 # =============================================================================
 
 program: sweep_runner.py
@@ -18,6 +18,12 @@ metric:
   goal: maximize
 
 parameters:
+  # --- RL algoritmus ---
+  # Megjegyzés: Ha a sweep-ben akarod összehasonlítani az algoritmusokat,
+  # vedd ki a kommentet. Ha fix algoritmussal futtatsz, kommenteld be.
+  # algorithm:
+  #   values: [qrdqn, dqn, ppo]
+
   # --- Tanulási ráta ---
   learning_rate:
     distribution: log_uniform_values
@@ -34,17 +40,13 @@ parameters:
     min: 0.90
     max: 0.999
 
-  # --- Felfedezési arány ---
-  # Az exploration_fraction azt mondja meg, hogy a total_timesteps hány %-ánál
-  # éri el az epsilon a minimum értéket. 0.1 = gyorsan exploitál, 0.5 = sokat felfedez.
+  # --- Felfedezési arány (off-policy only) ---
   exploration_fraction:
     distribution: uniform
     min: 0.1
     max: 0.5
 
   # --- NEURÁLIS HÁLÓ MÉRET ---
-  # Az ágens policy hálójának mérete: num_layers × layer_size fully connected réteg.
-  # Pl. num_layers=3, layer_size=128 → [128, 128, 128]
   num_layers:
     min: 1
     max: 6
@@ -52,10 +54,6 @@ parameters:
   layer_size:
     values: [32, 64, 128, 256]
 
-  # --- Replay buffer méret ---
+  # --- Replay buffer méret (off-policy only) ---
   buffer_size:
     values: [5000, 10000, 25000, 50000]
-
-  # MEGJEGYZÉS: flow_min/flow_max NINCS a sweep-ben.
-  # A forgalmi tartomány epizódonként randomizálódik (target+spread logika
-  # a sumo_rl_environment.py reset()-ben), nem hiperparaméter.

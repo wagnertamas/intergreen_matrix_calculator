@@ -22,9 +22,10 @@ except ImportError:
 HAS_RL_LIBS = True
 _missing_libs = []
 try:
-    from stable_baselines3 import DQN
+    from stable_baselines3 import DQN, PPO, A2C
     from stable_baselines3.common.logger import configure
     from stable_baselines3.common.vec_env import DummyVecEnv
+    from stable_baselines3.common.callbacks import BaseCallback
 except ImportError as e:
     HAS_RL_LIBS = False
     _missing_libs.append(f"stable-baselines3: {e}")
@@ -51,6 +52,26 @@ if not HAS_RL_LIBS:
     print(f"  Tipp: aktiváld a megfelelő conda/venv környezetet, vagy futtasd:")
     print(f"  pip install stable-baselines3 sb3-contrib wandb torch")
 
+# --- Támogatott algoritmusok ---
+SUPPORTED_ALGORITHMS = {
+    'qrdqn': {'class': 'QRDQN', 'type': 'off_policy', 'source': 'sb3_contrib'},
+    'dqn':   {'class': 'DQN',   'type': 'off_policy', 'source': 'sb3'},
+    'ppo':   {'class': 'PPO',   'type': 'on_policy',  'source': 'sb3'},
+    'a2c':   {'class': 'A2C',   'type': 'on_policy',  'source': 'sb3'},
+}
+
+def get_algorithm_class(name):
+    """SB3 algoritmus osztály lekérdezése név alapján."""
+    info = SUPPORTED_ALGORITHMS.get(name.lower())
+    if not info:
+        raise ValueError(f"Ismeretlen algoritmus: {name}. Támogatott: {list(SUPPORTED_ALGORITHMS.keys())}")
+    cls_name = info['class']
+    if cls_name == 'QRDQN': return QRDQN
+    elif cls_name == 'DQN': return DQN
+    elif cls_name == 'PPO': return PPO
+    elif cls_name == 'A2C': return A2C
+    raise ValueError(f"Nem elérhető: {cls_name}")
+
 from sumo_rl_environment import SumoRLEnvironment
 
 # Export modul importálása (ha létezik)
@@ -61,13 +82,86 @@ except ImportError:
     HAS_EXPORT = False
 
 # =============================================================================
+# SINGLE-AGENT GYM WRAPPER
+# =============================================================================
+
+class SingleAgentGymWrapper(gym.Env):
+    """
+    A multi-agent SumoRLEnvironment csomagoló, ami egyetlen junction-re
+    standard Gym API-t ad. Ezzel bármely SB3 algoritmus (PPO, A2C, DQN, QRDQN)
+    használható model.learn()-nel.
+    """
+    metadata = {"render_modes": []}
+
+    def __init__(self, env, agent_id):
+        super().__init__()
+        self.env = env
+        self.agent_id = agent_id
+        self.observation_space = env.observation_space[agent_id]
+        self.action_space = env.action_space[agent_id]
+        self._last_infos = {}
+
+    def reset(self, seed=None, options=None):
+        obs_dict, info_dict = self.env.reset(seed=seed, options=options)
+        self._last_infos = info_dict.get(self.agent_id, {})
+        return obs_dict[self.agent_id], self._last_infos
+
+    def step(self, action):
+        actions = {self.agent_id: int(action)}
+        obs_dict, rewards_dict, global_done, truncated, info_dict = self.env.step(actions)
+        obs = obs_dict[self.agent_id]
+        reward = rewards_dict[self.agent_id]
+        info = info_dict.get(self.agent_id, {})
+        self._last_infos = info
+        return obs, reward, global_done, truncated, info
+
+    def close(self):
+        self.env.close()
+
+    def render(self):
+        pass
+
+
+# =============================================================================
+# WANDB CALLBACK (on-policy algoritmusokhoz)
+# =============================================================================
+
+if HAS_RL_LIBS:
+    class WandBCallback(BaseCallback):
+        """WandB logging callback SB3 model.learn()-höz."""
+        def __init__(self, log_freq=100, verbose=0):
+            super().__init__(verbose)
+            self.log_freq = log_freq
+
+        def _on_step(self) -> bool:
+            if self.num_timesteps % self.log_freq == 0 and wandb.run:
+                log_dict = {
+                    "global_step": self.num_timesteps,
+                }
+                # Reward from info
+                if self.locals.get("infos"):
+                    for info in self.locals["infos"]:
+                        if "metric_avg_speed" in info:
+                            log_dict["metric/avg_speed"] = info["metric_avg_speed"]
+                        if "metric_throughput" in info:
+                            log_dict["metric/throughput"] = info["metric_throughput"]
+                # Reward
+                if "rewards" in self.locals:
+                    rewards = self.locals["rewards"]
+                    if len(rewards) > 0:
+                        log_dict["reward_step"] = float(rewards[0])
+                wandb.log(log_dict, commit=True)
+            return True
+
+
+# =============================================================================
 # 1. TRÉNER LOGIKA (IndependentDQNTrainer)
 # =============================================================================
 
 class IndependentDQNTrainer:
-    def __init__(self, 
-                 net_file, logic_file, detector_file, 
-                 total_timesteps=100000, 
+    def __init__(self,
+                 net_file, logic_file, detector_file,
+                 total_timesteps=100000,
                  wandb_project="sumo-rl",
                  log_queue=None,
                  hyperparams=None,
@@ -75,8 +169,11 @@ class IndependentDQNTrainer:
                  n_envs=1,
                  single_agent_id=None,
                  sumo_gui=False,
-                 load_model_path=None,  # [NEW] Path to pre-trained model .zip
-                 fixed_flow=None,       # Fix forgalom: {'target': int, 'spread': int} vagy None (random)
+                 load_model_path=None,
+                 fixed_flow=None,
+                 algorithm="qrdqn",
+                 reward_mode="speed_throughput",
+                 junction_params_path=None,
                  **env_kwargs):
 
 
@@ -91,14 +188,24 @@ class IndependentDQNTrainer:
         self.reward_weights = reward_weights or {'waiting': 1.0, 'co2': 1.0}
         self.single_agent_id = single_agent_id
         self.load_model_path = load_model_path
-        self.fixed_flow = fixed_flow  # {'target': 500, 'spread': 0} → fix 500 veh/h
+        self.fixed_flow = fixed_flow
+        self.algorithm_name = algorithm.lower()
+        self.reward_mode = reward_mode
+        self.junction_params_path = junction_params_path
         self.env_kwargs = env_kwargs
-        
+
         self.stop_requested = False
         self.agents = {}
         self.env = None
-        self.reward_smoothing = {} # Futó átlag tárolása
-        self.action_counts = {}    # Action distribution tracking per agent
+        self.reward_smoothing = {}
+        self.action_counts = {}
+
+        # Algoritmus validáció
+        algo_info = SUPPORTED_ALGORITHMS.get(self.algorithm_name)
+        if not algo_info:
+            raise ValueError(f"Ismeretlen algoritmus: {algorithm}. "
+                           f"Támogatott: {list(SUPPORTED_ALGORITHMS.keys())}")
+        self.algo_type = algo_info['type']  # 'on_policy' vagy 'off_policy'
 
     def _build_reset_options(self):
         """Reset options összeállítása fix forgalom beállításokkal."""
@@ -119,13 +226,32 @@ class IndependentDQNTrainer:
         else: print(msg)
 
     def run(self):
-        self.log("Initializing Environment...")
-        
+        self.log(f"Initializing Environment (algorithm={self.algorithm_name}, reward={self.reward_mode})...")
+
+        AlgoClass = get_algorithm_class(self.algorithm_name)
+        self.log(f"[INFO] Algorithm: {self.algorithm_name} ({self.algo_type})")
+        self.log(f"[INFO] Reward mode: {self.reward_mode}")
+
         # 1. WandB init és SWEEP Támogatás
         if HAS_RL_LIBS:
+            wandb_config = {
+                **self.hyperparams,
+                'algorithm': self.algorithm_name,
+                'reward_mode': self.reward_mode,
+                'junction_id': self.single_agent_id or 'ALL',
+            }
             if wandb.run is None:
                 try:
-                    wandb.init(project=self.project_name, config=self.hyperparams, sync_tensorboard=False)
+                    wandb_kwargs = {
+                        'project': self.project_name,
+                        'config': wandb_config,
+                        'sync_tensorboard': False,
+                    }
+                    # Per-junction group (ha single agent)
+                    if self.single_agent_id:
+                        wandb_kwargs['group'] = self.single_agent_id
+                        wandb_kwargs['tags'] = [self.single_agent_id, self.algorithm_name, self.reward_mode]
+                    wandb.init(**wandb_kwargs)
                 except Exception as e:
                     self.log(f"WandB init failed (skipped): {e}")
 
@@ -137,7 +263,6 @@ class IndependentDQNTrainer:
             self.log("WandB config applied (Sweep compatible).")
 
         # 2. Környezet létrehozása
-        # Forgalmi tartomány: epizódonként randomizálódik (target+spread)
         self.env = SumoRLEnvironment(
             net_file=self.net_file,
             logic_json_file=self.logic_file,
@@ -149,6 +274,8 @@ class IndependentDQNTrainer:
             random_traffic=True,
             single_agent_id=self.single_agent_id,
             run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
+            reward_mode=self.reward_mode,
+            junction_params_path=self.junction_params_path,
             **self.env_kwargs
         )
 
@@ -197,78 +324,155 @@ class IndependentDQNTrainer:
         grad_steps = int(current_config.get("gradient_steps", 1))
         net_arch = [layer_size] * num_layers
 
+        # =====================================================================
+        # ON-POLICY ÚT (PPO, A2C) — SingleAgentGymWrapper + model.learn()
+        # =====================================================================
+        if self.algo_type == 'on_policy':
+            if len(agent_ids) > 1:
+                self.log("[WARNING] On-policy algoritmus (PPO/A2C) csak single-agent módban támogatott!")
+                self.log("         Használj --single-agent-t vagy válts off-policy algoritmusra (QRDQN/DQN).")
+                self.env.close()
+                return
+
+            jid = agent_ids[0]
+            self.log(f"[INFO] On-policy training: {self.algorithm_name} → {jid}")
+
+            # SingleAgentGymWrapper: standard Gym API a SUMO env felett
+            gym_env = SingleAgentGymWrapper(self.env, jid)
+            tb_log = os.path.join(runs_dir, self.project_name, jid)
+
+            # Modell létrehozása
+            model_kwargs = {
+                'policy': "MultiInputPolicy",
+                'env': gym_env,
+                'learning_rate': lr,
+                'gamma': gamma,
+                'verbose': 1,
+                'tensorboard_log': tb_log,
+                'device': rl_device,
+                'policy_kwargs': dict(net_arch=net_arch),
+            }
+            # PPO/A2C specifikus paraméterek
+            if self.algorithm_name == 'ppo':
+                model_kwargs['batch_size'] = bs
+                model_kwargs['n_steps'] = int(current_config.get("n_steps", 2048))
+                model_kwargs['n_epochs'] = int(current_config.get("n_epochs", 10))
+            elif self.algorithm_name == 'a2c':
+                model_kwargs['n_steps'] = int(current_config.get("n_steps", 5))
+
+            # Transfer learning
+            if self.load_model_path and os.path.exists(self.load_model_path):
+                self.log(f"Loading pre-trained model: {self.load_model_path}")
+                try:
+                    model = AlgoClass.load(self.load_model_path, env=gym_env, device=rl_device)
+                    model.learning_rate = lr
+                    model.gamma = gamma
+                    self.log("Pre-trained model loaded successfully.")
+                except Exception as e:
+                    self.log(f"Failed to load model: {e}. Initializing fresh model.")
+                    model = AlgoClass(**model_kwargs)
+            else:
+                model = AlgoClass(**model_kwargs)
+
+            self.agents[jid] = model
+
+            # WandB callback
+            callbacks = []
+            if wandb.run:
+                callbacks.append(WandBCallback(log_freq=100))
+
+            # Tanítás
+            try:
+                self.log(f"Starting on-policy training: {self.total_timesteps} timesteps...")
+                model.learn(
+                    total_timesteps=self.total_timesteps,
+                    callback=callbacks,
+                    progress_bar=True,
+                )
+                self.log("On-policy training completed.")
+            except KeyboardInterrupt:
+                self.log("Training interrupted by user.")
+            except Exception as e:
+                self.log(f"Training crashed: {e}")
+                import traceback
+                traceback.print_exc()
+            finally:
+                self.log("Closing environment and EXPORTING models...")
+                try:
+                    self.save_pytorch_models(runs_dir)
+                    self.export_onnx_models(runs_dir)
+                except Exception as e:
+                    self.log(f"Final export failed: {e}")
+                if self.env:
+                    self.env.close()
+                if wandb.run:
+                    wandb.finish()
+                self.log("Cleanup done.")
+            return
+
+        # =====================================================================
+        # OFF-POLICY ÚT (DQN, QRDQN) — Eredeti manuális tréning ciklus
+        # =====================================================================
         for jid in agent_ids:
-            self.reward_smoothing[jid] = 0.0 
+            self.reward_smoothing[jid] = 0.0
             agent_obs_space = self.env.observation_space[jid]
             agent_act_space = self.env.action_space[jid]
-            
+
             def make_dummy_wrapper():
-                class SingleAgentWrapper(gym.Env):
+                class _DummyEnv(gym.Env):
                     def __init__(self):
                         self.observation_space = agent_obs_space
                         self.action_space = agent_act_space
                     def reset(self, **kwargs): return self.observation_space.sample(), {}
                     def step(self, a): return self.observation_space.sample(), 0, False, False, {}
-                return SingleAgentWrapper()
+                return _DummyEnv()
 
             model_env = DummyVecEnv([make_dummy_wrapper])
             tb_log = os.path.join(runs_dir, self.project_name, jid)
-            
-            # [NEW] Transfer Learning Logic
+
+            # Off-policy modell paraméterek
+            model_kwargs = {
+                'policy': "MultiInputPolicy",
+                'env': model_env,
+                'learning_rate': lr,
+                'buffer_size': buf,
+                'batch_size': bs,
+                'gamma': gamma,
+                'exploration_fraction': expl_fraction,
+                'policy_kwargs': dict(net_arch=net_arch),
+                'verbose': 0,
+                'tensorboard_log': tb_log,
+                'device': rl_device,
+            }
+
+            # Transfer Learning
             if self.load_model_path and os.path.exists(self.load_model_path):
                 self.log(f"Loading pre-trained model from {self.load_model_path} for agent {jid}...")
                 try:
                     if self.load_model_path.endswith('.onnx') or self.load_model_path.endswith('.onnx.zip'):
-                        self.log(f"Detected ONNX file or ONNX.ZIP archive. Performing manual PyTorch weight injection...")
-                        
+                        self.log(f"Detected ONNX file. Performing weight injection...")
                         actual_onnx_path = self.load_model_path
                         if self.load_model_path.endswith('.zip'):
-                            import zipfile
-                            import tempfile
+                            import zipfile, tempfile
                             temp_dir = tempfile.mkdtemp()
                             with zipfile.ZipFile(self.load_model_path, 'r') as z:
                                 z.extractall(temp_dir)
-                                # Find first .onnx file
                                 onnx_files = [f for f in os.listdir(temp_dir) if f.endswith('.onnx')]
                                 if onnx_files:
                                     actual_onnx_path = os.path.join(temp_dir, onnx_files[0])
                                 else:
-                                    raise ValueError("No .onnx file found inside the provided zip archive.")
-                                    
-                        # 1. Initialize fresh PyTorch QRDQN model
-                        self.agents[jid] = QRDQN(
-                            "MultiInputPolicy",
-                            env=model_env,
-                            learning_rate=lr,
-                            buffer_size=buf,
-                            batch_size=bs,
-                            gamma=gamma,
-                            exploration_fraction=expl_fraction,
-                            verbose=0,
-                            tensorboard_log=tb_log,
-                            device="cpu", # Force CPU for reliable loading
-                            policy_kwargs=dict(net_arch=[layer_size] * num_layers)
-                        )
-                        
-                        # 2. Extract weights from ONNX and inject
+                                    raise ValueError("No .onnx file found in zip.")
+
+                        self.agents[jid] = AlgoClass(**{**model_kwargs, 'device': 'cpu'})
+
                         import onnx
                         from onnx import numpy_helper
-                        import torch
                         model_proto = onnx.load(actual_onnx_path, load_external_data=False)
-                        try:
-                            onnx_weights = []
-                            for init in model_proto.graph.initializer:
-                                onnx_weights.append(numpy_helper.to_array(init))
-                        except Exception as e:
-                            self.log(f"CRITICAL ERROR: Could not extract weights from ONNX.")
-                            self.log(f"If you exported a 'fused' model, PyTorch may have saved the weights into a separate '.onnx.data' file!")
-                            self.log(f"Please use a standard non-fused ONNX model, or the original '.zip' PyTorch model for fine-tuning.")
-                            raise ValueError(f"Missing ONNX external data: {e}")
-                            
+                        onnx_weights = [numpy_helper.to_array(init) for init in model_proto.graph.initializer]
+
                         target_sd = self.agents[jid].policy.state_dict()
                         target_keys = [k for k in target_sd.keys() if "weight" in k or "bias" in k]
                         used_idx = set()
-                        
                         for k in target_keys:
                             target_param = target_sd[k]
                             t_shape = tuple(target_param.shape)
@@ -283,130 +487,54 @@ class IndependentDQNTrainer:
                                     with torch.no_grad(): target_param.copy_(torch.from_numpy(w.T))
                                     used_idx.add(i)
                                     break
-                                    
-                        # Switch back to optimal device
                         self.agents[jid] = self.agents[jid].to("auto")
-                        self.log(f"ONNX Model weights injected successfully into SB3 PyTorch graph for {jid}.")
-                        
+                        self.log(f"ONNX weights injected for {jid}.")
                     else:
-                        # SB3 load method for native .zip files
-                        self.agents[jid] = QRDQN.load(
-                            self.load_model_path,
-                            env=model_env,
-                            print_system_info=True,
-                            force_reset=False,
-                            custom_objects=None,
-                            device=rl_device
+                        # Native .zip load
+                        self.agents[jid] = AlgoClass.load(
+                            self.load_model_path, env=model_env,
+                            print_system_info=True, force_reset=False, device=rl_device
                         )
-                        
-                        # Update parameters for fine-tuning
                         self.agents[jid].learning_rate = lr
-                        self.agents[jid].buffer_size = buf
-                        self.agents[jid].batch_size = bs
                         self.agents[jid].gamma = gamma
                         self.agents[jid].exploration_fraction = expl_fraction
-                        self.agents[jid].verbose = 0
-                        self.agents[jid].tensorboard_log = tb_log
-                        
-                        self.log(f"PyTorch Model loaded successfully from {self.load_model_path}.")
-                        
+                        self.log(f"Model loaded from {self.load_model_path}.")
+
                 except Exception as e:
                     import traceback
                     self.log(f"FAILED to load model for {jid}: {e}\n{traceback.format_exc()}")
                     self.log("Falling back to clean initialization.")
-                    # Fallback to copy-paste of initialization below
-                    self.agents[jid] = QRDQN(
-                        "MultiInputPolicy",
-                        model_env,
-                        learning_rate=lr,
-                        buffer_size=buf,
-                        batch_size=bs,
-                        gamma=gamma,
-                        exploration_fraction=expl_fraction,
-                        policy_kwargs=dict(net_arch=net_arch),
-                        verbose=0,
-                        tensorboard_log=tb_log,
-                        device=rl_device
-                    )
-            elif self.load_model_path and self.load_model_path.endswith(".onnx"):
-                # [NEW] ONNX Loading Strategy
-                self.log(f"Detected ONNX model: {self.load_model_path}")
-                
-                # 1. Auto-detect architecture from ONNX
-                detected_arch = self.detect_architecture_from_onnx(self.load_model_path)
-                if detected_arch:
-                    self.log(f"Auto-detected architecture from ONNX: {detected_arch}")
-                    net_arch = detected_arch
-                else:
-                    self.log(f"Could not detect architecture. using default/GUI settings: {net_arch}")
-
-                # 2. Initialize fresh agent with correct architecture
-                self.agents[jid] = QRDQN(
-                    "MultiInputPolicy",
-                    model_env,
-                    learning_rate=lr,
-                    buffer_size=buf,
-                    batch_size=bs,
-                    gamma=gamma,
-                    exploration_fraction=expl_fraction,
-                    policy_kwargs=dict(net_arch=net_arch),
-                    verbose=0,
-                    tensorboard_log=tb_log,
-                    device=rl_device
-                )
-                
-                # 3. Load weights
-                try:
-                    self._load_from_onnx(self.agents[jid], self.load_model_path)
-                    self.log(f"Successfully loaded ONNX weights for {jid}!")
-                except Exception as e:
-                    self.log(f"FAILED to load ONNX weights: {e}")
-                    # Agent remains initialized with random weights
+                    self.agents[jid] = AlgoClass(**model_kwargs)
             else:
                 if self.load_model_path:
-                    self.log(f"Warning: Model file {self.load_model_path} not found or unknown format. Initializing new model.")
+                    self.log(f"Warning: Model file {self.load_model_path} not found.")
+                self.agents[jid] = AlgoClass(**model_kwargs)
 
-                self.agents[jid] = QRDQN(
-                    "MultiInputPolicy",
-                    model_env,
-                    learning_rate=lr,
-                    buffer_size=buf,
-                    batch_size=bs,
-                    gamma=gamma,
-                    exploration_fraction=expl_fraction,
-                    policy_kwargs=dict(net_arch=net_arch),
-                    verbose=0,
-                    tensorboard_log=tb_log,
-                    device=rl_device
-                )
-            
             self.agents[jid].set_logger(configure(tb_log, ["stdout", "tensorboard"]))
 
         # =========================================================================
-        # 5. TANÍTÁSI CIKLUS (TRY-FINALLY BLOKKAL VÉDVE)
+        # 5. TANÍTÁSI CIKLUS — OFF-POLICY (TRY-FINALLY BLOKKAL VÉDVE)
         # =========================================================================
-        self.log(f"Starting Training Loop (Gamma={gamma}, Expl_Fraction={expl_fraction})...")
+        self.log(f"Starting Training Loop ({self.algorithm_name}, gamma={gamma}, expl={expl_fraction})...")
         global_step = 0
         episode_count = 0
         episode_step = 0
         start_time = time.time()
 
-        # --- PROFILING ---
         _prof_predict = 0.0
         _prof_env_step = 0.0
         _prof_train = 0.0
         _prof_buffer = 0.0
         _prof_count = 0
-        
-        try: # <--- KEZDŐDIK A BIZTONSÁGI BLOKK
+
+        try:
             while global_step < self.total_timesteps and not self.stop_requested:
-                
+
                 progress = global_step / self.total_timesteps
                 remaining_progress = 1.0 - progress
-                
+
                 for model in self.agents.values():
                     model._current_progress_remaining = remaining_progress
-                    # CRITICAL FIX: Manually update exploration_rate because we are not using model.learn()
                     model.exploration_rate = model.exploration_schedule(remaining_progress)
 
                 # --- AKCIÓVÁLASZTÁS ---
@@ -416,7 +544,6 @@ class IndependentDQNTrainer:
                     agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
                     action, _ = model.predict(agent_obs, deterministic=False)
                     actions[jid] = int(action[0])
-                    # Action distribution tracking
                     if jid not in self.action_counts:
                         self.action_counts[jid] = {}
                     a = actions[jid]
@@ -464,7 +591,6 @@ class IndependentDQNTrainer:
                     fps = int(global_step / (elapsed + 1e-5))
                     self.log(f"Step: {global_step}/{self.total_timesteps} | FPS: {fps}")
 
-                    # --- PROFILING REPORT (every 100 steps) ---
                     if _prof_count > 0:
                         _total = _prof_predict + _prof_env_step + _prof_train + _prof_buffer
                         if _total > 0:
@@ -479,10 +605,10 @@ class IndependentDQNTrainer:
                             )
                         _prof_predict = _prof_env_step = _prof_train = _prof_buffer = 0.0
                         _prof_count = 0
-                    
+
                     if wandb.run:
                         log_dict = {
-                            "global_step": global_step, 
+                            "global_step": global_step,
                             "fps": fps,
                             "train/gamma": gamma,
                         }
@@ -490,24 +616,22 @@ class IndependentDQNTrainer:
                             curr_lr = model.policy.optimizer.param_groups[0]["lr"]
                             curr_loss = model.logger.name_to_value.get("train/loss", 0.0)
                             curr_epsilon = model.exploration_schedule(remaining_progress)
-                            
+
                             log_dict[f"{jid}/train/learning_rate"] = curr_lr
                             log_dict[f"{jid}/train/loss"] = curr_loss
                             log_dict[f"{jid}/train/epsilon"] = curr_epsilon
                             log_dict[f"reward_smooth/{jid}"] = self.reward_smoothing[jid]
 
-                        # Calculate global average reward for Sweep optimization
                         if self.reward_smoothing:
                             avg_reward = sum(self.reward_smoothing.values()) / len(self.reward_smoothing)
                             log_dict["avg_reward"] = avg_reward
 
                         wandb.log(log_dict, commit=True)
-                        
+
                 # --- CHECKPOINTS ---
                 if global_step in [10000, 25000, 50000, 75000, 100000]:
                     try:
                         self.log(f"--- Saving CHECKPOINT at {global_step} steps ---")
-                        # Kimentjük a modellt "_10k", "_25k" stb. suffixszel
                         self.save_pytorch_models(runs_dir, step_suffix=f"{global_step//1000}k")
                         self.export_onnx_models(runs_dir, step_suffix=f"{global_step//1000}k")
                     except Exception as e:
@@ -519,7 +643,6 @@ class IndependentDQNTrainer:
                     avg_r = sum(self.reward_smoothing.values()) / max(len(self.reward_smoothing), 1)
                     eps_rate = self.agents[agent_ids[0]].exploration_rate if agent_ids else 0
 
-                    # Action distribution log (minden 5. epizódban)
                     if episode_count % 5 == 0:
                         for jid in agent_ids:
                             counts = self.action_counts.get(jid, {})
@@ -530,7 +653,6 @@ class IndependentDQNTrainer:
                                 for a_id, cnt in counts.items():
                                     wandb.log({f"{jid}/action_pct/phase_{a_id}": cnt / total_a * 100}, commit=False)
 
-                    # Reset action counts per episode
                     self.action_counts = {}
 
                     self.log(
@@ -557,25 +679,19 @@ class IndependentDQNTrainer:
             import traceback
             traceback.print_exc()
         finally:
-            # =================================================================
-            # 6. EZ MINDENKÉPPEN LEFUT (HIBA ESETÉN IS)
-            # =================================================================
             self.log("Closing environment and EXPORTING models...")
-            
-            # Először exportálunk
             try:
                 self.save_pytorch_models(runs_dir)
                 self.export_onnx_models(runs_dir)
             except Exception as e:
                 self.log(f"Final export failed: {e}")
 
-            # Aztán zárunk
             if self.env:
                 self.env.close()
-            
+
             if wandb.run:
                 wandb.finish()
-            
+
             self.log("Cleanup done.")
 
     def save_pytorch_models(self, runs_dir, step_suffix=""):

@@ -3,13 +3,21 @@ WandB Sweep runner — a sweep agent ezt hívja minden egyes futásnál.
 
 A hiperparamétereket a wandb.config-ból veszi (sweep_config.yaml definiálja),
 a fájl útvonalakat a training_config.yaml-ból (vagy .json-ból).
+
+Használat:
+  # Sweep indítás egy junction-re
+  wandb sweep data/sweep_config.yaml --project sumo-rl-catalogue
+  wandb agent <entity>/<project>/<sweep_id>
+
+  # Junction-re szűkítve
+  SWEEP_JUNCTION=R1C1_C wandb agent <entity>/<project>/<sweep_id>
 """
 import os
 import sys
 import yaml
 import json
 import wandb
-from rl_trainer import IndependentDQNTrainer
+from rl_trainer import IndependentDQNTrainer, SUPPORTED_ALGORITHMS
 
 
 def load_config():
@@ -40,7 +48,15 @@ def main():
     parser.add_argument("--timesteps", type=int, default=None,
                         help="Total timesteps (felülírja a configot)")
     parser.add_argument("--project", type=str, default=None,
-                        help="WandB projekt név (felülírja a configot)")
+                        help="WandB projekt név")
+    parser.add_argument("--junction", type=str, default=None,
+                        help="Junction ID (pl. R1C1_C)")
+    parser.add_argument("--algorithm", type=str, default=None,
+                        choices=list(SUPPORTED_ALGORITHMS.keys()),
+                        help="RL algoritmus")
+    parser.add_argument("--reward-mode", type=str, default=None,
+                        choices=["speed_throughput", "halt_ratio", "co2_speedstd"],
+                        help="Reward mód")
     args, _ = parser.parse_known_args()
 
     # --- Config betöltése ---
@@ -48,7 +64,6 @@ def main():
 
     # Fájlok megkeresése
     if config:
-        # YAML formátum
         if "files" in config:
             files = config["files"]
             net_file = find_file([files.get("net", ""), "data/mega_catalogue_v2.net.xml"])
@@ -64,7 +79,6 @@ def main():
         default_timesteps = int(config.get("total_timesteps", hp.get("total_timesteps", 50000)))
         default_project = config.get("project_name", hp.get("wandb_project", "sumo-rl-sweep"))
     else:
-        # Fallback: automatikus keresés
         import glob
         net_files = glob.glob("*.net.xml") + glob.glob("data/*.net.xml")
         net_file = os.path.abspath(net_files[0]) if net_files else None
@@ -79,11 +93,22 @@ def main():
         print(f"[ERROR] Hiányzó fájlok! net={net_file}, logic={logic_file}, det={detector_file}")
         sys.exit(1)
 
-    # Prioritás: CLI arg > env var > config default
+    # Prioritás: CLI > env var > config
     total_timesteps = args.timesteps or int(os.environ.get("SWEEP_TIMESTEPS", 0)) or default_timesteps
     project = args.project or os.environ.get("SWEEP_PROJECT", "") or default_project
 
-    # Reward weights
+    # Junction: CLI > env var > config
+    junction_id = args.junction or os.environ.get("SWEEP_JUNCTION", None)
+
+    # Algoritmus és reward: CLI > env var > config
+    algorithm = (args.algorithm
+                 or os.environ.get("SWEEP_ALGORITHM", "")
+                 or config.get("algorithm", "qrdqn") if config else "qrdqn")
+    reward_mode = (args.reward_mode
+                   or os.environ.get("SWEEP_REWARD_MODE", "")
+                   or config.get("reward_mode", "speed_throughput") if config else "speed_throughput")
+
+    # Reward weights (backward compat)
     rw = env_kw.get("reward_weights", {})
     reward_weights = {
         'waiting': float(rw.get('waiting', hp.get('w_waiting', 1.0))),
@@ -93,8 +118,8 @@ def main():
     print(f"[SWEEP] Config: {config_path or 'auto-detect'}")
     print(f"[SWEEP] Net: {net_file}")
     print(f"[SWEEP] Timesteps: {total_timesteps} | Project: {project}")
-    print(f"[SWEEP] Reward weights: {reward_weights}")
-    print(f"[SWEEP] Base hyperparams: {hp}")
+    print(f"[SWEEP] Junction: {junction_id or 'ALL'}")
+    print(f"[SWEEP] Algorithm: {algorithm} | Reward: {reward_mode}")
 
     # --- Trainer ---
     trainer = IndependentDQNTrainer(
@@ -106,6 +131,9 @@ def main():
         hyperparams=hp,
         reward_weights=reward_weights,
         sumo_gui=args.gui,
+        single_agent_id=junction_id,
+        algorithm=algorithm,
+        reward_mode=reward_mode,
     )
 
     try:
