@@ -128,29 +128,104 @@ class SingleAgentGymWrapper(gym.Env):
 
 if HAS_RL_LIBS:
     class WandBCallback(BaseCallback):
-        """WandB logging callback SB3 model.learn()-höz."""
-        def __init__(self, log_freq=100, verbose=0):
+        """
+        WandB logging callback SB3 model.learn()-höz (on-policy).
+        Ugyanazokat a metrikákat logollja, mint az off-policy manuális ciklus,
+        hogy a WandB dashboard-on konzisztensek legyenek a chart-ok.
+        """
+        def __init__(self, agent_id, log_freq=100, verbose=0):
             super().__init__(verbose)
+            self.agent_id = agent_id
             self.log_freq = log_freq
+            self.reward_smooth = 0.0
+            self.episode_count = 0
+            self.episode_rewards = []
+            self.action_counts = {}
+            self._start_time = None
+
+        def _on_training_start(self):
+            self._start_time = time.time()
 
         def _on_step(self) -> bool:
-            if self.num_timesteps % self.log_freq == 0 and wandb.run:
+            if not wandb.run:
+                return True
+
+            # Reward smoothing (azonos az off-policy 0.95 decay-jel)
+            reward = self.locals.get("rewards", [0.0])
+            if len(reward) > 0:
+                r = float(reward[0])
+                self.reward_smooth = 0.95 * self.reward_smooth + 0.05 * r
+                self.episode_rewards.append(r)
+
+            # Action tracking
+            actions = self.locals.get("actions", [])
+            if len(actions) > 0:
+                a = int(actions[0])
+                self.action_counts[a] = self.action_counts.get(a, 0) + 1
+
+            # Periodikus logolás (100 step-enként, mint az off-policy)
+            if self.num_timesteps % self.log_freq == 0:
+                elapsed = time.time() - (self._start_time or time.time())
+                fps = int(self.num_timesteps / (elapsed + 1e-5))
+
                 log_dict = {
                     "global_step": self.num_timesteps,
+                    "fps": fps,
+                    "train/gamma": self.model.gamma,
+                    f"reward_smooth/{self.agent_id}": self.reward_smooth,
+                    "avg_reward": self.reward_smooth,
                 }
-                # Reward from info
+
+                # Learning rate
+                try:
+                    curr_lr = self.model.policy.optimizer.param_groups[0]["lr"]
+                    log_dict[f"{self.agent_id}/train/learning_rate"] = curr_lr
+                except Exception:
+                    pass
+
+                # Loss (SB3 on-policy loggerből)
+                try:
+                    logger_vals = self.model.logger.name_to_value
+                    for key in ["train/loss", "train/policy_gradient_loss",
+                                "train/value_loss", "train/entropy_loss"]:
+                        if key in logger_vals:
+                            log_dict[f"{self.agent_id}/{key}"] = logger_vals[key]
+                except Exception:
+                    pass
+
+                # Metrikák az info-ból
                 if self.locals.get("infos"):
                     for info in self.locals["infos"]:
-                        if "metric_avg_speed" in info:
-                            log_dict["metric/avg_speed"] = info["metric_avg_speed"]
-                        if "metric_throughput" in info:
-                            log_dict["metric/throughput"] = info["metric_throughput"]
-                # Reward
-                if "rewards" in self.locals:
-                    rewards = self.locals["rewards"]
-                    if len(rewards) > 0:
-                        log_dict["reward_step"] = float(rewards[0])
+                        if isinstance(info, dict):
+                            if "metric_avg_speed" in info:
+                                log_dict["metric/avg_speed"] = info["metric_avg_speed"]
+                            if "metric_throughput" in info:
+                                log_dict["metric/throughput"] = info["metric_throughput"]
+
                 wandb.log(log_dict, commit=True)
+
+            # Epizód vége detektálás
+            dones = self.locals.get("dones", [False])
+            if len(dones) > 0 and dones[0]:
+                self.episode_count += 1
+                ep_reward = sum(self.episode_rewards) / max(len(self.episode_rewards), 1)
+
+                ep_log = {
+                    "episode": self.episode_count,
+                    "episode_length": len(self.episode_rewards),
+                    "episode/avg_reward": ep_reward,
+                }
+
+                # Action distribution (minden 5. epizódban)
+                if self.episode_count % 5 == 0 and self.action_counts:
+                    total_a = sum(self.action_counts.values()) or 1
+                    for a_id, cnt in self.action_counts.items():
+                        ep_log[f"{self.agent_id}/action_pct/phase_{a_id}"] = cnt / total_a * 100
+
+                wandb.log(ep_log, commit=False)
+                self.episode_rewards = []
+                self.action_counts = {}
+
             return True
 
 
@@ -379,7 +454,7 @@ class IndependentDQNTrainer:
             # WandB callback
             callbacks = []
             if wandb.run:
-                callbacks.append(WandBCallback(log_freq=100))
+                callbacks.append(WandBCallback(agent_id=jid, log_freq=100))
 
             # Tanítás
             try:
