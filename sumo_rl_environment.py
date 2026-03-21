@@ -1044,10 +1044,10 @@ class TrafficAgent:
 
     def get_throughput_metric(self):
         """Throughput: összes detektor vehicle count az időszakban.
-        Σ det_accumulated_flow / steps_measured → átlag vehicle/step."""
-        if self.steps_measured > 0 and self.detectors:
-            total_flow = sum(self.det_accumulated_flow.values())
-            return total_flow / self.steps_measured
+        Σ det_accumulated_flow (nem osztjuk steps_measured-vel,
+        mert a kalibrációs script sem osztja — konzisztens skála)."""
+        if self.detectors:
+            return float(sum(self.det_accumulated_flow.values()))
         return 0.0
 
     def get_halt_ratio_metric(self):
