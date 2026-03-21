@@ -91,6 +91,11 @@ echo "  Hátralevő:       ${REMAINING}"
 echo "============================================================"
 echo ""
 
+# --- WandB árva runok ellenőrzése ---
+echo "WandB szinkron ellenőrzés..."
+python wandb_cleanup.py --project "${PROJECT}" --done-dir "${DONE_DIR}" || true
+echo ""
+
 if [[ $REMAINING -eq 0 ]]; then
     echo "Minden futás kész! Nincs teendő."
     exit 0
