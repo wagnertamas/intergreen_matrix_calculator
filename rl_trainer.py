@@ -326,6 +326,10 @@ class IndependentDQNTrainer:
                     if self.single_agent_id:
                         wandb_kwargs['group'] = self.single_agent_id
                         wandb_kwargs['tags'] = [self.single_agent_id, self.algorithm_name, self.reward_mode]
+                    # WANDB_RUN_NAME env var támogatás (grid search script)
+                    run_name = os.environ.get('WANDB_RUN_NAME')
+                    if run_name:
+                        wandb_kwargs['name'] = run_name
                     wandb.init(**wandb_kwargs)
                 except Exception as e:
                     self.log(f"WandB init failed (skipped): {e}")
