@@ -941,7 +941,7 @@ class TrafficAgent:
                         step_co2 += res.get(TC_VAR_CO2EMISSION, 0.0)
                         step_veh_count += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
                         # Kiegészítő metrikák (nincs subscription, egyedi hívás)
-                        spd = traci.lane.getMeanSpeed(lane)
+                        spd = traci.lane.getLastStepMeanSpeed(lane)
                         step_speed_sum += spd
                         step_speed_sq_sum += spd * spd
                         speed_lanes += 1
@@ -958,7 +958,7 @@ class TrafficAgent:
                 step_waiting += traci.lane.getWaitingTime(lane)
                 step_co2 += traci.lane.getCO2Emission(lane)
                 step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
-                spd = traci.lane.getMeanSpeed(lane)
+                spd = traci.lane.getLastStepMeanSpeed(lane)
                 step_speed_sum += spd
                 step_speed_sq_sum += spd * spd
                 speed_lanes += 1
@@ -973,7 +973,7 @@ class TrafficAgent:
                 step_waiting += traci.lane.getWaitingTime(lane)
                 step_co2 += traci.lane.getCO2Emission(lane)
                 step_veh_count += traci.lane.getLastStepVehicleNumber(lane)
-                spd = traci.lane.getMeanSpeed(lane)
+                spd = traci.lane.getLastStepMeanSpeed(lane)
                 step_speed_sum += spd
                 step_speed_sq_sum += spd * spd
                 speed_lanes += 1
