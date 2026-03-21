@@ -1010,7 +1010,7 @@ class TrainingDialog:
 
         self.top = tk.Toplevel(parent)
         self.top.title("Reinforcement Learning Trainer")
-        self.top.geometry("600x750")
+        self.top.geometry("650x820")
         
         self.net_file = net_file
         self.logic_file = logic_file
@@ -1085,29 +1085,53 @@ class TrainingDialog:
             entry.grid(row=i, column=1, padx=5, sticky="ew")
             setattr(self, attr_name, entry)
 
-        frame_reward = tk.LabelFrame(self.top, text="Reward Weights", padx=10, pady=5)
-        frame_reward.pack(fill="x", padx=10, pady=5)
+        # --- ALGORITHM & REWARD MODE ---
+        frame_algo = tk.LabelFrame(self.top, text="Algorithm & Reward", padx=10, pady=5)
+        frame_algo.pack(fill="x", padx=10, pady=5)
+        frame_algo.columnconfigure(1, weight=1)
+        frame_algo.columnconfigure(3, weight=1)
 
-        tk.Label(frame_reward, text="Waiting Weight:").grid(row=0, column=0)
-        self.entry_w_waiting = tk.Entry(frame_reward, width=10)
-        self.entry_w_waiting.insert(0, "1.0")
-        self.entry_w_waiting.grid(row=0, column=1)
+        tk.Label(frame_algo, text="RL Algorithm:").grid(row=0, column=0, sticky="w")
+        self.combo_algorithm = ttk.Combobox(frame_algo,
+            values=list(SUPPORTED_ALGORITHMS.keys()),
+            state="readonly", width=12)
+        self.combo_algorithm.set("qrdqn")
+        self.combo_algorithm.grid(row=0, column=1, padx=5, sticky="w")
+        self.combo_algorithm.bind("<<ComboboxSelected>>", self._on_algorithm_changed)
 
-        tk.Label(frame_reward, text="CO2 Weight:").grid(row=0, column=2)
-        self.entry_w_co2 = tk.Entry(frame_reward, width=10)
-        self.entry_w_co2.insert(0, "1.0")
-        self.entry_w_co2.grid(row=0, column=3)
+        tk.Label(frame_algo, text="Reward Mode:").grid(row=0, column=2, sticky="w", padx=(15, 0))
+        self.combo_reward_mode = ttk.Combobox(frame_algo,
+            values=["speed_throughput", "halt_ratio", "co2_speedstd"],
+            state="readonly", width=18)
+        self.combo_reward_mode.set("speed_throughput")
+        self.combo_reward_mode.grid(row=0, column=3, padx=5, sticky="w")
 
-        # --- SINGLE AGENT SELECTION ---
-        frame_single = tk.LabelFrame(self.top, text="Single Intersection Mode", padx=10, pady=5)
+        # Algoritmus info label
+        self.lbl_algo_info = tk.Label(frame_algo, text="QRDQN — Off-policy, distributional DQN (replay buffer)",
+                                       font=("Arial", 8), fg="gray")
+        self.lbl_algo_info.grid(row=1, column=0, columnspan=4, sticky="w", pady=(2, 0))
+
+        # Reward info label
+        self.lbl_reward_info = tk.Label(frame_algo,
+            text="speed_throughput — AvgSpeed + Throughput, log-tanh (η²=0.120, legjobb)",
+            font=("Arial", 8), fg="gray")
+        self.lbl_reward_info.grid(row=2, column=0, columnspan=4, sticky="w")
+        self.combo_reward_mode.bind("<<ComboboxSelected>>", self._on_reward_mode_changed)
+
+        # --- JUNCTION SELECTION ---
+        frame_single = tk.LabelFrame(self.top, text="Junction Selection", padx=10, pady=5)
         frame_single.pack(fill="x", padx=10, pady=5)
-        
+
         self.var_single_enabled = tk.BooleanVar(value=False)
-        chk_single = tk.Checkbutton(frame_single, text="Train ONLY one intersection", variable=self.var_single_enabled, command=self.toggle_single_agent_ui)
+        chk_single = tk.Checkbutton(frame_single, text="Train ONLY one junction",
+                                     variable=self.var_single_enabled,
+                                     command=self.toggle_single_agent_ui)
         chk_single.grid(row=0, column=0, sticky="w")
-        
-        tk.Label(frame_single, text="Select Junction ID:").grid(row=0, column=1, padx=10)
-        self.combo_agent = ttk.Combobox(frame_single, values=getattr(self, 'available_junctions', []), state="disabled")
+
+        tk.Label(frame_single, text="Junction ID:").grid(row=0, column=1, padx=10)
+        self.combo_agent = ttk.Combobox(frame_single,
+            values=getattr(self, 'available_junctions', []),
+            state="disabled", width=15)
         self.combo_agent.grid(row=0, column=2, sticky="ew")
 
         # --- SUMO GUI CHECKBOX ---
@@ -1170,6 +1194,42 @@ class TrainingDialog:
             self.txt_log.config(state="disabled")
         self.top.after(100, self.process_logs)
 
+    def _on_algorithm_changed(self, event=None):
+        """Algoritmus kiválasztásakor info label frissítése + off/on-policy specifikus elemek."""
+        algo = self.combo_algorithm.get()
+        info_map = {
+            'qrdqn': 'QRDQN — Off-policy, distributional DQN (replay buffer)',
+            'dqn':   'DQN — Off-policy, vanilla DQN (replay buffer)',
+            'ppo':   'PPO — On-policy, policy gradient (rollout buffer, stabil)',
+            'a2c':   'A2C — On-policy, advantage actor-critic (gyors, egyszerű)',
+        }
+        self.lbl_algo_info.config(text=info_map.get(algo, ''))
+
+        # Off-policy specifikus mezők engedélyezése/tiltása
+        algo_info = SUPPORTED_ALGORITHMS.get(algo, {})
+        is_off_policy = algo_info.get('type') == 'off_policy'
+        state_off = "normal" if is_off_policy else "disabled"
+        self.entry_buffer.config(state=state_off)
+        self.entry_expl.config(state=state_off)
+
+        # On-policy figyelmeztetés multi-agent módban
+        if not is_off_policy and not self.var_single_enabled.get():
+            self.lbl_algo_info.config(
+                text=info_map.get(algo, '') + '  ⚠ Csak single-junction módban!',
+                fg='red')
+        else:
+            self.lbl_algo_info.config(fg='gray')
+
+    def _on_reward_mode_changed(self, event=None):
+        """Reward mód kiválasztásakor info label frissítése."""
+        mode = self.combo_reward_mode.get()
+        info_map = {
+            'speed_throughput': 'AvgSpeed + Throughput, log-tanh (η²=0.120, legjobb)',
+            'halt_ratio':       'HaltRatio, log-tanh (η²=0.156, legrobusztusabb)',
+            'co2_speedstd':     'TotalCO2 + SpeedStd, log-tanh (η²=0.224)',
+        }
+        self.lbl_reward_info.config(text=f"{mode} — {info_map.get(mode, '')}")
+
     def get_settings(self):
         return {
             "total_timesteps": int(self.entry_steps.get()),
@@ -1177,13 +1237,13 @@ class TrainingDialog:
             "wandb_api_key": self.entry_apikey.get(),
             "learning_rate": float(self.entry_lr.get()),
             "batch_size": int(self.entry_batch.get()),
-            "buffer_size": int(self.entry_buffer.get()),
+            "buffer_size": int(self.entry_buffer.get()) if self.entry_buffer.cget("state") != "disabled" else 10000,
             "gamma": float(self.entry_gamma.get()),
-            "exploration_fraction": float(self.entry_expl.get()),
-            "w_waiting": float(self.entry_w_waiting.get()),
-            "w_co2": float(self.entry_w_co2.get()),
+            "exploration_fraction": float(self.entry_expl.get()) if self.entry_expl.cget("state") != "disabled" else 0.5,
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
+            "algorithm": self.combo_algorithm.get(),
+            "reward_mode": self.combo_reward_mode.get(),
             "single_agent_id": self.combo_agent.get() if self.var_single_enabled.get() else None,
             "sumo_gui": self.var_gui_enabled.get(),
             "fixed_flow": self.var_fixed_flow.get(),
@@ -1221,7 +1281,9 @@ class TrainingDialog:
                 "--config", "training_config.yaml",
                 "--timesteps", str(settings["total_timesteps"]),
                 "--project", settings["wandb_project"],
-                # GUI-ból beírt hiperparaméterek átadása
+                "--algorithm", settings["algorithm"],
+                "--reward-mode", settings["reward_mode"],
+                # Hiperparaméterek
                 "--learning-rate", str(settings["learning_rate"]),
                 "--batch-size", str(settings["batch_size"]),
                 "--buffer-size", str(settings["buffer_size"]),
@@ -1229,15 +1291,13 @@ class TrainingDialog:
                 "--exploration-fraction", str(settings["exploration_fraction"]),
                 "--num-layers", str(settings["num_layers"]),
                 "--layer-size", str(settings["layer_size"]),
-                "--w-waiting", str(settings["w_waiting"]),
-                "--w-co2", str(settings["w_co2"]),
             ]
 
             if settings["sumo_gui"]:
                 cmd.append("--gui")
 
             if settings["single_agent_id"]:
-                cmd.extend(["--single-agent", settings["single_agent_id"]])
+                cmd.extend(["--junction", settings["single_agent_id"]])
 
             if settings.get("fixed_flow") and settings.get("flow_target") is not None:
                 cmd.extend(["--flow-target", str(settings["flow_target"])])
@@ -1260,8 +1320,10 @@ class TrainingDialog:
             env["SWEEP_TIMESTEPS"] = str(settings["total_timesteps"])
 
             self.log(f"Tanítás indítása subprocess-ben...")
-            self.log(f"  Parancs: {' '.join(cmd)}")
+            self.log(f"  Algoritmus: {settings['algorithm']} | Reward: {settings['reward_mode']}")
+            self.log(f"  Junction: {settings.get('single_agent_id') or 'ALL'}")
             self.log(f"  SUMO: {sumo_engine}")
+            self.log(f"  Parancs: {' '.join(cmd)}")
 
             import subprocess as sp
             self.training_process = sp.Popen(
