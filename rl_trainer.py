@@ -387,7 +387,7 @@ class IndependentDQNTrainer:
                 model.learn(
                     total_timesteps=self.total_timesteps,
                     callback=callbacks,
-                    progress_bar=True,
+                    log_interval=10,
                 )
                 self.log("On-policy training completed.")
             except KeyboardInterrupt:
