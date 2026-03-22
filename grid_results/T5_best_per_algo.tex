@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Best configuration per algorithm (highest mean final reward, 3 repeats).}
+\label{tab:best_per_algo}
+\begin{tabular}{llllcc}
+\toprule
+Algorithm & Reward Mode & Network & Type & $\bar{r}$ & $\sigma$ \\
+\midrule
+QRDQN & Speed+Throughput & 3x8 & Off-policy & $0.5897$ & $0.0529$ \\
+DQN & Speed+Throughput & 2x128 & Off-policy & $0.5612$ & $0.0756$ \\
+PPO & Speed+Throughput & 1x128 & On-policy & $0.5850$ & $0.0179$ \\
+A2C & CO2+SpeedStd & 2x64 & On-policy & $0.4584$ & $0.0339$ \\
+\bottomrule
+\end{tabular}
+\end{table}

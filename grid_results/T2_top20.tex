@@ -1,0 +1,31 @@
+\begin{table}[htbp]
+\centering
+\caption{Top 20 configurations ranked by mean final reward (3 repeats).}
+\label{tab:top20}
+\begin{tabular}{clllcc}
+\toprule
+Rank & Algorithm & Reward Mode & Network & $\bar{r}$ & $\sigma$ \\
+\midrule
+1 & QRDQN & Speed+Throughput & 3x8 & $0.5897$ & $0.0529$ \\
+2 & PPO & Speed+Throughput & 1x128 & $0.5850$ & $0.0179$ \\
+3 & PPO & CO2+SpeedStd & 3x128 & $0.5823$ & $0.0329$ \\
+4 & PPO & CO2+SpeedStd & 2x128 & $0.5785$ & $0.0194$ \\
+5 & PPO & Speed+Throughput & 1x32 & $0.5774$ & $0.0228$ \\
+6 & PPO & CO2+SpeedStd & 1x128 & $0.5762$ & $0.0706$ \\
+7 & PPO & CO2+SpeedStd & 2x64 & $0.5707$ & $0.0404$ \\
+8 & PPO & Speed+Throughput & 3x16 & $0.5653$ & $0.0356$ \\
+9 & PPO & Speed+Throughput & 3x64 & $0.5651$ & $0.0712$ \\
+10 & PPO & CO2+SpeedStd & 1x8 & $0.5646$ & $0.0431$ \\
+11 & PPO & CO2+SpeedStd & 1x16 & $0.5621$ & $0.0589$ \\
+12 & DQN & Speed+Throughput & 2x128 & $0.5612$ & $0.0756$ \\
+13 & QRDQN & CO2+SpeedStd & 1x128 & $0.5597$ & $0.0135$ \\
+14 & PPO & Speed+Throughput & 2x128 & $0.5588$ & $0.0259$ \\
+15 & DQN & Speed+Throughput & 1x8 & $0.5583$ & $0.0602$ \\
+16 & QRDQN & Speed+Throughput & 2x8 & $0.5551$ & $0.0819$ \\
+17 & QRDQN & Speed+Throughput & 1x16 & $0.5525$ & $0.0775$ \\
+18 & QRDQN & CO2+SpeedStd & 3x64 & $0.5511$ & $0.0635$ \\
+19 & PPO & Speed+Throughput & 1x16 & $0.5494$ & $0.0220$ \\
+20 & QRDQN & Speed+Throughput & 1x8 & $0.5454$ & $0.0473$ \\
+\bottomrule
+\end{tabular}
+\end{table}

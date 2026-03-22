@@ -206,6 +206,10 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
     layer_order = sorted(df['layers'].unique())
     valid_df = df.dropna(subset=['final_avg_reward']).copy()
 
+    # ---- Global color scale for all heatmaps ----
+    global_vmin = valid_df['final_avg_reward'].min()
+    global_vmax = valid_df['final_avg_reward'].max()
+
     # ---- 01: Algo × Reward heatmap ----
     print("01 — Algorithm × Reward heatmap...")
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -213,7 +217,7 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
         pivot = df.pivot_table(values='final_avg_reward', index='algorithm',
                                columns='reward_short', aggfunc=agg
                                ).reindex(index=ALGO_ORDER, columns=REWARD_SHORT_ORDER)
-        im = axes[ax_idx].imshow(pivot.values, cmap='RdYlGn', aspect='auto')
+        im = axes[ax_idx].imshow(pivot.values, cmap='RdYlGn', aspect='auto', vmin=global_vmin, vmax=global_vmax)
         axes[ax_idx].set_xticks(range(len(REWARD_SHORT_ORDER)))
         axes[ax_idx].set_xticklabels(REWARD_SHORT_ORDER, rotation=30, ha='right', fontsize=13)
         axes[ax_idx].set_yticks(range(len(ALGO_ORDER)))
@@ -241,7 +245,7 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
             pivot = sub.pivot_table(
                 values='final_avg_reward', index='layers', columns='neurons', aggfunc='mean'
             ).reindex(index=layer_order, columns=neuron_order)
-            im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto')
+            im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto', vmin=global_vmin, vmax=global_vmax)
             ax.grid(False)
             ax.set_xticks(range(len(neuron_order))); ax.set_xticklabels(neuron_order, fontsize=11)
             ax.set_yticks(range(len(layer_order))); ax.set_yticklabels(layer_order, fontsize=11)
@@ -254,7 +258,8 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
                         ax.text(ci, ri, f'{v:.3f}', ha='center', va='center', fontweight='bold', fontsize=11)
             ax.set_title(f'{algo.upper()} / {REWARD_LABELS[reward]}', fontweight='bold', fontsize=13)
             plt.colorbar(im, ax=ax, shrink=0.7)
-    fig.suptitle('Network Size Effect — Algorithm × Reward (mean final reward)', fontsize=17, fontweight='bold')
+    fig.suptitle('Network Size Effect — Algorithm × Reward (mean final reward)\nUnified color scale across all subplots',
+                 fontsize=17, fontweight='bold')
     plt.tight_layout()
     fig.savefig(f'{output_dir}/02_network_heatmap_algo_reward.png', bbox_inches='tight')
     plt.close(fig)
@@ -337,7 +342,7 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
             for j, nl_label in enumerate(net_labels):
                 vals = sub[(sub['algorithm'] == algo) & (sub['net_label'] == nl_label)]['final_avg_reward']
                 if len(vals) > 0: matrix[i, j] = vals.mean()
-        im = ax.imshow(matrix, cmap='RdYlGn', aspect='auto')
+        im = ax.imshow(matrix, cmap='RdYlGn', aspect='auto', vmin=global_vmin, vmax=global_vmax)
         ax.grid(False)
         ax.set_xticks(range(len(net_labels))); ax.set_xticklabels(net_labels, rotation=45, ha='right', fontsize=13)
         ax.set_yticks(range(len(ALGO_ORDER))); ax.set_yticklabels([a.upper() for a in ALGO_ORDER], fontsize=14)
@@ -527,6 +532,178 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
     print("=" * 60)
 
     return valid_df, grouped
+
+
+# ================================================================
+# LaTeX TABLE EXPORT
+# ================================================================
+def export_latex_tables(df, grouped, output_dir="grid_results"):
+    """Export key results as LaTeX tables."""
+    os.makedirs(output_dir, exist_ok=True)
+    valid_df = df.dropna(subset=['final_avg_reward']).copy()
+    valid_df['reward_short'] = valid_df['reward_mode'].map(REWARD_LABELS)
+    tables = {}
+
+    # ---- T1: Algorithm × Reward (mean ± std) ----
+    lines = []
+    lines.append(r"\begin{table}[htbp]")
+    lines.append(r"\centering")
+    lines.append(r"\caption{Mean final reward by algorithm and reward mode ($\bar{r} \pm \sigma$, $n=45$ per cell).}")
+    lines.append(r"\label{tab:algo_reward}")
+    lines.append(r"\begin{tabular}{l" + "c" * len(REWARD_ORDER) + "}")
+    lines.append(r"\toprule")
+    header = "Algorithm & " + " & ".join([REWARD_LABELS[r] for r in REWARD_ORDER]) + r" \\"
+    lines.append(header)
+    lines.append(r"\midrule")
+    for algo in ALGO_ORDER:
+        cells = [algo.upper()]
+        for reward in REWARD_ORDER:
+            vals = valid_df[(valid_df['algorithm'] == algo) & (valid_df['reward_mode'] == reward)]['final_avg_reward']
+            m, s = vals.mean(), vals.std()
+            cells.append(f"${m:.3f} \\pm {s:.3f}$")
+        lines.append(" & ".join(cells) + r" \\")
+    lines.append(r"\midrule")
+    # Overall per reward
+    cells = [r"\textit{Overall}"]
+    for reward in REWARD_ORDER:
+        vals = valid_df[valid_df['reward_mode'] == reward]['final_avg_reward']
+        cells.append(f"${vals.mean():.3f} \\pm {vals.std():.3f}$")
+    lines.append(" & ".join(cells) + r" \\")
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\end{table}")
+    tables['T1_algo_reward.tex'] = "\n".join(lines)
+
+    # ---- T2: Top 20 configurations ----
+    lines = []
+    lines.append(r"\begin{table}[htbp]")
+    lines.append(r"\centering")
+    lines.append(r"\caption{Top 20 configurations ranked by mean final reward (3 repeats).}")
+    lines.append(r"\label{tab:top20}")
+    lines.append(r"\begin{tabular}{clllcc}")
+    lines.append(r"\toprule")
+    lines.append(r"Rank & Algorithm & Reward Mode & Network & $\bar{r}$ & $\sigma$ \\")
+    lines.append(r"\midrule")
+    top20 = grouped.nlargest(20, 'mean_reward')
+    for rank, (_, row) in enumerate(top20.iterrows(), 1):
+        algo = row['algorithm'].upper()
+        reward = REWARD_LABELS.get(row['reward_mode'], row['reward_mode'])
+        net = row['net_label']
+        m = row['mean_reward']
+        s = row['std_reward']
+        lines.append(f"{rank} & {algo} & {reward} & {net} & ${m:.4f}$ & ${s:.4f}$ \\\\")
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\end{table}")
+    tables['T2_top20.tex'] = "\n".join(lines)
+
+    # ---- T3: Factor importance (η²) ----
+    factors = {'Reward mode': 'reward_mode', 'Algorithm': 'algorithm', 'Network (L×N)': 'net_label',
+               'Layers': 'layers', 'Neurons': 'neurons'}
+    grand_mean = valid_df['final_avg_reward'].mean()
+    sst = ((valid_df['final_avg_reward'] - grand_mean) ** 2).sum()
+    eta_sq = {}
+    for label, col in factors.items():
+        ssb = sum(len(g) * (g.mean() - grand_mean) ** 2 for _, g in valid_df.groupby(col)['final_avg_reward'])
+        eta_sq[label] = ssb / sst if sst > 0 else 0
+
+    lines = []
+    lines.append(r"\begin{table}[htbp]")
+    lines.append(r"\centering")
+    lines.append(r"\caption{ANOVA-style factor importance ($\eta^2$) for final reward variance.}")
+    lines.append(r"\label{tab:eta_squared}")
+    lines.append(r"\begin{tabular}{lcc}")
+    lines.append(r"\toprule")
+    lines.append(r"Factor & $\eta^2$ & Explained \% \\")
+    lines.append(r"\midrule")
+    for label, val in sorted(eta_sq.items(), key=lambda x: x[1], reverse=True):
+        lines.append(f"{label} & ${val:.4f}$ & ${val*100:.1f}\\%$ \\\\")
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\end{table}")
+    tables['T3_factor_importance.tex'] = "\n".join(lines)
+
+    # ---- T4: Network size effect (layers × neurons, pooled across algo+reward) ----
+    lines = []
+    lines.append(r"\begin{table}[htbp]")
+    lines.append(r"\centering")
+    lines.append(r"\caption{Mean final reward by network architecture (all algorithms and reward modes pooled).}")
+    lines.append(r"\label{tab:network_size}")
+    neuron_order = sorted(valid_df['neurons'].unique())
+    layer_order = sorted(valid_df['layers'].unique())
+    lines.append(r"\begin{tabular}{l" + "c" * len(neuron_order) + "}")
+    lines.append(r"\toprule")
+    lines.append("Layers & " + " & ".join([f"{n} neurons" for n in neuron_order]) + r" \\")
+    lines.append(r"\midrule")
+    for nl in layer_order:
+        cells = [f"{nl} layer{'s' if nl > 1 else ' '}"]
+        for ns in neuron_order:
+            vals = valid_df[(valid_df['layers'] == nl) & (valid_df['neurons'] == ns)]['final_avg_reward']
+            cells.append(f"${vals.mean():.3f}$")
+        lines.append(" & ".join(cells) + r" \\")
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\end{table}")
+    tables['T4_network_size.tex'] = "\n".join(lines)
+
+    # ---- T5: Best config per algorithm ----
+    lines = []
+    lines.append(r"\begin{table}[htbp]")
+    lines.append(r"\centering")
+    lines.append(r"\caption{Best configuration per algorithm (highest mean final reward, 3 repeats).}")
+    lines.append(r"\label{tab:best_per_algo}")
+    lines.append(r"\begin{tabular}{llllcc}")
+    lines.append(r"\toprule")
+    lines.append(r"Algorithm & Reward Mode & Network & Type & $\bar{r}$ & $\sigma$ \\")
+    lines.append(r"\midrule")
+    for algo in ALGO_ORDER:
+        sub = grouped[grouped['algorithm'] == algo].nlargest(1, 'mean_reward').iloc[0]
+        reward = REWARD_LABELS.get(sub['reward_mode'], sub['reward_mode'])
+        algo_type = 'On-policy' if algo in ('ppo', 'a2c') else 'Off-policy'
+        lines.append(f"{algo.upper()} & {reward} & {sub['net_label']} & {algo_type} & ${sub['mean_reward']:.4f}$ & ${sub['std_reward']:.4f}$ \\\\")
+    lines.append(r"\bottomrule")
+    lines.append(r"\end{tabular}")
+    lines.append(r"\end{table}")
+    tables['T5_best_per_algo.tex'] = "\n".join(lines)
+
+    # ---- T6: Algorithm × Network (detailed, per reward) ----
+    for reward in REWARD_ORDER:
+        lines = []
+        r_label = REWARD_LABELS[reward]
+        lines.append(r"\begin{table}[htbp]")
+        lines.append(r"\centering")
+        lines.append(f"\\caption{{Mean final reward — {r_label} reward mode.}}")
+        lines.append(f"\\label{{tab:detail_{reward}}}")
+        net_labels = [f"{nl}×{ns}" for nl in layer_order for ns in neuron_order]
+        lines.append(r"\resizebox{\textwidth}{!}{")
+        lines.append(r"\begin{tabular}{l" + "c" * len(net_labels) + "}")
+        lines.append(r"\toprule")
+        lines.append("Algorithm & " + " & ".join(net_labels) + r" \\")
+        lines.append(r"\midrule")
+        sub = valid_df[valid_df['reward_mode'] == reward]
+        for algo in ALGO_ORDER:
+            cells = [algo.upper()]
+            for nl in layer_order:
+                for ns in neuron_order:
+                    vals = sub[(sub['algorithm'] == algo) & (sub['layers'] == nl) & (sub['neurons'] == ns)]['final_avg_reward']
+                    if len(vals) > 0:
+                        cells.append(f"${vals.mean():.3f}$")
+                    else:
+                        cells.append("--")
+            lines.append(" & ".join(cells) + r" \\")
+        lines.append(r"\bottomrule")
+        lines.append(r"\end{tabular}}")
+        lines.append(r"\end{table}")
+        tables[f'T6_detail_{reward}.tex'] = "\n".join(lines)
+
+    # Save all tables
+    for filename, content in tables.items():
+        path = f"{output_dir}/{filename}"
+        with open(path, 'w') as f:
+            f.write(content)
+    print(f"\nLaTeX tables exported: {len(tables)} files to {output_dir}/")
+    for f in sorted(tables.keys()):
+        print(f"  {f}")
 
 
 # ================================================================
@@ -783,5 +960,6 @@ def make_curve_plots(df, histories, output_dir="grid_results/curves"):
 # ================================================================
 if __name__ == "__main__":
     df, histories = fetch_wandb_data()
-    make_summary_plots(df, histories)
+    valid_df, grouped = make_summary_plots(df, histories)
+    export_latex_tables(df, grouped)
     make_curve_plots(df, histories)
