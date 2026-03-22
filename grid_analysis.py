@@ -36,8 +36,7 @@ plt.rcParams.update({
     'figure.dpi': 200,
     'savefig.dpi': 200,
     'savefig.bbox': 'tight',
-    'axes.grid': True,
-    'grid.alpha': 0.3,
+    'axes.grid': False,
 })
 
 CACHE_FILE = "grid_results/wandb_cache.json"
@@ -219,6 +218,7 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
         axes[ax_idx].set_xticklabels(REWARD_SHORT_ORDER, rotation=30, ha='right', fontsize=13)
         axes[ax_idx].set_yticks(range(len(ALGO_ORDER)))
         axes[ax_idx].set_yticklabels([a.upper() for a in ALGO_ORDER], fontsize=13)
+        axes[ax_idx].grid(False)
         for i in range(len(ALGO_ORDER)):
             for j in range(len(REWARD_SHORT_ORDER)):
                 v = pivot.values[i, j]
@@ -231,88 +231,96 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
     fig.savefig(f'{output_dir}/01_algo_reward_heatmap.png', bbox_inches='tight')
     plt.close(fig)
 
-    # ---- 02: Network heatmap per algo ----
-    print("02 — Network size heatmaps...")
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
-    for idx, algo in enumerate(ALGO_ORDER):
-        ax = axes[idx // 2][idx % 2]
-        pivot = df[df['algorithm'] == algo].pivot_table(
-            values='final_avg_reward', index='layers', columns='neurons', aggfunc='mean'
-        ).reindex(index=layer_order, columns=neuron_order)
-        im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto')
-        ax.set_xticks(range(len(neuron_order))); ax.set_xticklabels(neuron_order)
-        ax.set_yticks(range(len(layer_order))); ax.set_yticklabels(layer_order)
-        ax.set_xlabel('Number of neurons'); ax.set_ylabel('Number of layers')
-        for i in range(len(layer_order)):
-            for j in range(len(neuron_order)):
-                v = pivot.values[i, j]
-                if not np.isnan(v):
-                    ax.text(j, i, f'{v:.3f}', ha='center', va='center', fontweight='bold', fontsize=9)
-        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=12)
-        plt.colorbar(im, ax=ax, shrink=0.8)
-    fig.suptitle('Network Size Effect by Algorithm (mean final reward)', fontsize=14, fontweight='bold')
+    # ---- 02: Network heatmap per algo × reward (4×3 grid) ----
+    print("02 — Network size heatmaps (algo × reward)...")
+    fig, axes = plt.subplots(4, 3, figsize=(22, 22))
+    for i, algo in enumerate(ALGO_ORDER):
+        for j, reward in enumerate(REWARD_ORDER):
+            ax = axes[i][j]
+            sub = df[(df['algorithm'] == algo) & (df['reward_mode'] == reward)]
+            pivot = sub.pivot_table(
+                values='final_avg_reward', index='layers', columns='neurons', aggfunc='mean'
+            ).reindex(index=layer_order, columns=neuron_order)
+            im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto')
+            ax.grid(False)
+            ax.set_xticks(range(len(neuron_order))); ax.set_xticklabels(neuron_order, fontsize=11)
+            ax.set_yticks(range(len(layer_order))); ax.set_yticklabels(layer_order, fontsize=11)
+            if i == 3: ax.set_xlabel('Neurons', fontsize=12)
+            if j == 0: ax.set_ylabel('Layers', fontsize=12)
+            for ri in range(len(layer_order)):
+                for ci in range(len(neuron_order)):
+                    v = pivot.values[ri, ci]
+                    if not np.isnan(v):
+                        ax.text(ci, ri, f'{v:.3f}', ha='center', va='center', fontweight='bold', fontsize=11)
+            ax.set_title(f'{algo.upper()} / {REWARD_LABELS[reward]}', fontweight='bold', fontsize=13)
+            plt.colorbar(im, ax=ax, shrink=0.7)
+    fig.suptitle('Network Size Effect — Algorithm × Reward (mean final reward)', fontsize=17, fontweight='bold')
     plt.tight_layout()
-    fig.savefig(f'{output_dir}/02_network_heatmap_per_algo.png', bbox_inches='tight')
+    fig.savefig(f'{output_dir}/02_network_heatmap_algo_reward.png', bbox_inches='tight')
     plt.close(fig)
 
     # ---- 03: Algo boxplots per reward ----
     print("03 — Algorithm boxplots...")
+    median_props = dict(color='black', linewidth=2.5)
     fig, axes = plt.subplots(1, 3, figsize=(18, 7), sharey=True)
     for idx, reward in enumerate(REWARD_ORDER):
         ax = axes[idx]
         sub = df[df['reward_mode'] == reward]
         data = [sub[sub['algorithm'] == a]['final_avg_reward'].dropna() for a in ALGO_ORDER]
-        bp = ax.boxplot(data, labels=[a.upper() for a in ALGO_ORDER], patch_artist=True, widths=0.6)
+        bp = ax.boxplot(data, labels=[a.upper() for a in ALGO_ORDER], patch_artist=True, widths=0.6, medianprops=median_props)
         for patch, algo in zip(bp['boxes'], ALGO_ORDER):
             patch.set_facecolor(ALGO_COLORS[algo]); patch.set_alpha(0.7)
         for i, algo in enumerate(ALGO_ORDER):
             vals = sub[sub['algorithm'] == algo]['final_avg_reward'].dropna()
             ax.scatter(np.random.normal(i + 1, 0.08, len(vals)), vals, alpha=0.3, s=15, color=ALGO_COLORS[algo], zorder=5)
-        ax.set_title(f'{REWARD_LABELS[reward]}', fontweight='bold', fontsize=12)
+        ax.set_title(f'{REWARD_LABELS[reward]}', fontweight='bold', fontsize=13)
         ax.set_ylabel('Final avg_reward' if idx == 0 else ''); ax.grid(axis='y', alpha=0.3)
-    fig.suptitle('Algorithm Comparison by Reward Mode', fontsize=14, fontweight='bold')
+    fig.suptitle('Algorithm Comparison by Reward Mode', fontsize=16, fontweight='bold')
     plt.tight_layout()
     fig.savefig(f'{output_dir}/03_algo_boxplot_per_reward.png', bbox_inches='tight')
     plt.close(fig)
 
     # ---- 04: Reward boxplots per algo ----
     print("04 — Reward boxplots...")
-    fig, axes = plt.subplots(1, 4, figsize=(18, 5), sharey=True)
+    fig, axes = plt.subplots(1, 4, figsize=(20, 7), sharey=True)
     for idx, algo in enumerate(ALGO_ORDER):
         ax = axes[idx]
         sub = df[df['algorithm'] == algo]
         data = [sub[sub['reward_mode'] == r]['final_avg_reward'].dropna() for r in REWARD_ORDER]
-        bp = ax.boxplot(data, labels=REWARD_SHORT_ORDER, patch_artist=True, widths=0.6)
+        bp = ax.boxplot(data, labels=REWARD_SHORT_ORDER, patch_artist=True, widths=0.6, medianprops=median_props)
         for patch, r_short in zip(bp['boxes'], REWARD_SHORT_ORDER):
             patch.set_facecolor(REWARD_COLORS[r_short]); patch.set_alpha(0.7)
         for i, r in enumerate(REWARD_ORDER):
             vals = sub[sub['reward_mode'] == r]['final_avg_reward'].dropna()
             ax.scatter(np.random.normal(i + 1, 0.08, len(vals)), vals, alpha=0.3, s=15, color=REWARD_COLORS[REWARD_LABELS[r]], zorder=5)
-        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=12)
+        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=13)
         ax.set_ylabel('Final avg_reward' if idx == 0 else ''); ax.tick_params(axis='x', rotation=30); ax.grid(axis='y', alpha=0.3)
-    fig.suptitle('Reward Mode Comparison by Algorithm', fontsize=14, fontweight='bold')
+    fig.suptitle('Reward Mode Comparison by Algorithm', fontsize=16, fontweight='bold')
     plt.tight_layout()
     fig.savefig(f'{output_dir}/04_reward_boxplot_per_algo.png', bbox_inches='tight')
     plt.close(fig)
 
-    # ---- 05: Neuron effect line plots ----
-    print("05 — Neuron effect...")
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    layer_styles = {1: '-o', 2: '--s', 3: ':^'}
+    # ---- 05: Neuron × Layer effect — grouped bar chart ----
+    print("05 — Neuron × Layer effect...")
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    bar_width = 0.25
+    x_positions = np.arange(len(neuron_order))
     for idx, algo in enumerate(ALGO_ORDER):
         ax = axes[idx // 2][idx % 2]
         sub = df[df['algorithm'] == algo]
-        for nl in layer_order:
+        for li, nl in enumerate(layer_order):
             means, stds = [], []
             for ns in neuron_order:
                 vals = sub[(sub['layers'] == nl) & (sub['neurons'] == ns)]['final_avg_reward'].dropna()
                 means.append(vals.mean()); stds.append(vals.std())
-            ax.errorbar(neuron_order, means, yerr=stds, fmt=layer_styles[nl], color=LAYER_COLORS[nl],
-                       label=f'{nl} layer{"s" if nl > 1 else ""}', capsize=4, markersize=6, linewidth=1.5)
-        ax.set_xlabel('Number of neurons'); ax.set_ylabel('Final avg_reward')
-        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=12)
-        ax.set_xscale('log', base=2); ax.set_xticks(neuron_order); ax.set_xticklabels(neuron_order)
-        ax.legend(loc='lower right'); ax.grid(alpha=0.3)
+            offset = (li - 1) * bar_width
+            bars = ax.bar(x_positions + offset, means, bar_width, yerr=stds,
+                         color=LAYER_COLORS[nl], alpha=0.8, capsize=3,
+                         label=f'{nl} layer{"s" if nl > 1 else ""}', edgecolor='white', linewidth=0.5)
+        ax.set_xlabel('Number of neurons', fontsize=12); ax.set_ylabel('Final avg_reward', fontsize=12)
+        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=14)
+        ax.set_xticks(x_positions); ax.set_xticklabels(neuron_order, fontsize=11)
+        ax.legend(fontsize=10); ax.grid(axis='y', alpha=0.3)
     fig.suptitle('Effect of Network Width by Depth (mean ± std)', fontsize=14, fontweight='bold')
     plt.tight_layout()
     fig.savefig(f'{output_dir}/05_neurons_effect.png', bbox_inches='tight')
@@ -330,13 +338,14 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
                 vals = sub[(sub['algorithm'] == algo) & (sub['net_label'] == nl_label)]['final_avg_reward']
                 if len(vals) > 0: matrix[i, j] = vals.mean()
         im = ax.imshow(matrix, cmap='RdYlGn', aspect='auto')
+        ax.grid(False)
         ax.set_xticks(range(len(net_labels))); ax.set_xticklabels(net_labels, rotation=45, ha='right', fontsize=13)
         ax.set_yticks(range(len(ALGO_ORDER))); ax.set_yticklabels([a.upper() for a in ALGO_ORDER], fontsize=14)
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
                 if not np.isnan(matrix[i, j]):
                     ax.text(j, i, f'{matrix[i,j]:.2f}', ha='center', va='center', fontsize=12, fontweight='bold')
-        ax.set_title(f'Network × Algorithm — {REWARD_LABELS[reward]}', fontweight='bold', fontsize=16)
+        ax.set_title(f'Network × Algorithm — {REWARD_LABELS[reward]}\n(mean final reward, 3 repeats)', fontweight='bold', fontsize=16)
         plt.colorbar(im, ax=ax, shrink=0.8)
         plt.tight_layout()
         fig.savefig(f'{output_dir}/07{chr(97+idx)}_heatmap_{reward}.png', bbox_inches='tight')
@@ -366,9 +375,9 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
     fig.savefig(f'{output_dir}/08_top20_configs.png', bbox_inches='tight')
     plt.close(fig)
 
-    # ---- 09: Variance analysis ----
+    # ---- 09: Variance analysis (ANOVA-style) ----
     print("09 — Variance analysis...")
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
     factors = {'Reward mode': 'reward_mode', 'Algorithm': 'algorithm', 'Network (L×N)': 'net_label',
                'Layers': 'layers', 'Neurons': 'neurons'}
     grand_mean = valid_df['final_avg_reward'].mean()
@@ -379,41 +388,49 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
         eta_sq[label] = ssb / sst if sst > 0 else 0
     sorted_f = sorted(eta_sq.items(), key=lambda x: x[1], reverse=True)
     labels_f, values_f = zip(*sorted_f)
-    axes[0].barh(range(len(labels_f)), values_f, color='#3498db', alpha=0.8)
-    axes[0].set_yticks(range(len(labels_f))); axes[0].set_yticklabels(labels_f); axes[0].invert_yaxis()
-    axes[0].set_xlabel('η² (explained variance ratio)'); axes[0].set_title('Factor Importance', fontweight='bold')
-    for i, v in enumerate(values_f): axes[0].text(v + 0.005, i, f'{v:.3f}', va='center', fontsize=10)
+    bars = axes[0].barh(range(len(labels_f)), values_f, color='#3498db', alpha=0.8)
+    axes[0].set_yticks(range(len(labels_f))); axes[0].set_yticklabels(labels_f, fontsize=13); axes[0].invert_yaxis()
+    axes[0].set_xlabel('η² (explained variance ratio)', fontsize=12)
+    axes[0].set_title('Factor Importance (η² — ANOVA)\nHigher = factor explains more variance in reward', fontweight='bold', fontsize=13)
+    for i, v in enumerate(values_f): axes[0].text(v + 0.008, i, f'{v:.3f}', va='center', fontsize=12, fontweight='bold')
     axes[0].grid(axis='x', alpha=0.3)
+    axes[0].set_xlim(0, max(values_f) * 1.2)
 
     for algo in ALGO_ORDER:
         means = [valid_df[(valid_df['algorithm'] == algo) & (valid_df['reward_mode'] == r)]['final_avg_reward'].mean() for r in REWARD_ORDER]
-        axes[1].plot(REWARD_SHORT_ORDER, means, '-o', color=ALGO_COLORS[algo], label=algo.upper(), linewidth=2, markersize=8)
-    axes[1].set_xlabel('Reward mode'); axes[1].set_ylabel('Mean final reward')
-    axes[1].set_title('Interaction: Algorithm × Reward', fontweight='bold'); axes[1].legend(); axes[1].grid(alpha=0.3)
-    fig.suptitle('Variance Analysis', fontsize=14, fontweight='bold')
+        axes[1].plot(REWARD_SHORT_ORDER, means, '-o', color=ALGO_COLORS[algo], label=algo.upper(), linewidth=2.5, markersize=10)
+    axes[1].set_xlabel('Reward mode', fontsize=12); axes[1].set_ylabel('Mean final reward', fontsize=12)
+    axes[1].set_title('Interaction: Algorithm × Reward\nHow each algorithm responds to different rewards', fontweight='bold', fontsize=13)
+    axes[1].legend(fontsize=11); axes[1].grid(alpha=0.3)
+    fig.suptitle('Variance Analysis — Which factors matter most?', fontsize=17, fontweight='bold')
     plt.tight_layout()
     fig.savefig(f'{output_dir}/09_variance_analysis.png', bbox_inches='tight')
     plt.close(fig)
 
-    # ---- 11: Stability ----
-    print("11 — Stability analysis...")
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    # ---- 11: Reproducibility — Performance vs Variance across repeats ----
+    print("11 — Reproducibility analysis...")
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     for idx, algo in enumerate(ALGO_ORDER):
         ax = axes[idx // 2][idx % 2]
         sub = grouped[grouped['algorithm'] == algo]
         for reward in REWARD_ORDER:
             r_sub = sub[sub['reward_mode'] == reward]
             ax.scatter(r_sub['mean_reward'], r_sub['std_reward'],
-                      color=REWARD_COLORS[REWARD_LABELS[reward]], alpha=0.6, s=40, label=REWARD_LABELS[reward])
-        ax.set_xlabel('Mean reward'); ax.set_ylabel('Std (3 repeats)')
-        ax.set_title(f'{algo.upper()} — Performance vs Stability', fontweight='bold'); ax.legend(fontsize=8); ax.grid(alpha=0.3)
-    fig.suptitle('Stability: Does Higher Reward Mean More Stable?', fontsize=14, fontweight='bold')
+                      color=REWARD_COLORS[REWARD_LABELS[reward]], alpha=0.7, s=60, label=REWARD_LABELS[reward], edgecolors='white', linewidth=0.5)
+        ax.set_xlabel('Mean reward (across 3 repeats)', fontsize=11)
+        ax.set_ylabel('Std deviation (across 3 repeats)', fontsize=11)
+        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=14)
+        ax.legend(fontsize=10); ax.grid(alpha=0.3)
+    fig.suptitle('Reproducibility: Mean Reward vs Variance Across Repeats\n'
+                 'Each dot = one network config. Bottom-right = best (high reward, low variance)',
+                 fontsize=15, fontweight='bold')
     plt.tight_layout()
-    fig.savefig(f'{output_dir}/11_stability.png', bbox_inches='tight')
+    fig.savefig(f'{output_dir}/11_reproducibility.png', bbox_inches='tight')
     plt.close(fig)
 
-    # ---- 12-15: Normalized comparison ----
-    print("12-15 — Normalized comparison...")
+    # ---- 12: Within-reward ranking — which algo ranks best per reward mode ----
+    print("12 — Within-reward algorithm ranking...")
+    # Normalize within each reward mode: 0% = worst config, 100% = best config
     valid_df['norm_reward'] = 0.0
     for reward in REWARD_ORDER:
         mask = valid_df['reward_mode'] == reward
@@ -422,76 +439,56 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
         if rmax > rmin:
             valid_df.loc[mask, 'norm_reward'] = (vals - rmin) / (rmax - rmin) * 100
 
-    # 12: Normalized heatmap + boxplot
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
-    pivot_n = valid_df.pivot_table(values='norm_reward', index='algorithm', columns='reward_short',
-                                    aggfunc='mean').reindex(index=ALGO_ORDER, columns=REWARD_SHORT_ORDER)
-    im = axes[0].imshow(pivot_n.values, cmap='RdYlGn', aspect='auto', vmin=0, vmax=100)
-    axes[0].set_xticks(range(len(REWARD_SHORT_ORDER))); axes[0].set_xticklabels(REWARD_SHORT_ORDER, rotation=45, ha='right')
-    axes[0].set_yticks(range(len(ALGO_ORDER))); axes[0].set_yticklabels([a.upper() for a in ALGO_ORDER])
-    for i in range(len(ALGO_ORDER)):
-        for j in range(len(REWARD_SHORT_ORDER)):
-            v = pivot_n.values[i, j]
-            if not np.isnan(v): axes[0].text(j, i, f'{v:.1f}%', ha='center', va='center', fontweight='bold', fontsize=11)
-    axes[0].set_title('Mean performance (normalized %)', fontweight='bold')
-    plt.colorbar(im, ax=axes[0], shrink=0.8, label='%')
-    data_n = [valid_df[valid_df['algorithm'] == a]['norm_reward'].dropna() for a in ALGO_ORDER]
-    bp = axes[1].boxplot(data_n, labels=[a.upper() for a in ALGO_ORDER], patch_artist=True, widths=0.6)
-    for patch, algo in zip(bp['boxes'], ALGO_ORDER): patch.set_facecolor(ALGO_COLORS[algo]); patch.set_alpha(0.7)
-    for i, algo in enumerate(ALGO_ORDER):
-        vals = valid_df[valid_df['algorithm'] == algo]['norm_reward'].dropna()
-        axes[1].scatter(np.random.normal(i + 1, 0.08, len(vals)), vals, alpha=0.2, s=12, color=ALGO_COLORS[algo], zorder=5)
-    axes[1].set_ylabel('Normalized performance (%)'); axes[1].set_title('Algorithms (pooled across rewards)', fontweight='bold')
-    axes[1].grid(axis='y', alpha=0.3)
-    fig.suptitle('Percentile-Normalized Comparison (cross-reward)', fontsize=14, fontweight='bold')
+    fig, axes = plt.subplots(1, 3, figsize=(20, 7))
+    for idx, reward in enumerate(REWARD_ORDER):
+        ax = axes[idx]
+        sub = valid_df[valid_df['reward_mode'] == reward]
+        data = [sub[sub['algorithm'] == a]['norm_reward'].dropna() for a in ALGO_ORDER]
+        bp = ax.boxplot(data, labels=[a.upper() for a in ALGO_ORDER], patch_artist=True, widths=0.6, medianprops=median_props)
+        for patch, algo in zip(bp['boxes'], ALGO_ORDER):
+            patch.set_facecolor(ALGO_COLORS[algo]); patch.set_alpha(0.7)
+        for i, algo in enumerate(ALGO_ORDER):
+            vals = sub[sub['algorithm'] == algo]['norm_reward'].dropna()
+            ax.scatter(np.random.normal(i + 1, 0.08, len(vals)), vals, alpha=0.3, s=15, color=ALGO_COLORS[algo], zorder=5)
+            # Mean label
+            ax.text(i + 1, vals.mean() + 2, f'{vals.mean():.0f}%', ha='center', fontsize=10, fontweight='bold')
+        ax.set_title(f'{REWARD_LABELS[reward]}', fontweight='bold', fontsize=14)
+        ax.set_ylabel('Rank within reward mode (%)' if idx == 0 else ''); ax.grid(axis='y', alpha=0.3)
+        ax.set_ylim(-5, 105)
+    fig.suptitle('Within-Reward Ranking: Which algorithm performs best?\n'
+                 '(0% = worst config in this reward mode, 100% = best)', fontsize=16, fontweight='bold')
     plt.tight_layout()
-    fig.savefig(f'{output_dir}/12_normalized_comparison.png', bbox_inches='tight')
+    fig.savefig(f'{output_dir}/12_within_reward_ranking.png', bbox_inches='tight')
     plt.close(fig)
 
-    # 13: Normalized network heatmap
-    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+    # ---- 13: Network size ranking within each algo (not cross-reward) ----
+    print("13 — Network size ranking per algo...")
+    fig, axes = plt.subplots(2, 2, figsize=(16, 13))
     for idx, algo in enumerate(ALGO_ORDER):
         ax = axes[idx // 2][idx % 2]
         pivot = valid_df[valid_df['algorithm'] == algo].pivot_table(
             values='norm_reward', index='layers', columns='neurons', aggfunc='mean'
         ).reindex(index=layer_order, columns=neuron_order)
         im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto', vmin=0, vmax=100)
-        ax.set_xticks(range(len(neuron_order))); ax.set_xticklabels(neuron_order)
-        ax.set_yticks(range(len(layer_order))); ax.set_yticklabels(layer_order)
-        ax.set_xlabel('Neurons'); ax.set_ylabel('Layers')
+        ax.grid(False)
+        ax.set_xticks(range(len(neuron_order))); ax.set_xticklabels(neuron_order, fontsize=12)
+        ax.set_yticks(range(len(layer_order))); ax.set_yticklabels(layer_order, fontsize=12)
+        ax.set_xlabel('Neurons', fontsize=12); ax.set_ylabel('Layers', fontsize=12)
         for i in range(len(layer_order)):
             for j in range(len(neuron_order)):
                 v = pivot.values[i, j]
-                if not np.isnan(v): ax.text(j, i, f'{v:.0f}%', ha='center', va='center', fontweight='bold', fontsize=9)
-        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=12)
+                if not np.isnan(v): ax.text(j, i, f'{v:.0f}%', ha='center', va='center', fontweight='bold', fontsize=12)
+        ax.set_title(f'{algo.upper()}', fontweight='bold', fontsize=14)
         plt.colorbar(im, ax=ax, shrink=0.8, label='%')
-    fig.suptitle('Network Size Effect — Normalized % (cross-reward)', fontsize=14, fontweight='bold')
+    fig.suptitle('Network Size Ranking (within-reward normalized %)\nHigher = better relative to other configs in same reward mode',
+                 fontsize=16, fontweight='bold')
     plt.tight_layout()
-    fig.savefig(f'{output_dir}/13_normalized_network_heatmap.png', bbox_inches='tight')
+    fig.savefig(f'{output_dir}/13_network_ranking_heatmap.png', bbox_inches='tight')
     plt.close(fig)
 
-    # 14: Normalized top 20
-    grouped_n = valid_df.groupby(['algorithm', 'reward_mode', 'net_label']).agg(
-        mean_norm=('norm_reward', 'mean'), std_norm=('norm_reward', 'std')).reset_index()
-    grouped_n['config_label'] = grouped_n.apply(
-        lambda r: f"{r['algorithm'].upper()} | {REWARD_LABELS.get(r['reward_mode'], r['reward_mode'])} | {r['net_label']}", axis=1)
-    top20n = grouped_n.nlargest(20, 'mean_norm')
-    fig, ax = plt.subplots(figsize=(14, 8))
-    colors_n = [ALGO_COLORS.get(row['algorithm'], '#999') for _, row in top20n.iterrows()]
-    ax.barh(range(len(top20n)), top20n['mean_norm'], xerr=top20n['std_norm'],
-            color=colors_n, alpha=0.8, capsize=3, edgecolor='white', linewidth=0.5)
-    ax.set_yticks(range(len(top20n))); ax.set_yticklabels(top20n['config_label'], fontsize=9)
-    ax.invert_yaxis(); ax.set_xlabel('Normalized performance (%, mean ± std)')
-    ax.set_title('Top 20 Configurations — Normalized Ranking', fontweight='bold', fontsize=14); ax.grid(axis='x', alpha=0.3)
-    for i, (_, row) in enumerate(top20n.iterrows()):
-        ax.text(row['mean_norm'] + row['std_norm'] + 1, i, f"{row['mean_norm']:.1f}%", va='center', fontsize=8)
-    ax.legend(handles=[Patch(facecolor=ALGO_COLORS[a], label=a.upper()) for a in ALGO_ORDER], loc='lower right')
-    plt.tight_layout()
-    fig.savefig(f'{output_dir}/14_normalized_top20.png', bbox_inches='tight')
-    plt.close(fig)
-
-    # 15: Normalized variance
-    fig, ax = plt.subplots(figsize=(8, 5))
+    # ---- 14: Normalized variance ----
+    print("14 — Normalized variance...")
+    fig, ax = plt.subplots(figsize=(10, 6))
     gm_n = valid_df['norm_reward'].mean()
     sst_n = ((valid_df['norm_reward'] - gm_n) ** 2).sum()
     eta_n = {}
@@ -501,12 +498,14 @@ def make_summary_plots(df, histories, output_dir="grid_results"):
     sf_n = sorted(eta_n.items(), key=lambda x: x[1], reverse=True)
     ln, vn = zip(*sf_n)
     ax.barh(range(len(ln)), vn, color='#e74c3c', alpha=0.8)
-    ax.set_yticks(range(len(ln))); ax.set_yticklabels(ln); ax.invert_yaxis()
-    ax.set_xlabel('η² (explained variance ratio)'); ax.set_title('Factor Importance — Normalized Reward', fontweight='bold')
-    for i, v in enumerate(vn): ax.text(v + 0.005, i, f'{v:.3f}', va='center', fontsize=10)
-    ax.grid(axis='x', alpha=0.3)
+    ax.set_yticks(range(len(ln))); ax.set_yticklabels(ln, fontsize=13); ax.invert_yaxis()
+    ax.set_xlabel('η² (explained variance ratio)', fontsize=12)
+    ax.set_title('Factor Importance — Normalized Reward (within-reward)\nHigher η² = factor explains more of the performance difference',
+                 fontweight='bold', fontsize=14)
+    for i, v in enumerate(vn): ax.text(v + 0.008, i, f'{v:.3f}', va='center', fontsize=12, fontweight='bold')
+    ax.grid(axis='x', alpha=0.3); ax.set_xlim(0, max(vn) * 1.2)
     plt.tight_layout()
-    fig.savefig(f'{output_dir}/15_normalized_variance.png', bbox_inches='tight')
+    fig.savefig(f'{output_dir}/14_normalized_variance.png', bbox_inches='tight')
     plt.close(fig)
 
     # ---- Print summary ----
