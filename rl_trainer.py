@@ -62,6 +62,25 @@ if not HAS_RL_LIBS:
     print(f"  Tipp: aktiváld a megfelelő conda/venv környezetet, vagy futtasd:")
     print(f"  pip install stable-baselines3 sb3-contrib wandb torch")
 
+# =============================================================================
+# GUIDED EXPLORATION — ALGORITMUS-SPECIFIKUS KONFIGURÁLÁS
+# =============================================================================
+
+# DQN / QRDQN: Replay buffer beoltása aktuált lépésekkel
+# Ennyi arányban cserélődik le az ágens akciója aktuált vezérlésre.
+# Az aktuált tapasztalatok a bufferbe kerülnek, javítva az early-phase stabilitást.
+ACTUATED_SEED_RATIO = 0.15          # 15% lépés legyen aktuált
+
+# PPO: Epizód eleji aktuált warmup (az env.reset()-ben fut, PPO nem látja ezeket)
+# ~200 SUMO-lépés ≈ 1000 sim-sec ≈ ~16 perc "valós" forgalmi stabilizálás
+PPO_ACTUATED_WARMUP_STEPS = 200
+
+# A2C: Rövidebb warmup (az A2C n_steps=5, epizódok rövidek)
+# + Entrópia-boost az early explorationhoz, hogy ne ragadjon bele egy rosszba
+A2C_ACTUATED_WARMUP_STEPS  = 60
+A2C_ENTROPY_BOOST_FACTOR   = 3.0   # ent_coef × 3 a training első 30%-ában
+A2C_ENTROPY_BOOST_FRACTION = 0.30  # utána lineárisan visszaáll az alap értékre
+
 # --- Támogatott algoritmusok ---
 SUPPORTED_ALGORITHMS = {
     'qrdqn': {'class': 'QRDQN', 'type': 'off_policy', 'source': 'sb3_contrib'},
@@ -256,6 +275,46 @@ if HAS_RL_LIBS:
 
 
 # =============================================================================
+# A2C ENTROPIA-BOOST CALLBACK
+# =============================================================================
+
+if HAS_RL_LIBS:
+    class A2CEntropyScheduleCallback(BaseCallback):
+        """
+        A2C számára: az entrópia-együttható lineárisan csökkentő ütemezése.
+
+        Az early exploration során az ent_coef boost_factor-szorosára nő,
+        hogy az ágens ne ragadjon bele a warmup utáni első "jó elég" megoldásba.
+        A boost lineárisan csökken 0-ra a boost_fraction × total_timesteps lépésig,
+        majd marad az alap értéken.
+
+        Különbség a többi algotól:
+          DQN/QRDQN: lépésszintű aktuált injekció (15%)
+          PPO:       epizódeleji env-szintű warmup (ágens nem látja)
+          A2C:       epizódeleji env-szintű warmup + ent_coef boost (ágens maga explorálja)
+        """
+        def __init__(self, base_ent_coef: float, boost_factor: float,
+                     boost_fraction: float, total_timesteps: int, verbose: int = 0):
+            super().__init__(verbose)
+            self.base_ent_coef    = base_ent_coef
+            self.boosted_ent_coef = base_ent_coef * boost_factor
+            self.boost_steps      = int(boost_fraction * total_timesteps)
+
+        def _on_step(self) -> bool:
+            if self.num_timesteps < self.boost_steps:
+                # Lineáris decay: boosted → base
+                t = self.num_timesteps / max(1, self.boost_steps)
+                ent = self.boosted_ent_coef + t * (self.base_ent_coef - self.boosted_ent_coef)
+            else:
+                ent = self.base_ent_coef
+            self.model.ent_coef = float(ent)
+
+            if wandb.run and self.num_timesteps % 100 == 0:
+                wandb.log({"train/ent_coef_actual": float(ent),
+                           "global_step": self.num_timesteps}, commit=False)
+            return True
+
+# =============================================================================
 # 1. TRÉNER LOGIKA (IndependentDQNTrainer)
 # =============================================================================
 
@@ -325,6 +384,48 @@ class IndependentDQNTrainer:
     def log(self, msg):
         if self.log_queue: self.log_queue.put(msg)
         else: print(msg)
+
+    def _get_actuated_action(self, jid: str, obs: dict) -> int:
+        """
+        Max-pressure közelítő aktuált akció-becslés (DQN/QRDQN buffer-beoltáshoz).
+
+        A detektorokat egyenlően osztja el a fázisok között, majd a legmagasabb
+        átlagos occupancy-jú fázist preferálja. Ha a jelenlegi fázis terhelése
+        legalább 50%-a a maximumnak ÉS érdemi (>0.05), kiterjeszti azt.
+        Különben a legzsúfoltabb fázisra vált.
+
+        Visszaad: phase_idx (int)
+        """
+        agent = self.env.agents.get(jid)
+        if agent is None:
+            return 0
+        if not agent.is_ready_for_action():
+            return agent.current_phase_idx
+
+        occ = obs.get('occupancy', np.array([]))
+        n_phases = agent.num_phases
+
+        if len(occ) == 0 or n_phases <= 1:
+            # Nincs detektor-adat → round-robin
+            return (agent.current_phase_idx + 1) % n_phases
+
+        # Detektorokat egyenlően osztjuk fel a fázisok közé (közelítés)
+        n_dets  = len(occ)
+        chunk   = max(1, n_dets // n_phases)
+        phase_pressure = []
+        for p in range(n_phases):
+            start = (p * chunk) % n_dets
+            end   = min(start + chunk, n_dets)
+            phase_pressure.append(float(np.mean(occ[start:end])))
+
+        best_p    = max(phase_pressure)
+        current_p = phase_pressure[agent.current_phase_idx]
+
+        # Kiterjesztés, ha a jelenlegi fázis elég terhelt
+        if current_p >= 0.5 * best_p and current_p > 0.05:
+            return agent.current_phase_idx
+        else:
+            return int(np.argmax(phase_pressure))
 
     def _run_warmup_calibration(self, initial_obs):
         """3 órás szimuláció a nyers metrikák leméréséhez (súlyok frissítése nélkül)."""
@@ -464,6 +565,19 @@ class IndependentDQNTrainer:
             self.log("WandB config applied (Sweep compatible).")
 
         # 2. Környezet létrehozása
+        # Algoritmus-specifikus aktuált warmup lépések meghatározása
+        # (env_kwargs-ban felülírható, ha kell)
+        _default_warmup = {
+            'ppo':   PPO_ACTUATED_WARMUP_STEPS,
+            'a2c':   A2C_ACTUATED_WARMUP_STEPS,
+            'dqn':   0,   # DQN: lépésszintű buffer-beoltás, nem env-szintű warmup
+            'qrdqn': 0,
+        }
+        _warmup_steps = self.env_kwargs.pop('actuated_warmup_steps',
+                                            _default_warmup.get(self.algorithm_name, 0))
+        self.log(f"[INFO] Aktuált warmup lépések (env.reset-ben): {_warmup_steps} "
+                 f"({self.algorithm_name})")
+
         self.env = SumoRLEnvironment(
             net_file=self.net_file,
             logic_json_file=self.logic_file,
@@ -477,6 +591,7 @@ class IndependentDQNTrainer:
             run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
             reward_mode=self.reward_mode,
             junction_params_path=self.junction_params_path,
+            actuated_warmup_steps=_warmup_steps,
             **self.env_kwargs
         )
 
@@ -588,10 +703,24 @@ class IndependentDQNTrainer:
             # --- TRANSFER LEARNING WARMUP ---
             obs = self._run_warmup_calibration(obs)
 
-            # WandB callback
+            # WandB callback + algoritmus-specifikus callback-ok
             callbacks = []
             if wandb.run:
                 callbacks.append(WandBCallback(agent_id=jid, log_freq=100))
+
+            # A2C: entrópia-boost callback (lineáris decay boosted → base)
+            if self.algorithm_name == 'a2c':
+                a2c_ent_boost_cb = A2CEntropyScheduleCallback(
+                    base_ent_coef    = ent_coef,
+                    boost_factor     = A2C_ENTROPY_BOOST_FACTOR,
+                    boost_fraction   = A2C_ENTROPY_BOOST_FRACTION,
+                    total_timesteps  = self.total_timesteps,
+                )
+                callbacks.append(a2c_ent_boost_cb)
+                self.log(f"[A2C] Entrópia-boost aktív: {ent_coef:.4f} → "
+                         f"{ent_coef * A2C_ENTROPY_BOOST_FACTOR:.4f} (első "
+                         f"{A2C_ENTROPY_BOOST_FRACTION*100:.0f}% lépés), "
+                         f"majd lineárisan visszaáll.")
 
             # Tanítás
             try:
@@ -752,13 +881,21 @@ class IndependentDQNTrainer:
                     model._current_progress_remaining = remaining_progress
                     model.exploration_rate = model.exploration_schedule(remaining_progress)
 
-                # --- AKCIÓVÁLASZTÁS ---
+                # --- AKCIÓVÁLASZTÁS (DQN/QRDQN) ---
+                # ACTUATED_SEED_RATIO arányban aktuált akcióval oltjuk be a replay buffert,
+                # hogy az early-phase ne ragadjon dugós állapotba random exploráció miatt.
                 _t0 = time.perf_counter()
                 actions = {}
+                _used_actuated = False
                 for jid, model in self.agents.items():
-                    agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
-                    action, _ = model.predict(agent_obs, deterministic=False)
-                    actions[jid] = int(action[0])
+                    if random.random() < ACTUATED_SEED_RATIO:
+                        # Aktuált vezérlés: max-pressure közelítés
+                        actions[jid] = self._get_actuated_action(jid, obs[jid])
+                        _used_actuated = True
+                    else:
+                        agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
+                        action, _ = model.predict(agent_obs, deterministic=False)
+                        actions[jid] = int(action[0])
                     if jid not in self.action_counts:
                         self.action_counts[jid] = {}
                     a = actions[jid]
@@ -826,6 +963,7 @@ class IndependentDQNTrainer:
                             "global_step": global_step,
                             "fps": fps,
                             "train/gamma": gamma,
+                            "train/actuated_step": int(_used_actuated),
                         }
                         for jid, model in self.agents.items():
                             curr_lr = model.policy.optimizer.param_groups[0]["lr"]

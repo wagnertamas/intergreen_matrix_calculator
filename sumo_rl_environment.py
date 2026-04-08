@@ -45,7 +45,8 @@ class SumoRLEnvironment(gym.Env):
                  single_agent_id=None,
                  run_id=None,
                  reward_mode="speed_throughput",
-                 junction_params_path=None):
+                 junction_params_path=None,
+                 actuated_warmup_steps=0):
 
         self.net_file = net_file
         self.logic_json_file = logic_json_file
@@ -77,6 +78,7 @@ class SumoRLEnvironment(gym.Env):
         # "halt_ratio":       HaltRatio (log-tanh) ← legrobusztusabb, η²=0.156
         # "co2_speedstd":     TotalCO2 + SpeedStd (log-tanh) ← η²=0.224
         self.reward_mode = reward_mode
+        self.actuated_warmup_steps = int(actuated_warmup_steps)
 
         # --- Per-junction normalizációs paraméterek betöltése ---
         self.junction_reward_params = self._load_junction_params(junction_params_path)
@@ -341,7 +343,7 @@ class SumoRLEnvironment(gym.Env):
         #    Reális forgalmi időszakok: 15 perc → 2 óra
         #    Rövid epizódok: gyorsabb feedback, de zajosabb metrikák
         #    Hosszú epizódok: stabilabb átlagok, lassabb tanulás
-        DURATION_OPTIONS = [900, 1800, 2700, 3600]  # 15min, 30min, 45min, 1h (5400/7200 túl lassú)
+        DURATION_OPTIONS = [150,300,600,900, 1800, 2700]  # 15min, 30min, 45min, 1h (5400/7200 túl lassú)
         if options and 'traffic_duration' in options:
             self.traffic_duration = int(options['traffic_duration'])
         else:
@@ -364,11 +366,11 @@ class SumoRLEnvironment(gym.Env):
                 if options and 'flow_range' in options:
                     flow_range = options['flow_range']
                 else:
-                    FLOW_TARGETS = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                    FLOW_TARGETS = [200, 300, 400, 500, 600]
                     FLOW_SPREADS = [50, 100, 150, 200, 250, 300]
                     target = random.choice(FLOW_TARGETS)
                     spread = random.choice(FLOW_SPREADS)
-                    flow_range = (max(50, target - spread), min(1100, target + spread))
+                    flow_range = (max(100, target - spread), min(650, target + spread))
                     print(f"[INFO] Traffic: target={target}, spread=±{spread} "
                           f"→ flow_range={flow_range}")
                 self.generate_random_traffic(flow_range=flow_range)
@@ -425,20 +427,34 @@ class SumoRLEnvironment(gym.Env):
                  jid: self.agents[jid].action_space for jid in self.agents.keys()
              })
 
-        # 5. Warm-up — KIKAPCSOLVA
-        #    A warm-up random fázisokkal dugót okozott, amit az ágens megörökölt.
-        #    Memória nélküli ágensnél (nincs LSTM) ez zajos, nem informatív jel.
-        #    A forgalom a jitter miatt úgyis fokozatosan indul (depart ≈ 0 + jitter).
-        warmup_seconds = 0
-        if options and 'warmup_seconds' in options:
-            warmup_seconds = options['warmup_seconds']
+        # 5. Aktuált warmup (opcionális — PPO/A2C-hez ajánlott)
+        #    Round-robin fázisváltással stabilizálja a forgalmat az epizód elején,
+        #    hogy az ágens ne induljon mindjárt egy dugós állapotból.
+        #    DQN/QRDQN esetén ez 0 (a buffer-beoltás lépésszinten történik).
+        #    Legacy warmup_seconds (random) — visszafelé kompatibilitás, de nem ajánlott.
+        warmup_steps = self.actuated_warmup_steps
+        if options and 'actuated_warmup_steps' in options:
+            warmup_steps = int(options['actuated_warmup_steps'])
 
-        for _ in range(warmup_seconds):
-            for agent in self.agents.values():
-                agent.update_logic()
-                if agent.is_ready_for_action():
-                     agent.set_target_phase(random.randint(0, agent.num_phases - 1))
-            traci.simulationStep()
+        if warmup_steps > 0:
+            print(f"[INFO] Aktuált warmup: {warmup_steps} lépés (round-robin)...")
+            for _ in range(warmup_steps):
+                for agent in self.agents.values():
+                    if agent.is_ready_for_action():
+                        # Round-robin: következő fázisra vált, ha kész
+                        next_phase = (agent.current_phase_idx + 1) % agent.num_phases
+                        agent.set_target_phase(next_phase)
+                    agent.update_logic()
+                traci.simulationStep()
+            print(f"[INFO] Warmup kész, forgalom stabilizálva.")
+        elif options and 'warmup_seconds' in options:
+            # Legacy véletlen warmup — visszafelé kompatibilitás
+            for _ in range(int(options['warmup_seconds'])):
+                for agent in self.agents.values():
+                    agent.update_logic()
+                    if agent.is_ready_for_action():
+                        agent.set_target_phase(random.randint(0, agent.num_phases - 1))
+                traci.simulationStep()
 
         for agent in self.agents.values():
             agent.reset_step_metrics()
