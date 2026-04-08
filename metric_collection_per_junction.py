@@ -60,6 +60,11 @@ OUTPUT_DIR = os.path.join(SCRIPT_DIR, "metric_pca_per_junction")
 # Lehetséges értékek: "plain" | "halt" | "triplet" | "" (üres = auto: legjobb IQR alapján)
 PLOT_REWARD_VARIANT = "plain"
 
+# --- Reward step curve (reward_step_curve.png) ---
+# Ha meg van adva, csak ezt a junction-t plotolja LOKÁLIS normalizációs paraméterekkel.
+# Ha üres → minden junction, globális paraméterekkel.
+REWARD_CURVE_JUNCTION = "R1C1_C"
+
 
 def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use_gui=False):
     """
@@ -951,6 +956,155 @@ def analyze_per_junction(output_dir):
 
 
 
+def generate_reward_step_curve(output_dir, junction_filter=None):
+    """
+    WandB-stílusú step-szintű reward görbe (Speed+TP, log-tanh normálás).
+
+    Ha junction_filter meg van adva (pl. "R1C1_C"), csak azt a junction-t plotolja
+    LOKÁLIS normalizációs paraméterekkel.
+    Ha junction_filter üres/None → minden junction, globális paraméterekkel.
+
+    Önállóan is futtatható: python metric_collection_per_junction.py --reward-curve-only
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    if junction_filter is None:
+        junction_filter = REWARD_CURVE_JUNCTION  # config default
+
+    csv_files = sorted([f for f in os.listdir(output_dir)
+                        if f.endswith('.csv') and '_flow' in f and '_ep' in f])
+    if not csv_files:
+        print("  [SKIP] Nincs CSV fájl a step curve generálásához.")
+        return
+
+    # Paraméterek betöltése
+    params_path = os.path.join(DATA_DIR, "junction_reward_params.json")
+    if not os.path.exists(params_path):
+        params_path = os.path.join(output_dir, "junction_reward_params.json")
+    junction_params = {}
+    if os.path.exists(params_path):
+        with open(params_path) as f:
+            junction_params = json.load(f)
+
+    glob_p   = junction_params.get('global', {})
+    local_p  = junction_params.get('per_junction', {})
+
+    # Ha junction_filter meg van adva, lokális paramétereket használunk
+    if junction_filter and junction_filter in local_p:
+        params = local_p[junction_filter]
+        param_label = f"lokális ({junction_filter})"
+    else:
+        params = glob_p
+        param_label = "globális"
+
+    mu_s  = params.get('MU_SPEED',      glob_p.get('MU_SPEED',      2.0))
+    std_s = params.get('STD_SPEED',     glob_p.get('STD_SPEED',     1.0))
+    mu_t  = params.get('MU_THROUGHPUT', glob_p.get('MU_THROUGHPUT', 3.0))
+    std_t = params.get('STD_THROUGHPUT',glob_p.get('STD_THROUGHPUT',1.0))
+
+    # CSV beolvasás
+    all_data = []
+    for csv_file in csv_files:
+        jid = csv_file.split('_flow')[0]
+        if junction_filter and jid != junction_filter:
+            continue
+        try:
+            df = pd.read_csv(os.path.join(output_dir, csv_file))
+        except Exception:
+            continue
+        if 'AvgSpeed' not in df.columns or 'Throughput' not in df.columns:
+            continue
+        flow_level = int(csv_file.split('_flow')[1].split('_')[0])
+        ep = int(csv_file.split('_ep')[1].split('_')[0]) if '_ep' in csv_file else 0
+        mode = 'actuated' if '_actuated.csv' in csv_file else 'random'
+        df['junction']     = jid
+        df['flow_level']   = flow_level
+        df['episode']      = ep
+        df['control_mode'] = df['control_mode'] if 'control_mode' in df.columns else mode
+        df['run_id']       = f"{jid}_flow{flow_level}_ep{ep}_{mode}"
+        all_data.append(df)
+
+    if not all_data:
+        print(f"  [SKIP] Nincs adat junction_filter='{junction_filter}' esetén.")
+        return
+
+    full = pd.concat(all_data, ignore_index=True)
+    full = full[full['VehCount'] > 0].copy()
+
+    epsilon = 1e-5
+    spd = full['AvgSpeed'].values
+    thr = full['Throughput'].values
+    r_s = (1 + np.tanh((np.log(spd.clip(min=epsilon)) - mu_s)  / (std_s  + 1e-9))) / 2
+    r_t = (1 + np.tanh((np.log(thr.clip(min=epsilon)) - mu_t)  / (std_t  + 1e-9))) / 2
+    full['reward_plain_step'] = (r_s + r_t) / 2
+
+    run_ids     = sorted(full['run_id'].unique())
+    n_runs      = len(run_ids)
+    flow_levels = sorted(full['flow_level'].unique())
+    flow_norm   = {fl: i / max(len(flow_levels) - 1, 1) for i, fl in enumerate(flow_levels)}
+    cmap        = plt.cm.get_cmap('RdYlBu_r')
+    EMA_ALPHA   = 0.05
+
+    fig, ax = plt.subplots(figsize=(16, 6))
+    all_smoothed = []
+
+    for run_id in run_ids:
+        rd = full[full['run_id'] == run_id].sort_values('step')
+        if len(rd) < 5:
+            continue
+        steps  = rd['step'].values
+        reward = rd['reward_plain_step'].values
+        color  = cmap(flow_norm[rd['flow_level'].iloc[0]])
+
+        ax.plot(steps, reward, color=color, alpha=0.18, linewidth=0.7)
+
+        ema = np.zeros_like(reward, dtype=float)
+        ema[0] = reward[0]
+        for i in range(1, len(reward)):
+            ema[i] = EMA_ALPHA * reward[i] + (1 - EMA_ALPHA) * ema[i - 1]
+        ax.plot(steps, ema, color=color, alpha=0.55, linewidth=1.2)
+        all_smoothed.append((steps, ema))
+
+    if all_smoothed:
+        max_step     = max(s[-1] for s, _ in all_smoothed)
+        common_steps = np.arange(0, int(max_step) + 1)
+        interp_rows  = [np.interp(common_steps, s, e) for s, e in all_smoothed if len(s) > 1]
+        if interp_rows:
+            gm = np.mean(interp_rows, axis=0)
+            ema_g = np.zeros_like(gm)
+            ema_g[0] = gm[0]
+            for i in range(1, len(gm)):
+                ema_g[i] = EMA_ALPHA * gm[i] + (1 - EMA_ALPHA) * ema_g[i - 1]
+            ax.plot(common_steps, ema_g, color='black', linewidth=2.5,
+                    label=f'Átlag (n={len(interp_rows)} run)', zorder=10)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap,
+                               norm=plt.Normalize(vmin=min(flow_levels), vmax=max(flow_levels)))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, pad=0.01, shrink=0.85)
+    cbar.set_label('Flow level (veh/h)', fontsize=10)
+
+    title_jid = junction_filter if junction_filter else 'összes junction'
+    ax.set_xlabel('Step', fontsize=12)
+    ax.set_ylabel('Normalized reward  [0 – 1]', fontsize=12)
+    ax.set_title(
+        f'Step-szintű reward — Speed + Throughput, log-tanh  |  {title_jid}  |  {param_label} params\n'
+        f'μ_s={mu_s:.3f}  σ_s={std_s:.3f}  |  μ_tp={mu_t:.3f}  σ_tp={std_t:.3f}  |  '
+        f'{n_runs} run  |  EMA α={EMA_ALPHA}',
+        fontsize=11)
+    ax.set_ylim(-0.02, 1.02)
+    ax.legend(fontsize=10, loc='upper left')
+    ax.grid(True, alpha=0.25)
+
+    plt.tight_layout()
+    out_path = os.path.join(output_dir, 'reward_step_curve.png')
+    fig.savefig(out_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"  reward_step_curve.png mentve  ({n_runs} run, {title_jid}, {param_label})")
+
+
 def reward_selection_analysis(output_dir):
     """
     Reward metrika és normalizáció kiválasztás — tudományos módszertan.
@@ -990,6 +1144,14 @@ def reward_selection_analysis(output_dir):
         df['flow_level'] = flow_level
         jid = csv_file.split('_flow')[0]
         df['junction'] = jid
+        # Epizód száma a fájlnévből (pl. R1C1_C_flow1000_ep2_actuated.csv → ep=2)
+        ep = int(csv_file.split('_ep')[1].split('_')[0]) if '_ep' in csv_file else 0
+        df['episode'] = ep
+        # Kontrol mód (ha nincs oszlop)
+        if 'control_mode' not in df.columns:
+            df['control_mode'] = 'actuated' if '_actuated.csv' in csv_file else 'random'
+        # Egyedi run azonosító
+        df['run_id'] = f"{jid}_flow{flow_level}_ep{ep}_{df['control_mode'].iloc[0]}"
         all_data.append(df)
     full_df = pd.concat(all_data, ignore_index=True)
     junction_ids = sorted(full_df['junction'].unique())
@@ -2028,6 +2190,11 @@ def reward_selection_analysis(output_dir):
         norm_df.to_csv(os.path.join(output_dir, 'reward_normalization_results.csv'), index=False)
         print(f"  reward_normalization_results.csv mentve")
 
+    # =========================================================================
+    # Ábra 5: WandB-stílusú step-szintű reward görbe — önálló függvénybe kiemelve
+    # =========================================================================
+    generate_reward_step_curve(output_dir)
+
     # State↔Reward összefoglaló
     if has_det_data and state_reward_corr:
         print(f"\n  State↔Reward konzisztencia:")
@@ -2047,8 +2214,20 @@ def main():
                         help='Skip simulation, only run analysis on existing CSVs')
     parser.add_argument('--gui', action='store_true',
                         help='Use sumo-gui instead of libsumo (vizuális mód, Windows-on is működik)')
+    parser.add_argument('--reward-curve-only', action='store_true',
+                        help='Csak a reward_step_curve.png generálása (szimuláció + analízis nélkül)')
+    parser.add_argument('--reward-curve-junction', type=str, default='',
+                        help='Csak ezt a junction-t plotolja lokális paraméterekkel (pl. R1C1_C). '
+                             'Ha üres, a REWARD_CURVE_JUNCTION config értéke érvényes.')
     args = parser.parse_args()
     use_gui = args.gui
+
+    # Gyors mód: csak a reward step curve regenerálása
+    if args.reward_curve_only:
+        jid = args.reward_curve_junction or REWARD_CURVE_JUNCTION or None
+        print(f"[reward-curve-only] junction={jid or 'összes'}")
+        generate_reward_step_curve(OUTPUT_DIR, junction_filter=jid)
+        return
 
     # Ellenőrzés
     for name, path in [("net", NET_FILE), ("logic", LOGIC_FILE), ("det", DETECTOR_FILE)]:

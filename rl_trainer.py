@@ -1,5 +1,6 @@
 import gymnasium as gym
 import numpy as np
+import random
 import threading
 import queue
 import time
@@ -69,7 +70,7 @@ if not HAS_RL_LIBS:
 # DQN / QRDQN: Replay buffer beoltása aktuált lépésekkel
 # Ennyi arányban cserélődik le az ágens akciója aktuált vezérlésre.
 # Az aktuált tapasztalatok a bufferbe kerülnek, javítva az early-phase stabilitást.
-ACTUATED_SEED_RATIO = 0.15          # 15% lépés legyen aktuált
+ACTUATED_SEED_RATIO = 0.65          # 65% lépés legyen aktuált
 
 # PPO: Epizód eleji aktuált warmup (az env.reset()-ben fut, PPO nem látja ezeket)
 # ~200 SUMO-lépés ≈ 1000 sim-sec ≈ ~16 perc "valós" forgalmi stabilizálás
@@ -129,6 +130,7 @@ class SingleAgentGymWrapper(gym.Env):
         self.observation_space = env.observation_space[agent_id]
         self.action_space = env.action_space[agent_id]
         self._last_infos = {}
+        self.action_counts = {}
 
     def reset(self, seed=None, options=None):
         obs_dict, info_dict = self.env.reset(seed=seed, options=options)
@@ -136,7 +138,9 @@ class SingleAgentGymWrapper(gym.Env):
         return obs_dict[self.agent_id], self._last_infos
 
     def step(self, action):
-        actions = {self.agent_id: int(action)}
+        action_int = int(action)
+        self.action_counts[action_int] = self.action_counts.get(action_int, 0) + 1
+        actions = {self.agent_id: action_int}
         obs_dict, rewards_dict, terminated_raw, truncated_raw, info_dict = self.env.step(actions)
         obs = obs_dict[self.agent_id]
         reward = rewards_dict[self.agent_id]
@@ -152,6 +156,11 @@ class SingleAgentGymWrapper(gym.Env):
             truncated = bool(truncated_raw.get("__all__", False) or truncated_raw.get(self.agent_id, False))
         else:
             truncated = bool(truncated_raw)
+            
+        if terminated or truncated:
+            print(f"[ACTION LOG] {self.agent_id} Action distribution this episode: {self.action_counts}")
+            self.action_counts = {}
+            
         return obs, reward, terminated, truncated, info
 
     def close(self):
@@ -400,14 +409,14 @@ class IndependentDQNTrainer:
         if agent is None:
             return 0
         if not agent.is_ready_for_action():
-            return agent.current_phase_idx
+            return agent.current_logic_idx
 
         occ = obs.get('occupancy', np.array([]))
         n_phases = agent.num_phases
 
         if len(occ) == 0 or n_phases <= 1:
             # Nincs detektor-adat → round-robin
-            return (agent.current_phase_idx + 1) % n_phases
+            return (agent.current_logic_idx + 1) % n_phases
 
         # Detektorokat egyenlően osztjuk fel a fázisok közé (közelítés)
         n_dets  = len(occ)
@@ -419,11 +428,11 @@ class IndependentDQNTrainer:
             phase_pressure.append(float(np.mean(occ[start:end])))
 
         best_p    = max(phase_pressure)
-        current_p = phase_pressure[agent.current_phase_idx]
+        current_p = phase_pressure[agent.current_logic_idx]
 
         # Kiterjesztés, ha a jelenlegi fázis elég terhelt
         if current_p >= 0.5 * best_p and current_p > 0.05:
-            return agent.current_phase_idx
+            return agent.current_logic_idx
         else:
             return int(np.argmax(phase_pressure))
 
@@ -888,13 +897,21 @@ class IndependentDQNTrainer:
                 actions = {}
                 _used_actuated = False
                 for jid, model in self.agents.items():
-                    if random.random() < ACTUATED_SEED_RATIO:
-                        # Aktuált vezérlés: max-pressure közelítés
-                        actions[jid] = self._get_actuated_action(jid, obs[jid])
-                        _used_actuated = True
+                    # A háló beépített deterministic=False epsilon-greedy-jét manuálisan elvégezzük
+                    epsilon = model.exploration_rate
+                    if random.random() < epsilon:
+                        # Felfedezés (Exploration)
+                        if random.random() < ACTUATED_SEED_RATIO:
+                            # Aktuált vezérlés: max-pressure közelítés
+                            actions[jid] = self._get_actuated_action(jid, obs[jid])
+                            _used_actuated = True
+                        else:
+                            # Sima random fázis kiválasztás
+                            actions[jid] = int(self.env.action_space[jid].sample())
                     else:
+                        # Okos döntés (Exploitation) - predikció determinisztikusan
                         agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
-                        action, _ = model.predict(agent_obs, deterministic=False)
+                        action, _ = model.predict(agent_obs, deterministic=True)
                         actions[jid] = int(action[0])
                     if jid not in self.action_counts:
                         self.action_counts[jid] = {}

@@ -296,7 +296,7 @@ class SumoRLEnvironment(gym.Env):
             
             # Súlyozás: az átlagsebesség és áteresztőképesség fontos, de ha magas a halt, az eredmény büntetődik!
             base_reward = (r_speed + r_throughput) / 2.0
-            return base_reward * (1.0 - (r_halt * 0.8))  # Max 80% büntetés, ha teljes a dugó
+            return base_reward #* (1.0 - (r_halt * 0.8))  # Max 80% büntetés, ha teljes a dugó
 
         elif self.reward_mode == "halt_ratio":
             halt_ratio = agent.get_halt_ratio_metric()
@@ -367,7 +367,7 @@ class SumoRLEnvironment(gym.Env):
                     flow_range = options['flow_range']
                 else:
                     FLOW_TARGETS = [200, 300, 400, 500, 600]
-                    FLOW_SPREADS = [50, 100, 150, 200, 250, 300]
+                    FLOW_SPREADS = [50, 100, 150, 250]
                     target = random.choice(FLOW_TARGETS)
                     spread = random.choice(FLOW_SPREADS)
                     flow_range = (max(100, target - spread), min(650, target + spread))
@@ -442,7 +442,7 @@ class SumoRLEnvironment(gym.Env):
                 for agent in self.agents.values():
                     if agent.is_ready_for_action():
                         # Round-robin: következő fázisra vált, ha kész
-                        next_phase = (agent.current_phase_idx + 1) % agent.num_phases
+                        next_phase = (agent.current_logic_idx + 1) % agent.num_phases
                         agent.set_target_phase(next_phase)
                     agent.update_logic()
                 traci.simulationStep()
