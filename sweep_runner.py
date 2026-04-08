@@ -47,6 +47,8 @@ def main():
     parser.add_argument("--gui", action="store_true", help="SUMO GUI engedélyezése")
     parser.add_argument("--timesteps", type=int, default=None,
                         help="Total timesteps (felülírja a configot)")
+    parser.add_argument("--total_timesteps", type=int, default=None,
+                        help="Total timesteps - WandB sweep kompatibilis névvel")
     parser.add_argument("--project", type=str, default=None,
                         help="WandB projekt név")
     parser.add_argument("--junction", type=str, default=None,
@@ -93,8 +95,10 @@ def main():
         print(f"[ERROR] Hiányzó fájlok! net={net_file}, logic={logic_file}, det={detector_file}")
         sys.exit(1)
 
-    # Prioritás: CLI > env var > config
-    total_timesteps = args.timesteps or int(os.environ.get("SWEEP_TIMESTEPS", 0)) or default_timesteps
+    # Prioritás: CLI (--total_timesteps) > CLI (--timesteps) > env var > yaml config
+    # Megjegyzés: a wandb sweep --total_timesteps=X formátumban adja át, ezért mindkét nevet kezeljük
+    cli_timesteps = args.total_timesteps or args.timesteps
+    total_timesteps = cli_timesteps or int(os.environ.get("SWEEP_TIMESTEPS", 0)) or default_timesteps
     project = args.project or os.environ.get("SWEEP_PROJECT", "") or default_project
 
     # Junction: CLI > env var > config

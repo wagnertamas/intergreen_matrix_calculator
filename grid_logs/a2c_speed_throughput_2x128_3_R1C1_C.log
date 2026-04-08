@@ -1,0 +1,1569 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /Users/wagnertamas/.netrc.
+wandb: Currently logged in as: wagnertamas (wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run n5wijmmh
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260322_013104-n5wijmmh
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run a2c_speed_throughput_2x128_3_R1C1_C
+wandb: ⭐️ View project at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat
+wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat/runs/n5wijmmh
+[INFO] Config: training_config.yaml
+[INFO] Net: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml
+[INFO] Timesteps: 100000 | Project: sumo-rl-stat
+[INFO] Junction: R1C1_C
+[INFO] Algorithm: a2c | Reward: speed_throughput
+[INFO] Load model: None (fresh)
+[INFO] Traffic: random target+spread (epizódonként)
+Initializing Environment (algorithm=a2c, reward=speed_throughput)...
+[INFO] Algorithm: a2c (on_policy)
+[INFO] Reward mode: speed_throughput
+WandB config applied (Sweep compatible).
+[INFO] Junction reward params auto-loaded from /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/junction_reward_params.json
+[INFO] Using 'libsumo' (fast headless mode, OS=darwin).
+Starting SUMO...
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4455
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4455s
+[INFO] Network mapped: 1 agents, 3 detectors, 3 lanes
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+Agents discovered: ['R1C1_C']
+[INFO] RL device: mps
+[INFO] On-policy training: a2c → R1C1_C
+Using mps device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Starting on-policy training: 100000 timesteps...
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7775
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7775s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat/R1C1_C/A2C_31
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.008
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0080s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.019
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0190s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9164
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9164s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4103
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4103s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.733
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7330s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5651
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5651s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7234
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7234s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4307
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4307s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8865
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8865s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1506
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1506s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5608
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5608s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1117
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1117s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9569
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9569s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6888
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6888s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4753
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4753s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.519
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5190s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9605
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9605s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.886
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8860s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9799
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9799s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2782
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2782s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8791
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8791s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6822
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6822s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.771
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7710s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4529
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4529s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1569
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1569s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.32
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3200s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6827
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6827s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6864
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6864s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9941
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9941s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0874
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0874s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9846
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9846s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1009
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1009s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7447
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7447s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2641
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2641s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.87
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8700s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6237
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6237s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7733
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7733s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0853
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0853s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6738
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6738s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6855
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6855s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9344
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9344s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8757
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8757s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1076
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1076s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5775
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5775s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6552
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6552s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7695
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7695s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7915
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7915s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7005
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7005s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3903
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3903s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2052
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2052s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0298
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0298s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3531
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3531s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+------------------------------------
+| rollout/              |          |
+|    ep_len_mean        | 391      |
+|    ep_rew_mean        | 115      |
+| time/                 |          |
+|    fps                | 167      |
+|    iterations         | 10       |
+|    time_elapsed       | 122      |
+|    total_timesteps    | 20480    |
+| train/                |          |
+|    entropy_loss       | -1.39    |
+|    explained_variance | -0.0269  |
+|    learning_rate      | 0.0001   |
+|    n_updates          | 9        |
+|    policy_loss        | 28.7     |
+|    value_loss         | 496      |
+------------------------------------
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0575
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0575s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0999
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0999s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1488
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1488s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7297
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7297s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5467
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5467s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0292
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0292s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0523
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0523s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7615
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7615s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6499
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6499s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4195
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4195s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6296
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6296s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.789
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7890s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7908
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7908s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4133
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4133s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0542
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0542s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2821
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2821s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9337
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9337s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4217
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4217s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9349
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9349s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2291
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2291s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3724
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3724s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5976
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5976s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5894
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5894s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0779
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0779s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5845
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5845s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5298
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5298s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9417
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9417s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2888
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2888s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9334
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9334s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.985
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9850s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5039
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5039s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1178
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1178s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0508
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0508s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3678
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3678s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6922
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6922s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1463
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1463s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.867
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8670s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4436
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4436s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1391
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1391s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9645
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9645s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7745
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7745s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.479
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4790s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1866
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1866s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0663
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0663s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7493
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7493s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6852
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6852s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2757
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2757s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4956
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4956s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5135
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5135s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4817
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4817s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7606
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7606s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+------------------------------------
+| rollout/              |          |
+|    ep_len_mean        | 391      |
+|    ep_rew_mean        | 115      |
+| time/                 |          |
+|    fps                | 161      |
+|    iterations         | 20       |
+|    time_elapsed       | 253      |
+|    total_timesteps    | 40960    |
+| train/                |          |
+|    entropy_loss       | -1.39    |
+|    explained_variance | -0.0304  |
+|    learning_rate      | 0.0001   |
+|    n_updates          | 19       |
+|    policy_loss        | 31.7     |
+|    value_loss         | 589      |
+------------------------------------
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7168
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7168s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3789
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3789s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3903
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3903s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.765
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7650s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.873
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8730s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8697
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8697s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2591
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2591s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6971
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6971s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0751
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0751s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8212
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8212s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3853
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3853s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4655
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4655s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6737
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6737s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3295
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3295s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8587
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8587s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9063
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9063s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3957
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3957s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.059
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0590s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4695
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4695s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7646
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7646s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2946
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2946s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3136
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3136s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1838
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1838s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7343
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7343s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0492
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0492s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0588
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0588s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.872
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8720s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4552
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4552s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6092
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6092s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4887
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4887s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7995
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7995s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1074
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1074s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2539
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2539s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9677
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9677s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9153
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9153s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1189
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1189s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1772
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1772s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5478
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5478s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7065
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7065s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+------------------------------------
+| rollout/              |          |
+|    ep_len_mean        | 441      |
+|    ep_rew_mean        | 131      |
+| time/                 |          |
+|    fps                | 160      |
+|    iterations         | 30       |
+|    time_elapsed       | 383      |
+|    total_timesteps    | 61440    |
+| train/                |          |
+|    entropy_loss       | -1.38    |
+|    explained_variance | -0.0244  |
+|    learning_rate      | 0.0001   |
+|    n_updates          | 29       |
+|    policy_loss        | 28.9     |
+|    value_loss         | 501      |
+------------------------------------
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6214
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6214s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8334
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8334s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1269
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1269s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2287
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2287s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3143
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3143s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3794
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3794s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.486
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4860s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6907
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6907s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6964
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6964s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9678
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9678s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5643
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5643s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0081
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0081s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7568
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7568s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2549
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2549s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1956
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1956s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1213
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1213s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5394
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5394s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0576
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0576s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0634
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0634s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2188
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2188s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6216
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6216s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7014
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7014s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7395
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7395s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4844
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4844s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4389
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4389s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1504
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1504s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6542
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6542s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1409
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1409s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3957
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3957s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9042
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9042s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4614
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4614s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0239
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0239s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6381
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6381s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3987
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3987s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6439
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6439s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2179
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2179s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5193
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5193s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.733
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7330s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6714
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6714s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0632
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0632s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3174
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3174s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.331
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3310s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6746
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6746s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0315
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0315s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.8087
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8087s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4682
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4682s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.946
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9460s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3949
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3949s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1514
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1514s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8292
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8292s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3336
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3336s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.996
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9960s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+------------------------------------
+| rollout/              |          |
+|    ep_len_mean        | 448      |
+|    ep_rew_mean        | 132      |
+| time/                 |          |
+|    fps                | 158      |
+|    iterations         | 40       |
+|    time_elapsed       | 515      |
+|    total_timesteps    | 81920    |
+| train/                |          |
+|    entropy_loss       | -1.38    |
+|    explained_variance | -0.0538  |
+|    learning_rate      | 0.0001   |
+|    n_updates          | 39       |
+|    policy_loss        | 24.6     |
+|    value_loss         | 383      |
+------------------------------------
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.685
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6850s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3217
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3217s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.986
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9860s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1419
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1419s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3415
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3415s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4042
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4042s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8768
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8768s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6969
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6969s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.433
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4330s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3202
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3202s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3172
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3172s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4389
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4389s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2837
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2837s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5477
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5477s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3159
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3159s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4421
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4421s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3332
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3332s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7943
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7943s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9926
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9926s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3919
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3919s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0997
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0997s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1461
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1461s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.13
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1300s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.838
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8380s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9854
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9854s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0335
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0335s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4709
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4709s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3345
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3345s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4919
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4919s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7774
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7774s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8434
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8434s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6024
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6024s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5593
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5593s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1354
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1354s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/rl_trainer.py:857: UserWarning: Exporting a model while it is in training mode. Please ensure that this is intended, as it may lead to different behavior during inference. Calling model.eval() before export is recommended.
+  torch.onnx.export(
+/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/rl_trainer.py:857: UserWarning: # 'dynamic_axes' is not recommended when dynamo=True, and may lead to 'torch._dynamo.exc.UserError: Constraints violated.' Supply the 'dynamic_shapes' argument instead if export is unsuccessful.
+  torch.onnx.export(
+wandb: updating run metadata
+wandb: uploading wandb-summary.json; uploading config.yaml; uploading pytorch_models/R1C1_C.zip; uploading output.log
+wandb: uploading pytorch_models/R1C1_C.zip
+wandb: uploading history steps 997-1002, summary, console lines 1497-1513
+wandb: 
+wandb: Run history:
+wandb:  R1C1_C/action_pct/phase_0 ▄▇▄▅▅▄▃▅▅▂▄▅▄▄▁▆▅▆▇▆▆▆█▆▇▇▇▅▇▆▇█▅▆▅▆▅▅▄▇
+wandb:  R1C1_C/action_pct/phase_1 ▅▁▅▅▅▅▅▅▇█▅▄▃▅▇▇▅▃▄▄▄▄▃▆▅▄▂▃▂▄▄▂▅▄▄▅▄▃▃▄
+wandb:  R1C1_C/action_pct/phase_2 ▅▅▄▅▂▅▅▄▁▃▆▆▄▄█▄▃▅▃▃▅▃▄▃▃▃▃▆▃▄▂▅▄▃▄▄▃▇▇▄
+wandb:  R1C1_C/action_pct/phase_3 ▅▆▇▄█▅▆▅▆▆▅▄█▅▃▁▇▅▃▇▄▆▂▃▃▅█▅▇▄▅▂▄▅▆▄▇▄▆▂
+wandb:  R1C1_C/train/entropy_loss ▁▂▂▂▂▂▂▂▁▂▃▃▃▃▃▃▄▃▄▄▄▅▅▅▅▇▇▇▇██▇▇▇▇▇▇▇▆▆
+wandb: R1C1_C/train/learning_rate ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:    R1C1_C/train/value_loss ▄▆▆▂▇▇██▅▅▃▃▆▃▂▃▅▅▅▃▅▅▄▅▅▁▃▃▂▂▁▁▁▁▃▂▁▁▁▅
+wandb:                 avg_reward ▅▄▃▇▄▃▆▂▄▃▅▄▄▄▆▄▄▄▁▅▃▃▄▄▂▄▄▄▂▄▄▃▃▃▄▁▂▃▃█
+wandb:                    episode ▁▁▁▁▁▂▂▂▂▂▃▃▃▃▄▄▄▅▅▅▅▅▅▆▆▆▆▆▆▆▇▇▇▇▇▇████
+wandb:         episode/avg_reward ▄▁▄▄▃█▆▄▅▃▆▆▅▃▅▆▄▂▄▃▇▆▅▃▅▅▄▅▅▅▃▃▄▄▇▆▃▄▅▅
+wandb:                         +7 ...
+wandb: 
+wandb: Run summary:
+wandb:  R1C1_C/action_pct/phase_0 29.58333
+wandb:  R1C1_C/action_pct/phase_1 24.02778
+wandb:  R1C1_C/action_pct/phase_2 25.41667
+wandb:  R1C1_C/action_pct/phase_3 20.97222
+wandb:  R1C1_C/train/entropy_loss -1.38463
+wandb: R1C1_C/train/learning_rate 0.0001
+wandb:    R1C1_C/train/value_loss 491.51834
+wandb:                 avg_reward 0.32059
+wandb:                    episode 235
+wandb:         episode/avg_reward 0.29849
+wandb:                         +7 ...
+wandb: 
+wandb: 🚀 View run a2c_speed_throughput_2x128_3_R1C1_C at: https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat/runs/n5wijmmh
+wandb: ⭐️ View project at: https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 1 other file(s)
+wandb: Find logs at: ./wandb/run-20260322_013104-n5wijmmh/logs
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9944
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9944s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1093
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1093s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2164
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2164s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3544
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3544s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3162
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3162s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0771
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0771s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1385
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1385s
+[INFO] Subscriptions active: 6 (libsumo, fast mode)
+On-policy training completed.
+Closing environment and EXPORTING models...
+Saving PyTorch ZIP models to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/pytorch_models...
+Saved PyTorch R1C1_C to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/pytorch_models/R1C1_C.zip
+Exporting ONNX models to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/onnx_models...
+Failed to export R1C1_C: # Failed to convert 'dynamic_axes' to 'dynamic_shapes'. Please provide 'dynamic_shapes' directly. Refer to the documentation for 'torch.export.export' for more information on dynamic shapes.
+Cleanup done.

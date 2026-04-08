@@ -38,7 +38,8 @@ class TransferLearningDialog:
                 print(f"Error loading logic file for dropdown: {e}")
         
         self.model_path = tk.StringVar()
-        
+        self.selected_algorithm = tk.StringVar(value="qrdqn")
+
         self.model_path.trace("w", self.on_model_path_change)
         self.setup_ui()
         self.check_files()
@@ -71,8 +72,44 @@ class TransferLearningDialog:
         
         tk.Button(hbox, text="Browse...", command=self.browse_model).pack(side="right")
         
+        # --- ALGORITHM SELECTION ---
+        frame_algo = tk.LabelFrame(self.top, text="2. Fine-Tuning Algorithm", padx=10, pady=5)
+        frame_algo.pack(fill="x", padx=10, pady=5)
+
+        tk.Label(frame_algo, text="Select algorithm for continued training:").pack(anchor="w")
+
+        algo_frame = tk.Frame(frame_algo)
+        algo_frame.pack(fill="x", pady=4)
+
+        algorithms = [
+            ("QRDQN  (Quantile Regression DQN – off-policy)", "qrdqn"),
+            ("DQN    (Deep Q-Network – off-policy)",           "dqn"),
+            ("PPO    (Proximal Policy Optimization – on-policy)", "ppo"),
+        ]
+
+        for text, value in algorithms:
+            rb = tk.Radiobutton(
+                algo_frame,
+                text=text,
+                variable=self.selected_algorithm,
+                value=value,
+                font=("Courier", 9),
+                anchor="w",
+                command=self.on_algorithm_change,
+            )
+            rb.pack(anchor="w", pady=1)
+
+        self.lbl_algo_note = tk.Label(
+            frame_algo,
+            text="",
+            font=("Arial", 8),
+            fg="gray"
+        )
+        self.lbl_algo_note.pack(anchor="w")
+        self.on_algorithm_change()  # kezdeti állapot beállítása
+
         # --- JUNCTION SELECTION ---
-        frame_target = tk.LabelFrame(self.top, text="2. Target Intersection", padx=10, pady=5)
+        frame_target = tk.LabelFrame(self.top, text="3. Target Intersection", padx=10, pady=5)
         frame_target.pack(fill="x", padx=10, pady=5)
         
         tk.Label(frame_target, text="Select Junction ID for Fine-Tuning:").pack(anchor="w")
@@ -82,7 +119,7 @@ class TransferLearningDialog:
         self.combo_agent.pack(fill="x", pady=2)
         
         # --- WANDB ---
-        frame_wandb = tk.LabelFrame(self.top, text="3. Logging (WandB)", padx=10, pady=5)
+        frame_wandb = tk.LabelFrame(self.top, text="4. Logging (WandB)", padx=10, pady=5)
         frame_wandb.pack(fill="x", padx=10, pady=5)
         
         tk.Label(frame_wandb, text="Project Name:").grid(row=0, column=0, sticky="w")
@@ -91,7 +128,7 @@ class TransferLearningDialog:
         self.entry_project.grid(row=0, column=1, padx=5, sticky="ew")
 
         # --- HYPERPARAMETERS ---
-        frame_hyper = tk.LabelFrame(self.top, text="4. Fine-Tuning Parameters", padx=10, pady=5)
+        frame_hyper = tk.LabelFrame(self.top, text="5. Fine-Tuning Parameters", padx=10, pady=5)
         frame_hyper.pack(fill="x", padx=10, pady=5)
 
         params = [
@@ -118,7 +155,7 @@ class TransferLearningDialog:
         chk_gui.grid(row=len(params), column=0, sticky="w", pady=5)
 
         # --- FIX FORGALOM ---
-        frame_flow = tk.LabelFrame(self.top, text="5. Traffic Generation", padx=10, pady=5)
+        frame_flow = tk.LabelFrame(self.top, text="6. Traffic Generation", padx=10, pady=5)
         frame_flow.pack(fill="x", padx=10, pady=5)
 
         self.var_fixed_flow = tk.BooleanVar(value=False)
@@ -155,6 +192,26 @@ class TransferLearningDialog:
 
         self.txt_log = tk.Text(self.top, height=10, state="disabled", bg="#f0f0f0")
         self.txt_log.pack(fill="both", expand=True, padx=10, pady=10)
+
+    def on_algorithm_change(self, *args):
+        """Algoritmus váltáskor frissíti a megjegyzést és az exploration mezőt."""
+        algo = self.selected_algorithm.get()
+        notes = {
+            "qrdqn": "Off-policy · Replay buffer · Ajánlott: kisebb LR (0.00005), expl. frac 0.2",
+            "dqn":   "Off-policy · Replay buffer · Hasonló a QRDQN-hez, de egyszerűbb",
+            "ppo":   "On-policy · Rollout buffer · Az Exploration Fraction NEM használt itt",
+        }
+        if hasattr(self, 'lbl_algo_note'):
+            self.lbl_algo_note.config(text=notes.get(algo, ""))
+
+        # PPO esetén az exploration fraction-t letiltjuk (on-policy-nál nem releváns)
+        if hasattr(self, 'entry_expl'):
+            if algo == "ppo":
+                self.entry_expl.delete(0, tk.END)
+                self.entry_expl.insert(0, "0.0")
+                self.entry_expl.config(state="disabled")
+            else:
+                self.entry_expl.config(state="normal")
 
     def on_model_path_change(self, *args):
         path = self.model_path.get()
@@ -193,14 +250,18 @@ class TransferLearningDialog:
         self.top.after(100, self.process_logs)
 
     def get_settings(self):
+        algo = self.selected_algorithm.get()
+        # PPO esetén exploration_fraction nem releváns, default értéket adunk
+        expl = 0.0 if algo == "ppo" else float(self.entry_expl.get())
         return {
+            "algorithm": algo,
             "total_timesteps": int(self.entry_steps.get()),
             "wandb_project": self.entry_project.get(),
             "learning_rate": float(self.entry_lr.get()),
             "batch_size": int(self.entry_batch.get()),
             "buffer_size": int(self.entry_buffer.get()),
             "gamma": float(self.entry_gamma.get()),
-            "exploration_fraction": float(self.entry_expl.get()),
+            "exploration_fraction": expl,
             "num_layers": int(self.entry_num_layers.get()),
             "layer_size": int(self.entry_layer_size.get()),
             "single_agent_id": self.combo_agent.get(),
@@ -236,7 +297,13 @@ class TransferLearningDialog:
             if settings.get("fixed_flow") and settings.get("flow_target") is not None:
                 fixed_flow = {'target': settings["flow_target"], 'spread': settings.get("flow_spread", 0)}
 
-            # We reuse IndependentDQNTrainer but pass load_model_path
+            # ÉLETMENTŐ JAVÍTÁS: macOS + Tkinter + PyTorch + libsumo a háttérszálban = Segmentation Fault.
+            # Ezért a Transfer Learning alatt kötelező a TraCI használata (ami külön processzként indítja a SUMO-t)!
+            os.environ['USE_LIBSUMO'] = '0'
+
+            # We reuse IndependentDQNTrainer but pass load_model_path + algorithm
+            self.log(f"[Transfer Learning] Algoritmus: {settings['algorithm'].upper()}")
+            self.log(f"[Transfer Learning] Modell: {settings['load_model_path']}")
             self.trainer_instance = IndependentDQNTrainer(
                 net_file=self.net_file,
                 logic_file=self.logic_file,
@@ -245,10 +312,11 @@ class TransferLearningDialog:
                 wandb_project=settings["wandb_project"],
                 log_queue=self.log_queue,
                 hyperparams=settings,
-                single_agent_id=settings["single_agent_id"], # ALWAYS Single Agent for Fine-Tuning here
+                single_agent_id=settings["single_agent_id"],  # ALWAYS Single Agent for Fine-Tuning here
                 sumo_gui=settings["sumo_gui"],
                 load_model_path=settings["load_model_path"],
                 fixed_flow=fixed_flow,
+                algorithm=settings["algorithm"],
             )
 
             self.trainer_thread = threading.Thread(target=self.run_trainer_thread)

@@ -1,0 +1,2019 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2026.2.26)  19 MAR 2026 22:57
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**methodology_and_findings.tex
+(./methodology_and_findings.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2024/06/29 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/size11.clo
+File: size11.clo 2024/06/29 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count196
+\c@section=\count197
+\c@subsection=\count198
+\c@subsubsection=\count199
+\c@paragraph=\count266
+\c@subparagraph=\count267
+\c@figure=\count268
+\c@table=\count269
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen141
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/inputenc.sty
+Package: inputenc 2024/02/08 v1.3d Input encoding file
+\inpenc@prehook=\toks17
+\inpenc@posthook=\toks18
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2021/04/29 v2.0v Standard LaTeX package
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/babel/babel.sty
+Package: babel 2025/02/14 v25.4 The multilingual framework for pdfLaTeX, LuaLaT
+eX and XeLaTeX
+\babel@savecnt=\count270
+\U@D=\dimen142
+\l@unhyphenated=\language90
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/babel/txtbabel.def)
+\bbl@readstream=\read2
+\bbl@dirlevel=\count271
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/babel-hungarian/magyar.ldf
+Language: magyar 2019/01/14 v1.5c Magyar (Hungarian) support for babel
+Package babel Info: Making ` an active character on input line 2819.
+\c@footnote@add=\count272
+\c@footnote@ch=\count273
+))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/babel/locale/hu/babel-magyar.te
+x
+Package babel Info: Importing font and identification data for magyar
+(babel)             from babel-hu.ini. Reported on input line 11.
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks19
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+))
+\Gm@cnth=\count274
+\Gm@cntv=\count275
+\c@Gm@tempcnt=\count276
+\Gm@bindingoffset=\dimen143
+\Gm@wd@mp=\dimen144
+\Gm@odd@mp=\dimen145
+\Gm@even@mp=\dimen146
+\Gm@layoutwidth=\dimen147
+\Gm@layoutheight=\dimen148
+\Gm@layouthoffset=\dimen149
+\Gm@layoutvoffset=\dimen150
+\Gm@dimlist=\toks20
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2024/04/13 v1.2c Graphics/color driver for pdftex
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/titlesec/titlesec.sty
+Package: titlesec 2025/01/04 v2.17 Sectioning titles
+\ttl@box=\box52
+\beforetitleunit=\skip51
+\aftertitleunit=\skip52
+\ttl@plus=\dimen151
+\ttl@minus=\dimen152
+\ttl@toksa=\toks21
+\titlewidth=\dimen153
+\titlewidthlast=\dimen154
+\titlewidthfirst=\dimen155
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tcolorbox/tcolorbox.sty
+Package: tcolorbox 2024/10/22 version 6.4.1 text color boxes
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/frontendlayer/tikz.sty
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.te
+x
+\pgfutil@everybye=\toks22
+\pgfutil@tempdima=\dimen156
+\pgfutil@tempdimb=\dimen157
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
+\pgfutil@abb=\box53
+) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/pgf.revision.tex)
+Package: pgfrcs 2023-01-15 v3.1.10 (3.1.10)
+))
+Package: pgf 2023-01-15 v3.1.10 (3.1.10)
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/basiclayer/pgfcore.sty
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+)
+\Gin@req@height=\dimen158
+\Gin@req@width=\dimen159
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/systemlayer/pgfsys.sty
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsys.code.tex
+Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks23
+\pgfkeys@temptoks=\toks24
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfil
+tered.code.tex
+\pgfkeys@tmptoks=\toks25
+))
+\pgf@x=\dimen160
+\pgf@y=\dimen161
+\pgf@xa=\dimen162
+\pgf@ya=\dimen163
+\pgf@xb=\dimen164
+\pgf@yb=\dimen165
+\pgf@xc=\dimen166
+\pgf@yc=\dimen167
+\pgf@xd=\dimen168
+\pgf@yd=\dimen169
+\w@pgf@writea=\write3
+\r@pgf@reada=\read3
+\c@pgf@counta=\count277
+\c@pgf@countb=\count278
+\c@pgf@countc=\count279
+\c@pgf@countd=\count280
+\t@pgf@toka=\toks26
+\t@pgf@tokb=\toks27
+\t@pgf@tokc=\toks28
+\pgf@sys@id@count=\count281
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
+File: pgf.cfg 2023-01-15 v3.1.10 (3.1.10)
+)
+Driver file for pgf: pgfsys-pdftex.def
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-pdftex.d
+ef
+File: pgfsys-pdftex.def 2023-01-15 v3.1.10 (3.1.10)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-common-p
+df.def
+File: pgfsys-common-pdf.def 2023-01-15 v3.1.10 (3.1.10)
+)))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.
+code.tex
+File: pgfsyssoftpath.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfsyssoftpath@smallbuffer@items=\count282
+\pgfsyssoftpath@bigbuffer@items=\count283
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.
+code.tex
+File: pgfsysprotocol.code.tex 2023-01-15 v3.1.10 (3.1.10)
+))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcore.code.tex
+Package: pgfcore 2023-01-15 v3.1.10 (3.1.10)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
+\pgfmath@dimen=\dimen170
+\pgfmath@count=\count284
+\pgfmath@box=\box54
+\pgfmath@toks=\toks29
+\pgfmath@stack@operand=\toks30
+\pgfmath@stack@operation=\toks31
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.
+tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic
+.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.trigo
+nometric.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.rando
+m.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.compa
+rison.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.base.
+code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.round
+.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.misc.
+code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integ
+erarithmetics.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count285
+)) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfint.code.tex)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.co
+de.tex
+File: pgfcorepoints.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@picminx=\dimen171
+\pgf@picmaxx=\dimen172
+\pgf@picminy=\dimen173
+\pgf@picmaxy=\dimen174
+\pgf@pathminx=\dimen175
+\pgf@pathmaxx=\dimen176
+\pgf@pathminy=\dimen177
+\pgf@pathmaxy=\dimen178
+\pgf@xx=\dimen179
+\pgf@xy=\dimen180
+\pgf@yx=\dimen181
+\pgf@yy=\dimen182
+\pgf@zx=\dimen183
+\pgf@zy=\dimen184
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathconst
+ruct.code.tex
+File: pgfcorepathconstruct.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@path@lastx=\dimen185
+\pgf@path@lasty=\dimen186
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathusage
+.code.tex
+File: pgfcorepathusage.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@shorten@end@additional=\dimen187
+\pgf@shorten@start@additional=\dimen188
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.co
+de.tex
+File: pgfcorescopes.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfpic=\box55
+\pgf@hbox=\box56
+\pgf@layerbox@main=\box57
+\pgf@picture@serial@count=\count286
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicst
+ate.code.tex
+File: pgfcoregraphicstate.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgflinewidth=\dimen189
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransform
+ations.code.tex
+File: pgfcoretransformations.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@pt@x=\dimen190
+\pgf@pt@y=\dimen191
+\pgf@pt@temp=\dimen192
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorequick.cod
+e.tex
+File: pgfcorequick.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreobjects.c
+ode.tex
+File: pgfcoreobjects.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathproce
+ssing.code.tex
+File: pgfcorepathprocessing.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorearrows.co
+de.tex
+File: pgfcorearrows.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfarrowsep=\dimen193
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.cod
+e.tex
+File: pgfcoreshade.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@max=\dimen194
+\pgf@sys@shading@range@num=\count287
+\pgf@shadingcount=\count288
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.cod
+e.tex
+File: pgfcoreimage.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.
+code.tex
+File: pgfcoreexternal.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfexternal@startupbox=\box58
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.co
+de.tex
+File: pgfcorelayers.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretranspare
+ncy.code.tex
+File: pgfcoretransparency.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepatterns.
+code.tex
+File: pgfcorepatterns.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorerdf.code.
+tex
+File: pgfcorerdf.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.cod
+e.tex
+File: pgfmoduleshapes.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfnodeparttextbox=\box59
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.
+tex
+File: pgfmoduleplot.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version
+-0-65.sty
+Package: pgfcomp-version-0-65 2023-01-15 v3.1.10 (3.1.10)
+\pgf@nodesepstart=\dimen195
+\pgf@nodesepend=\dimen196
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version
+-1-18.sty
+Package: pgfcomp-version-1-18 2023-01-15 v3.1.10 (3.1.10)
+))
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/utilities/pgffor.sty
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex)
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/math/pgfmath.sty
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgffor.code.tex
+Package: pgffor 2023-01-15 v3.1.10 (3.1.10)
+\pgffor@iter=\dimen197
+\pgffor@skip=\dimen198
+\pgffor@stack=\toks32
+\pgffor@toks=\toks33
+))
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/frontendlayer/tikz/tikz.cod
+e.tex
+Package: tikz 2023-01-15 v3.1.10 (3.1.10)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothan
+dlers.code.tex
+File: pgflibraryplothandlers.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@plot@mark@count=\count289
+\pgfplotmarksize=\dimen199
+)
+\tikz@lastx=\dimen256
+\tikz@lasty=\dimen257
+\tikz@lastxsaved=\dimen258
+\tikz@lastysaved=\dimen259
+\tikz@lastmovetox=\dimen260
+\tikz@lastmovetoy=\dimen261
+\tikzleveldistance=\dimen262
+\tikzsiblingdistance=\dimen263
+\tikz@figbox=\box60
+\tikz@figbox@bg=\box61
+\tikz@tempbox=\box62
+\tikz@tempbox@bg=\box63
+\tikztreelevel=\count290
+\tikznumberofchildren=\count291
+\tikznumberofcurrentchild=\count292
+\tikz@fig@count=\count293
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/modules/pgfmodulematrix.cod
+e.tex
+File: pgfmodulematrix.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfmatrixcurrentrow=\count294
+\pgfmatrixcurrentcolumn=\count295
+\pgf@matrix@numberofcolumns=\count296
+)
+\tikz@expandcount=\count297
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)))
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tools/verbatim.sty
+Package: verbatim 2024-01-22 v1.5x LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks34
+\verbatim@line=\toks35
+\verbatim@in@stream=\read4
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/environ/environ.sty
+Package: environ 2014/05/04 v0.3 A new way to define environments
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/trimspaces/trimspaces.sty
+Package: trimspaces 2009/09/17 v1.1 Trim spaces around a token list
+)
+\@envbody=\toks36
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2025/02/11 v2.5l e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count298
+)
+\tcb@titlebox=\box64
+\tcb@upperbox=\box65
+\tcb@lowerbox=\box66
+\tcb@phantombox=\box67
+\c@tcbbreakpart=\count299
+\c@tcblayer=\count300
+\c@tcolorbox@number=\count301
+\l__tcobox_tmpa_box=\box68
+\l__tcobox_tmpa_dim=\dimen264
+\tcb@temp=\box69
+\tcb@temp=\box70
+\tcb@temp=\box71
+\tcb@temp=\box72
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tcolorbox/tcbskins.code.tex
+Library (tcolorbox): 'tcbskins.code.tex' version '6.4.1'
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tikzfill/tikzfill.image.sty
+Package: tikzfill.image 2023/08/08 v1.0.1 Image filling library for TikZ
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tikzfill/tikzfill-common.sty
+Package: tikzfill-common 2023/08/08 v1.0.1 Auxiliary code for tikzfill
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tikzfill/tikzlibraryfill.image.co
+de.tex
+File: tikzlibraryfill.image.code.tex 2023/08/08 v1.0.1 Image filling library
+\l__tikzfill_img_box=\box73
+))
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tcolorbox/tcbskinsjigsaw.code.tex
+Library (tcolorbox): 'tcbskinsjigsaw.code.tex' version '6.4.1'
+))
+(/usr/local/texlive/2025/texmf-dist/tex/latex/tcolorbox/tcbbreakable.code.tex
+Library (tcolorbox): 'tcbbreakable.code.tex' version '6.4.1'
+(/usr/local/texlive/2025/texmf-dist/tex/latex/pdfcol/pdfcol.sty
+Package: pdfcol 2022-09-21 v1.7 Handle new color stacks for pdfTeX (HO)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/infwarerr/infwarerr.sty
+Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
+))
+Package pdfcol Info: New color stack `tcb@breakable' = 1 on input line 23.
+\tcb@testbox=\box74
+\tcb@totalupperbox=\box75
+\tcb@totallowerbox=\box76
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/enumitem/enumitem.sty
+Package: enumitem 2025/02/06 v3.11 Customized lists
+\labelindent=\skip53
+\enit@outerparindent=\dimen265
+\enit@toks=\toks37
+\enit@inbox=\box77
+\enit@count@id=\count302
+\enitdp@description=\count303
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2024-11-05 v7.01l Hypertext links for LaTeX
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
+Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/kvdefinekeys/kvdefinekeys.sty
+Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pdfescape/pdfescape.sty
+Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/pdftexcmds/pdftexcmds.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
+)
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+))
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hycolor/hycolor.sty
+Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2023-11-26 v2.56 Cross-referencing by name of section
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/refcount/refcount.sty
+Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/gettitlestring/gettitlestring.s
+ty
+Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/kvoptions/kvoptions.sty
+Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
+))
+\c@section@level=\count304
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/stringenc/stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO
+)
+)
+\@linkdim=\dimen266
+\Hy@linkcounter=\count305
+\Hy@pagecounter=\count306
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2024-11-05 v7.01l Hyperref: PDFDocEncoding definition (HO)
+Now handling font encoding PD1 ...
+... no UTF-8 mapping file for font encoding PD1
+)
+(/usr/local/texlive/2025/texmf-dist/tex/generic/intcalc/intcalc.sty
+Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
+)
+\Hy@SavedSpaceFactor=\count307
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/puenc.def
+File: puenc.def 2024-11-05 v7.01l Hyperref: PDF Unicode definition (HO)
+Now handling font encoding PU ...
+... no UTF-8 mapping file for font encoding PU
+)
+Package hyperref Info: Hyper figures OFF on input line 4157.
+Package hyperref Info: Link nesting OFF on input line 4162.
+Package hyperref Info: Hyper index ON on input line 4165.
+Package hyperref Info: Plain pages OFF on input line 4172.
+Package hyperref Info: Backreferencing OFF on input line 4177.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4424.
+\c@Hy@tempcnt=\count308
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip17
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 4763.
+\XeTeXLinkMargin=\dimen267
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/bitset/bitset.sty
+Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
+)
+))
+\Fld@menulength=\count309
+\Field@Width=\dimen268
+\Fld@charsize=\dimen269
+Package hyperref Info: Hyper figures OFF on input line 6042.
+Package hyperref Info: Link nesting OFF on input line 6047.
+Package hyperref Info: Hyper index ON on input line 6050.
+Package hyperref Info: backreferencing OFF on input line 6057.
+Package hyperref Info: Link coloring OFF on input line 6062.
+Package hyperref Info: Link coloring with OCG OFF on input line 6067.
+Package hyperref Info: PDF/A mode OFF on input line 6072.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/atbegshi-ltx.sty
+Package: atbegshi-ltx 2021/01/10 v1.0c Emulation of the original atbegshi
+package with kernel methods
+)
+\Hy@abspage=\count310
+\c@Item=\count311
+\c@Hfootnote=\count312
+)
+Package hyperref Info: Driver (autodetected): hpdftex.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2024-11-05 v7.01l Hyperref driver for pdfTeX
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/atveryend-ltx.sty
+Package: atveryend-ltx 2020/08/19 v1.0a Emulation of the original atveryend pac
+kage
+with kernel methods
+)
+\Fld@listcount=\count313
+\c@bookmark@seq@number=\count314
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
+Package: rerunfilecheck 2022-07-10 v1.10 Rerun checks for auxiliary files (HO)
+
+(/usr/local/texlive/2025/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
+Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
+)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+85.
+)
+\Hy@SectionHShift=\skip54
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/lm/lmodern.sty
+Package: lmodern 2015/05/01 v1.6.1 Latin Modern Fonts
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  OT1/cmr/m/n --> OT1/lmr/m/n on input line 22.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `normal'
+(Font)                  OML/cmm/m/it --> OML/lmm/m/it on input line 23.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `normal'
+(Font)                  OMS/cmsy/m/n --> OMS/lmsy/m/n on input line 24.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
+(Font)                  OMX/cmex/m/n --> OMX/lmex/m/n on input line 25.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 26.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/cmm/b/it --> OML/lmm/b/it on input line 27.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  OMS/cmsy/b/n --> OMS/lmsy/b/n on input line 28.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  OMX/cmex/m/n --> OMX/lmex/m/n on input line 29.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 31.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
+(Font)                  OT1/cmss/m/n --> OT1/lmss/m/n on input line 32.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
+(Font)                  OT1/cmr/m/it --> OT1/lmr/m/it on input line 33.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
+(Font)                  OT1/cmtt/m/n --> OT1/lmtt/m/n on input line 34.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 35.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/cmss/bx/n --> OT1/lmss/bx/n on input line 36.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/cmr/bx/it --> OT1/lmr/bx/it on input line 37.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/cmtt/m/n --> OT1/lmtt/m/n on input line 38.
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\@emptytoks=\toks38
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 98.
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+))
+Package hyperref Info: Option `colorlinks' set `true' on input line 20.
+LaTeX Font Info:    Trying to load font information for T1+lmr on input line 27
+.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/t1lmr.fd
+File: t1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+(/usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count315
+\l__pdf_internal_box=\box78
+)
+(./methodology_and_findings.aux)
+\openout1 = `methodology_and_findings.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 27.
+LaTeX Font Info:    ... okay on input line 27.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(62.59596pt, 472.31595pt, 62.59596pt)
+* v-part:(T,H,B)=(62.59596pt, 719.85492pt, 62.59596pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=472.31595pt
+* \textheight=719.85492pt
+* \oddsidemargin=-9.67403pt
+* \evensidemargin=-9.67403pt
+* \topmargin=-46.67403pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=11.0pt
+* \footskip=30.0pt
+* \marginparwidth=50.0pt
+* \marginparsep=10.0pt
+* \columnsep=10.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+(/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count316
+\scratchdimen=\dimen270
+\scratchbox=\box79
+\nofMPsegments=\count317
+\nofMParguments=\count318
+\everyMPshowfont=\toks39
+\MPscratchCnt=\count319
+\MPscratchDim=\dimen271
+\MPnumerator=\count320
+\makeMPintoPDFobject=\count321
+\everyMPtoPDFconversion=\toks40
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+Package hyperref Info: Link coloring ON on input line 27.
+
+(./methodology_and_findings.out) (./methodology_and_findings.out)
+\@outlinefile=\write4
+\openout4 = `methodology_and_findings.out'.
+
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/article.cls
+LaTeX Info: Redefining \cal on input line 497.
+LaTeX Info: Redefining \mit on input line 498.
+)
+(./methodology_and_findings.toc
+LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 2
+.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/ot1lmr.fd
+File: ot1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 2
+.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/omllmm.fd
+File: omllmm.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
+2.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/omslmsy.fd
+File: omslmsy.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
+2.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/omxlmex.fd
+File: omxlmex.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10.95> on input line 2.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <8> on input line 2.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <6> on input line 2.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 2.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 2.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+
+[1
+
+
+{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/loc
+al/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}]
+
+[2{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}]
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 6
+6.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/lm/ts1lmr.fd
+File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+))
+\tf@toc=\write5
+\openout5 = `methodology_and_findings.toc'.
+
+
+
+[3{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}]
+Overfull \hbox (209.03537pt too wide) in paragraph at lines 38--48
+[]\T1/lmr/m/n/10.95 ===========================================================
+=====================
+ []
+
+
+Overfull \hbox (416.35541pt too wide) in paragraph at lines 38--48
+\T1/lmr/m/n/10.95 re-hen-sive Do-cu-men-ta-ti-on for Paper Writing ============
+====================================================================
+ []
+
+
+Overfull \hbox (236.47136pt too wide) in paragraph at lines 38--48
+\T1/lmr/m/n/10.95 split) ======================================================
+========================== 
+ []
+
+
+Overfull \hbox (49.16559pt too wide) in paragraph at lines 61--64
+[]\T1/lmr/m/n/10.95 Ha va-la-mi nem vi-l·-gos, az ·b-r·k a met-ric_pca_test_v2/
+ map-p·-ban van-nak. A kÛd: su-mo_rl_environment.py
+ []
+
+
+Overfull \hbox (54.89421pt too wide) in paragraph at lines 61--64
+\T1/lmr/m/n/10.95 (RL env), rl_trainer.py (ta-nÌ-t·s), met-ric_collection_test.
+py (PCA adat-gy∂j-tÈs), nor-ma-li-za-ti-on_comparison.py. 
+ []
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 88.
+
+
+
+[4]
+Overfull \hbox (15.32635pt too wide) in paragraph at lines 156--160
+[]\T1/lmr/bx/n/10.95 MINIMUM Z÷LD IDé: \T1/lmr/m/n/10.95 Az ·gens nem v·lt-hat 
+zˆl-det azon-nal az elÆ-zÆ v·l-t·s ut·n. min_green_time
+ []
+
+
+
+[5{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}]
+Overfull \hbox (10.72005pt too wide) in paragraph at lines 188--188
+|\T1/lmr/bx/n/14.4 II. TRAF-FIC GE-NE-RA-TI-ON ^^V HO-GYAN GE-NE-R¡L-JUK A FOR-
+
+ []
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 198.
+
+
+
+[6]
+Overfull \hbox (53.78358pt too wide) in paragraph at lines 276--279
+[]\T1/lmr/bx/n/10.95 MEGA CA-TA-LO-GUE (21 junc-ti-on, 527K+ min-ta, met-ric_pc
+a_test_v2/): MU_WAIT=4.5848,
+ []
+
+
+Overfull \hbox (46.14056pt too wide) in paragraph at lines 280--283
+[]\T1/lmr/bx/n/10.95 OSM SING-LE JUNC-TI-ON (2632893078, 63K min-ta, met-ric_pc
+a_osm/): MU_WAIT=2.4486,
+ []
+
+
+
+[7]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 362.
+
+
+
+[8]
+
+[9]
+LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
+53.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+
+! LaTeX Error: Unicode character ‚òÖ (U+2605)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.455 ...lane.getWaitingTime()          | IGEN ‚òÖ
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚òÖ (U+2605)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.457 ...lane.getCO2Emission()          | IGEN ‚òÖ
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.458 ... VehCount            | nem (‚âàkonstans!)
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+Overfull \hbox (22.07513pt too wide) in paragraph at lines 458--458
+[]  \T1/lmtt/m/n/10.95 AvgCO2              | mg/s/j·rm∂  | TotalCO2 / VehCount 
+           | nem (konstans!)[] 
+ []
+
+
+! LaTeX Error: Unicode character ‚òÖ (U+2605)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.466 ...n haszn√°lt metrik√°k (l√°sd VI. fejezet)
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 494.
+
+
+
+[10]
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
+556.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/lm/ts1lmtt.fd
+File: ts1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
+)
+
+[11]
+Overfull \hbox (4.82893pt too wide) in paragraph at lines 586--586
+[]    \T1/lmtt/m/n/10.95 TotalWaitingTime, AvgWaitingTime, QueueLength, VehCoun
+t, TotalCO2, AvgOccupancy 
+ []
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.613 ...CO2 ‚Äî NEAR-ZERO LOADING (‚âà constant):
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.615 ... 1575 mg/s/vehicle across all conditions.
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[12]
+
+[13]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 673.
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.693 ...gmoid        ‚Äî 1 - sigmoid((log(x) - Œº
+                                                  ) / œÉ)     $\leftarrow$ S...
+
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.693 ...       ‚Äî 1 - sigmoid((log(x) - Œº) / œÉ
+                                                  )     $\leftarrow$ SELECTED
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[14]
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.727 ...computed parameters per metric: Œº and œÉ
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.727 ...computed parameters per metric: Œº and œÉ
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 755.
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.766 z = (log(x) - Œº
+                      ) / œÉ = (4.787 - 4.5848) / 1.8249 $\approx$ 0.111
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.766 z = (log(x) - Œº) / œÉ
+                             = (4.787 - 4.5848) / 1.8249 $\approx$ 0.111
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚àû (U+221E)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.777 z = -‚àû
+               $\rightarrow$ score $\approx$ 0
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚àû (U+221E)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.779 z = +‚àû
+               $\rightarrow$ score $\approx$ 1
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.789 z = (log(x + $\epsilon$) - Œº
+                                   ) / œÉ          ... z-score log t√©rben
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.789 z = (log(x + $\epsilon$) - Œº) / œÉ
+                                                   ... z-score log t√©rben
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character Œµ (U+03B5)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.795 ...s stabilit√°s, hogy log(0) ne legyen -‚àû
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚àû (U+221E)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.795 ...s stabilit√°s, hogy log(0) ne legyen -‚àû
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.796 ... metrika √°tlaga a kalibr√°ci√≥s adatb√≥l
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.797 ...Äî a log-transzform√°lt metrika sz√≥r√°sa
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[15]
+Overfull \hbox (5.45575pt too wide) in paragraph at lines 802--804
+\T1/lmr/m/n/10.95 Ezek a sz·-mok a PCA adat-gy∂j-tÈs-bÆl sz·r-maz-nak (527,747 
+min-ta). A kÛd: su-mo_rl_environment.py,
+ []
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.807 ...‚Üí ez E[log(WaitingTime)] = log(~98 sec)
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.808 ...T) = 1.8249   ‚Üí a sz√≥r√°s log sk√°l√°n
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.817 ...6  ‚Üí ez E[log(CO2)] = log(~52,000 mg/s)
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.818 ... sz≈±kebb sz√≥r√°s mint a WaitingTime-√©!
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.828   2œÉ-nyi tartom√°nyban.
+                              
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character Œº (U+03BC)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.850 0.5 = √°tlagos forgalmi viszonyok (a Œº
+                                              param√©terb≈ël ad√≥d√≥an)
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[16]
+
+! LaTeX Error: Unicode character ‚úì (U+2713)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.881 ...t√°s ‚Üí MU = 4.5848 ‚Üí log(~98 sec) ‚úì
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚úì (U+2713)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.887 ...Üí MU = 10.8706 ‚Üí log(~52,000 mg/s) ‚úì
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.894 ...ne √©rv√©nyes (g/s-ben MU ‚âà 4.0 lenne).
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚úì (U+2713)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.899 ...a kalibr√°ci√≥s param√©terek √©rv√©nyesek
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[17]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 912.
+
+
+Overfull \hbox (28.69647pt too wide) in paragraph at lines 958--963
+\T1/lmr/m/n/10.95 ki-me-ne-ti ne-u-ron. Az ·gens a LEG-MA-GA-SABB ·t-la-gos Q-È
+rtÈk∂ ak-ci-Ût v·-laszt-ja (az exploration_fraction-
+ []
+
+
+
+[18]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 996.
+
+
+Overfull \hbox (33.5726pt too wide) in paragraph at lines 1018--1018
+[]  \T1/lmtt/m/n/10.95 ----------------------|----------------|----------------
+--|--------------------------- 
+ []
+
+
+Overfull \hbox (50.8188pt too wide) in paragraph at lines 1020--1020
+[]  \T1/lmtt/m/n/10.95 batch_size            | categorical    | [32,64,128,256]
+  | H·ny mint·bÛl tanul egyszerre[] 
+ []
+
+
+Overfull \hbox (10.57767pt too wide) in paragraph at lines 1021--1021
+[]  \T1/lmtt/m/n/10.95 gamma (discount)      | uniform        | [0.90, 0.999]  
+  | Mennyire fontos a J÷Vé[] 
+ []
+
+
+
+[19]
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1040 ...jutalom = 0.9^10 ‚âà 0.35√ó mai √©rt√©k"
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1041 ...utalom = 0.99^10 ‚âà 0.90√ó mai √©rt√©k"
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[20]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1090.
+
+
+Overfull \hbox (45.8326pt too wide) in paragraph at lines 1129--1134
+\T1/lmr/m/n/10.95 kell sym-link-kel-ni a venv site-packages-be: /Lib-rary/Frame
+works/EclipseSUMO.framework/.../tools/libsumo/ 
+ []
+
+
+
+[21]
+Overfull \hbox (51.3994pt too wide) in paragraph at lines 1143--1147
+\T1/lmr/m/n/10.95 vissza-kap-juk az ˆsszes ada-tot: tra-ci.inductionloop.subscr
+ibe(det_id, [0x10, 0x13]) tra-ci.lane.subscribe(lane_id,
+ []
+
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <12> on input line 1162.
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1163.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1163.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1163.
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1165 ...        r ‚âà 0.95  ‚Üê szinte azonosak!
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1165 ...        r ‚âà 0.95  ‚Üê szinte azonosak!
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1166 ...        r ‚âà 0.85  ‚Üê nagyon hasonl√≥k
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1166 ...        r ‚âà 0.85  ‚Üê nagyon hasonl√≥k
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1167 ...Time ‚Üî VehCount:            r ‚âà 0.80
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1167 ...Time ‚Üî VehCount:            r ‚âà 0.80
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1168 ... VehCount:                    r ‚âà 0.90
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1168 ... VehCount:                    r ‚âà 0.90
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1179 ...TotalWaitingTime:            r ‚âà -0.50
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1179 ...TotalWaitingTime:            r ‚âà -0.50
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1180 ... QueueLength:                r ‚âà -0.45
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚âà (U+2248)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1180 ... QueueLength:                r ‚âà -0.45
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚Üî (U+2194)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1190 ...szinte minden:                |r| < 0.15
+                                                  
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[22]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1215.
+
+
+
+[23]
+Overfull \hbox (45.07007pt too wide) in paragraph at lines 1280--1280
+[]  \T1/lmtt/m/n/10.95 ----------------------|-----------|-----------|---------
+----|-------------|------------- 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1281--1281
+[]  \T1/lmtt/m/n/10.95 TotalTravelTime       |  6.2194   |  0.9644   |      594
+.13 |       79.31 |    1,830.34[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1282--1282
+[]  \T1/lmtt/m/n/10.95 AvgTravelTime         |  4.5295   |  0.8580   |      113
+.26 |       16.72 |      279.93[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1283--1283
+[]  \T1/lmtt/m/n/10.95 TotalTravelTime_Raw   |  9.8353   |  3.6341   |    6,063
+.10 |      145.49 | 4,800,842.0[] 
+ []
+
+
+Overfull \hbox (33.5726pt too wide) in paragraph at lines 1284--1284
+[]  \T1/lmtt/m/n/10.95 AvgTravelTime_Raw     |  7.9540   |  3.5175   |      862
+.36 |       27.50 |  609,354.2[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1285--1285
+[]  \T1/lmtt/m/n/10.95 TotalWaitingTime      |  4.5848   |  1.8249   |      120
+.20 |        3.20 |    1,340.40[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1286--1286
+[]  \T1/lmtt/m/n/10.95 AvgWaitingTime        |  0.9783   |  1.2590   |        2
+.89 |        0.30 |       16.87[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1287--1287
+[]  \T1/lmtt/m/n/10.95 TotalCO2              | 10.8706   |  0.9629   |   70,129
+.35 |    8,382.93 |  173,544.70[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1288--1288
+[]  \T1/lmtt/m/n/10.95 AvgCO2                |  7.4120   |  0.1457   |    1,575
+.70 |    1,467.66 |    2,262.16[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1289--1289
+[]  \T1/lmtt/m/n/10.95 VehCount              |  3.4558   |  1.0533   |       44
+.40 |        4.00 |      113.80[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1290--1290
+[]  \T1/lmtt/m/n/10.95 AvgSpeed              |  0.4792   |  1.0377   |        1
+.59 |        0.38 |        7.54[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1291--1291
+[]  \T1/lmtt/m/n/10.95 AvgOccupancy          |  3.6915   |  0.9950   |       57
+.23 |        3.75 |       88.95[] 
+ []
+
+
+Overfull \hbox (39.32133pt too wide) in paragraph at lines 1292--1292
+[]  \T1/lmtt/m/n/10.95 QueueLength           |  2.5926   |  1.2683   |       18
+.00 |        1.00 |       71.40[] 
+ []
+
+
+
+[24]
+Overfull \hbox (6.97066pt too wide) in paragraph at lines 1321--1321
+|\T1/lmr/bx/n/14.4 XIV. GE-NE-RA-TED ANALY-SIS CHARTS ^^V DE-TAI-LED IN-TERP-
+ []
+
+
+Overfull \hbox (174.9678pt too wide) in paragraph at lines 1326--1329
+[]\T1/lmr/m/n/10.95 ===========================================================
+=================
+ []
+
+
+Overfull \hbox (248.87682pt too wide) in paragraph at lines 1326--1329
+\T1/lmr/m/n/10.95 PCA CHARTS ==================================================
+========================== 
+ []
+
+
+
+[25]
+
+! LaTeX Error: Unicode character œÉ (U+03C3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1385 ...ik ellipszis az adott forgalmi szint 2œÉ
+                                                   konfidencia-
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[26]
+Overfull \hbox (174.9678pt too wide) in paragraph at lines 1441--1444
+[]\T1/lmr/m/n/10.95 ===========================================================
+=================
+ []
+
+
+Overfull \hbox (321.725pt too wide) in paragraph at lines 1441--1444
+\T1/lmr/m/n/10.95 NOR-MA-LI-ZA-TI-ON CHARTS ===================================
+========================================= 
+ []
+
+
+Overfull \hbox (8.99408pt too wide) in paragraph at lines 1466--1473
+[]\T1/lmr/m/n/10.95 02_Normalization_Quality.png ^^V QU-A-LITY BAR-P-LOT ------
+------------------------------------------ \T1/lmr/bx/n/10.95 MIT
+ []
+
+
+
+[27]
+
+[28]
+Overfull \hbox (174.9678pt too wide) in paragraph at lines 1548--1551
+[]\T1/lmr/m/n/10.95 ===========================================================
+=================
+ []
+
+
+Overfull \hbox (536.22049pt too wide) in paragraph at lines 1548--1551
+\T1/lmr/m/n/10.95 COR-RE-LA-TI-ON MAT-RIX OL-VA-S¡-SI TIP-PEK (pca_02_correlati
+on.png) =======================================================================
+===== 
+ []
+
+
+Overfull \hbox (174.9678pt too wide) in paragraph at lines 1567--1570
+[]\T1/lmr/m/n/10.95 ===========================================================
+=================
+ []
+
+
+Overfull \hbox (480.11748pt too wide) in paragraph at lines 1567--1570
+\T1/lmr/m/n/10.95 BI-PLOT TEN-GE-LYEK …R-TEL-ME-Z…-SE (pca_03_biplot.png) =====
+======================================================================= 
+ []
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1601.
+
+
+
+[29]
+
+! LaTeX Error: Unicode character Œ£ (U+03A3)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1667 pressure(action) = Œ£
+                             halting\_vehicles(lane)
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+! LaTeX Error: Unicode character ‚àÄ (U+2200)
+               not set up for use with LaTeX.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.1668 ‚àÄ
+           lane $\in$ green\_lanes(action)
+You may provide a definition with
+\DeclareUnicodeCharacter 
+
+
+
+[30]
+Overfull \hbox (79.23026pt too wide) in paragraph at lines 1719--1723
+[]\T1/lmr/m/n/10.95 Kimenet: eval_results/baseline_summary.csv ^^V epi-zÛ-don-k
+Èn-ti ered-mÈ-nyek eval_results/baseline_per_junction.csv
+ []
+
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1733.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1733.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\rightarrow' on input line 1733.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1733.
+
+
+
+[31]
+Overfull \hbox (11.14694pt too wide) in paragraph at lines 1749--1753
+[]\T1/lmr/m/n/10.95 Logika (main_headless.py): 1. YAML-bÛl be-tˆl-ti a de-fa-ul
+t hi-per-pa-ra-mÈ-te-re-ket (train-ing_config.yaml)
+ []
+
+
+Overfull \hbox (53.99965pt too wide) in paragraph at lines 1758--1761
+\T1/lmr/m/n/10.95 A swe-ep_runner.py (vagy WandB agent) a main_headless.py-t hÌ
+v-ja. A swe-ep con-fig (da-ta/sweep_config.yaml)
+ []
+
+
+Overfull \hbox (134.2203pt too wide) in paragraph at lines 1762--1768
+\OML/lmm/m/it/10.95 <$\T1/lmr/m/n/10.95 USERNAME$\OML/lmm/m/it/10.95 >$\T1/lmr/
+m/n/10.95 /$\OML/lmm/m/it/10.95 <$\T1/lmr/m/n/10.95 PROJECT$\OML/lmm/m/it/10.95
+ >$\T1/lmr/m/n/10.95 /$\OML/lmm/m/it/10.95 <$\T1/lmr/m/n/10.95 SWEEP_ID$\OML/lm
+m/m/it/10.95 >$ \T1/lmr/m/n/10.95 # Ter-mi-nal 1 wandb agent $\OML/lmm/m/it/10.
+95 <$\T1/lmr/m/n/10.95 USERNAME$\OML/lmm/m/it/10.95 >$\T1/lmr/m/n/10.95 /$\OML/
+lmm/m/it/10.95 <$\T1/lmr/m/n/10.95 PROJECT$\OML/lmm/m/it/10.95 >$\T1/lmr/m/n/10
+.95 /$\OML/lmm/m/it/10.95 <$\T1/lmr/m/n/10.95 SWEEP_ID$\OML/lmm/m/it/10.95 >$
+ []
+
+
+Overfull \hbox (16.50891pt too wide) in paragraph at lines 1778--1782
+[]\T1/lmr/m/n/10.95 Futtat·s: docker-compose run --rm sumo-trainer py-thon main
+_headless.py --config train-ing_config.yaml
+ []
+
+
+Overfull \hbox (9.32805pt too wide) in paragraph at lines 1794--1794
+|\T1/lmr/bx/n/14.4 XVII. CUR-RI-CU-LUM LEAR-NING ^^V FO-KO-ZA-TOS FOR-GA-LOM-
+ []
+
+
+
+[32]
+
+Package hyperref Warning: The anchor of a bookmark and its parent's must not
+(hyperref)                be the same. Added a new anchor on input line 1801.
+
+
+
+[33]
+Overfull \hbox (1.23265pt too wide) in paragraph at lines 1859--1861
+[]\T1/lmr/bx/n/10.95 MEGJEGYZ…S: \T1/lmr/m/n/10.95 Ha egy k¸l-sÆ hÌ-vÛ (pl. ba-
+se-line_actuated.py) exp-li-cit flow_range-t ad az options-
+ []
+
+
+
+[34]
+
+[35]
+Overfull \hbox (8.17393pt too wide) in paragraph at lines 2001--2003
+| \TS1/lmr/m/n/10.95 à \T1/lmr/m/n/10.95 PCA op-ci-o-n·-lis de hasz-nos: el-len
+-Ær-zi, hogy a met-ri-k·k jel-le-ge (mely PC-re loa-dol-nak) megegyezik-
+ []
+
+
+
+[36]
+Overfull \hbox (1.42775pt too wide) in paragraph at lines 2008--2018
+[]\T1/lmr/bx/n/10.95 OUTPUT: \T1/lmr/m/n/10.95 da-ta/junction_reward_params.jso
+n For-m·-tum: { "R1C1_C": { \T1/lmr/bx/n/10.95 "MU_WAIT": \T1/lmr/m/n/10.95 3.2
+1,
+ []
+
+
+Overfull \hbox (32.09769pt too wide) in paragraph at lines 2022--2026
+\T1/lmr/m/n/10.95 ------- Min-den junc-ti-on pa-ra-mÈ-te-rei ˆssze-ha-son-lÌt-v
+a a ko-r·b-bi glo-b·-lis \T1/lmr/bx/n/10.95 Èr-tÈ-kek-kel (MU_WAIT=4.5848,
+ []
+
+
+Overfull \hbox (8.65324pt too wide) in paragraph at lines 2043--2048
+[]\T1/lmr/bx/n/10.95 F¡ZIS 3: \T1/lmr/m/n/10.95 EGYEN-K…N-TI JUNC-TI-ON TRAIN-I
+NG -------------------------------------- \T1/lmr/bx/n/10.95 L…-NYE-GI V¡L-
+ []
+
+
+Overfull \hbox (77.00665pt too wide) in paragraph at lines 2067--2073
+| \TS1/lmr/m/n/10.95 à \T1/lmr/m/n/10.95 A re-ward kons-tan-sok ki-v·-lasz-t·-s
+a az ak-tu-·-lis junc-ti-on alap-j·n: pa-rams = self.junction_params.get(juncti
+on_id,
+ []
+
+
+Overfull \hbox (17.02168pt too wide) in paragraph at lines 2067--2073
+\T1/lmr/m/n/10.95 glo-bal_defaults) MU_WAIT = pa-rams['MU_WAIT'] STD_WAIT = pa-
+rams['STD_WAIT'] MU_CO2
+ []
+
+
+
+[37]
+Overfull \hbox (13.01242pt too wide) in paragraph at lines 2089--2098
+\T1/lmr/m/n/10.95 ta/sweep_config.yaml \{} --project sumo-rl-catalogue \{} --na
+me "sweep-R1C1_C" A swe-ep_runner.py
+ []
+
+
+Overfull \hbox (41.11499pt too wide) in paragraph at lines 2113--2119
+| \TS1/lmr/m/n/10.95 à \T1/lmr/bx/n/10.95 Min-den junc-ti-on mo-dell-je K‹-L÷N 
+men-tÆ-dik: \T1/lmr/m/n/10.95 runs/sumo-rl-catalogue/R1C1_C_$\OML/lmm/m/it/10.9
+5 <$\T1/lmr/m/n/10.95 timestamp$\OML/lmm/m/it/10.95 >$\T1/lmr/m/n/10.95 /
+ []
+
+
+
+[38]
+Overfull \hbox (3.90561pt too wide) in paragraph at lines 2201--2205
+| $\U/msa/m/n/10.95 ^^C$ \T1/lmr/m/n/10.95 1. met-ric_collection_per_junction.p
+y Au-to-ma-ti-z·lt PCA + met-ri-ka gy∂j-tÈs mind a 21 junction-
+ []
+
+
+
+[39]
+Overfull \hbox (18.65865pt too wide) in paragraph at lines 2219--2222
+| $\U/msa/m/n/10.95 ^^C$ \T1/lmr/m/n/10.95 5. rl_trainer.py ^^V wandb gro-up + 
+junc-ti-on tag wandb.init(group=junction_id, tags=[junction_id,
+ []
+
+
+Overfull \hbox (27.9644pt too wide) in paragraph at lines 2227--2229
+| $\U/msa/m/n/10.95 ^^C$ \T1/lmr/m/n/10.95 7. main_headless.py ^^V --junction C
+LI arg Az ed-di-gi --single-agent ana-lÛ-gi-·-j·-ra, de a mega_catalogue-
+ []
+
+
+
+[40]
+
+[41] (./methodology_and_findings.aux)
+ ***********
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+ ***********
+
+
+Package rerunfilecheck Warning: File `methodology_and_findings.out' has changed
+.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `methodology_and_findings.out':
+(rerunfilecheck)             Before: 6FBF2C40BB3B0C047A4AA1E7BE77CF49;22189
+(rerunfilecheck)             After:  8AA628AED205706CB627A2072EC94AEA;22181.
+ ) 
+Here is how much of TeX's memory you used:
+ 26482 strings out of 473190
+ 523121 string characters out of 5715800
+ 954218 words of memory out of 5000000
+ 49261 multiletter control sequences out of 15000+600000
+ 601534 words of font info for 71 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 116i,6n,121p,510b,629s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/lo
+cal/texlive/2025/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></usr/local/texliv
+e/2025/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></usr/local/texlive/2025/tex
+mf-dist/fonts/type1/public/lm/lmmi12.pfb></usr/local/texlive/2025/texmf-dist/fo
+nts/type1/public/lm/lmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/p
+ublic/lm/lmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/lm/lm
+sy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><
+/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.p
+fb>
+Output written on methodology_and_findings.pdf (41 pages, 311052 bytes).
+PDF statistics:
+ 592 PDF objects out of 1000 (max. 8388607)
+ 522 compressed objects within 6 object streams
+ 56 named destinations out of 1000 (max. 500000)
+ 637 words of extra memory for PDF output out of 10000 (max. 10000000)
+

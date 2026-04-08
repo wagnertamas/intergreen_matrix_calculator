@@ -52,8 +52,16 @@ parameters:
     max: 6
 
   layer_size:
-    values: [32, 64, 128, 256]
+    values: [8, 16, 32, 64, 128, 256]
 
   # --- Replay buffer méret (off-policy only) ---
   buffer_size:
     values: [5000, 10000, 25000, 50000]
+
+  # --- Gradient steps (off-policy: hány gradient lépés env step-enként) ---
+  gradient_steps:
+    values: [1, 2, 4]
+
+  # --- Maximális szimulációs idő ---
+  total_timesteps:
+    values: [50000, 75000, 100000]

@@ -1995,10 +1995,11 @@ XX. ARCHITEKTURÁLIS VÁLTÁS — JUNCTION-SZINTŰ INDEPENDENS TRÉNING
         visszahatás, stb. A teljes hálózat szimulálásával az ágens
         természetes forgalmi környezetet lát.
       - RL ágens: CSAK az adott junction kapja az RL ágenst
-      - Többi junction: actuated control (SUMO beépített) vagy
-        fix időzítéssel, hogy realisztikus legyen
-      - Forgalomgenerálás: az egész hálózatra generálunk forgalmat
-        (target+spread), de a reward CSAK az adott junctionből számolódik
+      - Többi junction: kikapcsolt control vagy
+        fix időzítéssel, hogy realisztikus legyen, mivel ezek szeparált kereszteződések
+        és nem befolyásolják egymást
+      - Forgalomgenerálás: az egész hálózatra NEM generálunk forgalmat
+        (target+spread), és a reward CSAK az adott junctionből számolódik
       - Detektorok: csak az adott junction detektorai kellenek az
         observation-höz
 
@@ -2055,7 +2056,7 @@ XX. ARCHITEKTURÁLIS VÁLTÁS — JUNCTION-SZINTŰ INDEPENDENS TRÉNING
       - Minden junction modellje KÜLÖN mentődik:
           runs/sumo-rl-catalogue/R1C1_C_<timestamp>/
             ├── model_R1C1_C.zip (SB3 model)
-            ├── model_R1C1_C.onnx (exportált)
+            ├── model_R1C1_C.onnx (exportált) (Ez a jelenlegi formában nem műkődik!)
             ├── reward_params.json (a használt MU/STD értékek)
             └── training_config.yaml (hiperparaméterek)
       - A reward_params.json MINDIG mentődik a modellel együtt,

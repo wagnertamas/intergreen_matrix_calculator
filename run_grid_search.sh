@@ -18,18 +18,23 @@
 
 set -euo pipefail
 
+# Kényszerítjük a traci-t (process-level isolation), mert a libsumo C++ párhuzamosan segfault-ot okoz macOS-en!
+export USE_LIBSUMO=0
+
 # --- Alapértelmezések ---
 JUNCTION="R1C1_C"
-PROJECT="sumo-rl-stat"
+PROJECT="sumo-rl-stat-2"
 TIMESTEPS=100000
 REPEATS=3
 PARALLEL_JOBS=6  # 12 magból 6 párhuzamos SUMO szimuláció
 
 # Algoritmusok
-ALGORITHMS=(qrdqn dqn ppo a2c)
+ALGORITHMS=(ppo)
+#ALGORITHMS=(qrdqn dqn ppo a2c)
 
 # Reward módok
-REWARDS=(speed_throughput halt_ratio co2_speedstd)
+REWARDS=(speed_throughput)
+#REWARDS=(speed_throughput halt_ratio co2_speedstd)
 
 # Neurális háló méretek
 LAYERS=(1 2 3)
@@ -161,7 +166,11 @@ for JOB in "${ALL_JOBS[@]}"; do
                 wait "$pid" 2>/dev/null && COMPLETED=$((COMPLETED + 1)) || FAILED=$((FAILED + 1))
             fi
         done
-        RUNNING_PIDS=("${NEW_PIDS[@]}")
+        if [[ ${#NEW_PIDS[@]} -gt 0 ]]; then
+            RUNNING_PIDS=("${NEW_PIDS[@]}")
+        else
+            RUNNING_PIDS=()
+        fi
         if [[ ${#RUNNING_PIDS[@]} -ge $PARALLEL_JOBS ]]; then
             sleep 2
         fi

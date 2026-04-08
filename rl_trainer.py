@@ -41,6 +41,16 @@ except ImportError as e:
     _missing_libs.append(f"wandb: {e}")
 try:
     import torch
+    # --- PYTORCH 2.6 COMPATIBILITY FIX ---
+    # Stable-Baselines3 commonly saves complex objects (like LR schedules) inside the .zip models. 
+    # PyTorch 2.6 changed `weights_only=True` by default, which throws WeightsUnpickler errors and 
+    # crashes SB3.load() on older SB3 versions. We monkey-patch it here globally.
+    _original_torch_load = torch.load
+    def _patched_torch_load(*args, **kwargs):
+        kwargs['weights_only'] = False
+        return _original_torch_load(*args, **kwargs)
+    torch.load = _patched_torch_load
+    # -------------------------------------
 except ImportError as e:
     HAS_RL_LIBS = False
     _missing_libs.append(f"torch: {e}")
@@ -108,12 +118,22 @@ class SingleAgentGymWrapper(gym.Env):
 
     def step(self, action):
         actions = {self.agent_id: int(action)}
-        obs_dict, rewards_dict, global_done, truncated, info_dict = self.env.step(actions)
+        obs_dict, rewards_dict, terminated_raw, truncated_raw, info_dict = self.env.step(actions)
         obs = obs_dict[self.agent_id]
         reward = rewards_dict[self.agent_id]
         info = info_dict.get(self.agent_id, {})
         self._last_infos = info
-        return obs, reward, global_done, truncated, info
+        # terminated/truncated lehet bool (SumoRLEnvironment global_done)
+        # vagy dict (multi-agent API) — mindkettőt kezeljük
+        if isinstance(terminated_raw, dict):
+            terminated = bool(terminated_raw.get("__all__", False) or terminated_raw.get(self.agent_id, False))
+        else:
+            terminated = bool(terminated_raw)
+        if isinstance(truncated_raw, dict):
+            truncated = bool(truncated_raw.get("__all__", False) or truncated_raw.get(self.agent_id, False))
+        else:
+            truncated = bool(truncated_raw)
+        return obs, reward, terminated, truncated, info
 
     def close(self):
         self.env.close()
@@ -216,11 +236,17 @@ if HAS_RL_LIBS:
                     "episode/avg_reward": ep_reward,
                 }
 
-                # Action distribution (minden 5. epizódban)
-                if self.episode_count % 5 == 0 and self.action_counts:
+                # Action distribution logging (minden epizódban)
+                if self.action_counts:
                     total_a = sum(self.action_counts.values()) or 1
+                    
+                    # Log to WandB
                     for a_id, cnt in self.action_counts.items():
                         ep_log[f"{self.agent_id}/action_pct/phase_{a_id}"] = cnt / total_a * 100
+                        
+                    # Print to console via model logger if possible, or just standard print
+                    dist_str = " ".join([f"a{k}={v/total_a*100:.0f}% ({v})" for k, v in sorted(self.action_counts.items())])
+                    print(f"  [ACTION PPO] {self.agent_id}: {dist_str}")
 
                 wandb.log(ep_log, commit=False)
                 self.episode_rewards = []
@@ -299,6 +325,102 @@ class IndependentDQNTrainer:
     def log(self, msg):
         if self.log_queue: self.log_queue.put(msg)
         else: print(msg)
+
+    def _run_warmup_calibration(self, initial_obs):
+        """3 órás szimuláció a nyers metrikák leméréséhez (súlyok frissítése nélkül)."""
+        if not self.load_model_path or not self.single_agent_id:
+            return initial_obs
+
+        jid = self.single_agent_id
+        model = self.agents.get(jid)
+        if not model: return initial_obs
+
+        self.log(f"==================================================")
+        self.log(f"[WARMUP] Indítás: kalibráció 6 darab félórás epizóddal...")
+        
+        options = self._build_reset_options() or {}
+        options['traffic_duration'] = 1800
+        
+        raw_metrics = {'speed': [], 'throughput': [], 'halt': [], 'co2': [], 'speedstd': []}
+        
+        local_obs = initial_obs
+        
+        for ep in range(6):
+            # Enforce 3600 duration manually in the options (so single override)
+            curr_obs, _ = self.env.reset(options=options)
+            local_obs = curr_obs
+            
+            global_done = False
+            step_idx = 0
+            
+            while not global_done and not self.stop_requested:
+                # Transzfer tanulásnál az előtanított modell egy teljesen ismeretlen 
+                # kereszteződésbe kerülhet, ahol könnyen "beragad" egyetlen fázisba (pl. a3=100%).
+                # Ezért a bemelegítésnél tiszta, véletlenszerű akciókat (random) használunk 
+                # a torzítatlan kalibrációhoz!
+                act = int(self.env.action_space[jid].sample())
+                if act not in raw_metrics: raw_metrics[act] = 0
+                raw_metrics[act] += 1
+                
+                next_obs, rewards, global_done, _, infos = self.env.step({jid: act})
+                
+                ag = self.env.agents[jid]
+                # Log(x + 1e-5) transformation to match reward scaler logic
+                if ag.steps_measured > 0: # Ensure valid measurements
+                    raw_metrics['speed'].append(np.log(ag.get_avg_speed_metric() + 1e-5))
+                    raw_metrics['throughput'].append(np.log(ag.get_throughput_metric() + 1e-5))
+                    raw_metrics['halt'].append(np.log(ag.get_halt_ratio_metric() + 1e-5))
+                    raw_metrics['co2'].append(np.log((ag.accumulated_co2 / ag.steps_measured) + 1e-5))
+                    raw_metrics['speedstd'].append(np.log(ag.get_speed_std_metric() + 1e-5))
+                
+                local_obs = next_obs
+                step_idx += 1
+                
+            self.log(f"  [WARMUP] Epizód {ep+1}/6 vége ({step_idx} lépés).")
+            # Action distribution dump
+            acts_only = {k: v for k, v in raw_metrics.items() if isinstance(k, int)}
+            if acts_only:
+                ta = sum(acts_only.values())
+                dist_str = " ".join([f"a{k}={v/ta*100:.0f}% ({v})" for k, v in sorted(acts_only.items())])
+                self.log(f"  [WARMUP AKCIÓK] {dist_str}")
+                # Reset actions for next episode
+                for k in acts_only.keys(): del raw_metrics[k]
+                
+            if self.stop_requested:
+                break
+                
+        # --- Parameter Updates ---
+        if not self.stop_requested and len(raw_metrics['speed']) > 0:
+            new_params = {}
+            if "speed" in self.reward_mode or "throughput" in self.reward_mode:
+                new_params['MU_SPEED'] = float(np.mean(raw_metrics['speed']))
+                new_params['STD_SPEED'] = float(np.std(raw_metrics['speed'])) + 1e-9
+                new_params['MU_THROUGHPUT'] = float(np.mean(raw_metrics['throughput']))
+                new_params['STD_THROUGHPUT'] = float(np.std(raw_metrics['throughput'])) + 1e-9
+                self.log(f"  [KALIBRÁLVA] SPEED: mu={new_params['MU_SPEED']:.3f}, std={new_params['STD_SPEED']:.3f}")
+                self.log(f"  [KALIBRÁLVA] THROU: mu={new_params['MU_THROUGHPUT']:.3f}, std={new_params['STD_THROUGHPUT']:.3f}")
+                
+            if "halt" in self.reward_mode:
+                new_params['MU_HALT'] = float(np.mean(raw_metrics['halt']))
+                new_params['STD_HALT'] = float(np.std(raw_metrics['halt'])) + 1e-9
+                self.log(f"  [KALIBRÁLVA] HALT : mu={new_params['MU_HALT']:.3f}, std={new_params['STD_HALT']:.3f}")
+                
+            if "co2" in self.reward_mode or "speedstd" in self.reward_mode:
+                new_params['MU_CO2'] = float(np.mean(raw_metrics['co2']))
+                new_params['STD_CO2'] = float(np.std(raw_metrics['co2'])) + 1e-9
+                new_params['MU_SPEEDSTD'] = float(np.mean(raw_metrics['speedstd']))
+                new_params['STD_SPEEDSTD'] = float(np.std(raw_metrics['speedstd'])) + 1e-9
+                self.log(f"  [KALIBRÁLVA] CO2  : mu={new_params['MU_CO2']:.3f}, std={new_params['STD_CO2']:.3f}")
+                self.log(f"  [KALIBRÁLVA] S_STD: mu={new_params['MU_SPEEDSTD']:.3f}, std={new_params['STD_SPEEDSTD']:.3f}")
+                
+            self.env.update_reward_params(jid, new_params)
+            self.log(f"==================================================")
+            
+            # Reset environment after warmup to start fresh
+            final_obs, _ = self.env.reset(options=self._build_reset_options())
+            return final_obs
+        
+        return initial_obs
 
     def run(self):
         self.log(f"Initializing Environment (algorithm={self.algorithm_name}, reward={self.reward_mode})...")
@@ -401,6 +523,7 @@ class IndependentDQNTrainer:
         layer_size = int(current_config.get("layer_size", 64))
         train_freq = int(current_config.get("train_freq", 4))
         grad_steps = int(current_config.get("gradient_steps", 1))
+        ent_coef = float(current_config.get("ent_coef", 0.01))
         net_arch = [layer_size] * num_layers
 
         # =====================================================================
@@ -415,6 +538,11 @@ class IndependentDQNTrainer:
 
             jid = agent_ids[0]
             self.log(f"[INFO] On-policy training: {self.algorithm_name} → {jid}")
+
+            # Az env-et resetelni kell, hogy a observation/action space-ek inicializálódjanak
+            # (_map_network_elements() csak reset() után fut le, ami beállítja a tereket)
+            self.log("[INFO] Env reset az observation/action space inicializálásához...")
+            self.env.reset()
 
             # SingleAgentGymWrapper: standard Gym API a SUMO env felett
             gym_env = SingleAgentGymWrapper(self.env, jid)
@@ -436,8 +564,10 @@ class IndependentDQNTrainer:
                 model_kwargs['batch_size'] = bs
                 model_kwargs['n_steps'] = int(current_config.get("n_steps", 2048))
                 model_kwargs['n_epochs'] = int(current_config.get("n_epochs", 10))
+                model_kwargs['ent_coef'] = ent_coef
             elif self.algorithm_name == 'a2c':
                 model_kwargs['n_steps'] = int(current_config.get("n_steps", 5))
+                model_kwargs['ent_coef'] = ent_coef
 
             # Transfer learning
             if self.load_model_path and os.path.exists(self.load_model_path):
@@ -454,6 +584,9 @@ class IndependentDQNTrainer:
                 model = AlgoClass(**model_kwargs)
 
             self.agents[jid] = model
+
+            # --- TRANSFER LEARNING WARMUP ---
+            obs = self._run_warmup_calibration(obs)
 
             # WandB callback
             callbacks = []
@@ -591,6 +724,9 @@ class IndependentDQNTrainer:
 
             self.agents[jid].set_logger(configure(tb_log, ["stdout", "tensorboard"]))
 
+        # --- TRANSFER LEARNING WARMUP ---
+        obs = self._run_warmup_calibration(obs)
+
         # =========================================================================
         # 5. TANÍTÁSI CIKLUS — OFF-POLICY (TRY-FINALLY BLOKKAL VÉDVE)
         # =========================================================================
@@ -722,15 +858,14 @@ class IndependentDQNTrainer:
                     avg_r = sum(self.reward_smoothing.values()) / max(len(self.reward_smoothing), 1)
                     eps_rate = self.agents[agent_ids[0]].exploration_rate if agent_ids else 0
 
-                    if episode_count % 5 == 0:
-                        for jid in agent_ids:
-                            counts = self.action_counts.get(jid, {})
-                            total_a = sum(counts.values()) or 1
-                            dist_str = " ".join([f"a{k}={v/total_a*100:.0f}%" for k, v in sorted(counts.items())])
-                            self.log(f"  [ACTION] {jid}: {dist_str}")
-                            if wandb.run:
-                                for a_id, cnt in counts.items():
-                                    wandb.log({f"{jid}/action_pct/phase_{a_id}": cnt / total_a * 100}, commit=False)
+                    for jid in agent_ids:
+                        counts = self.action_counts.get(jid, {})
+                        total_a = sum(counts.values()) or 1
+                        dist_str = " ".join([f"a{k}={v/total_a*100:.0f}% ({v})" for k, v in sorted(counts.items())])
+                        self.log(f"  [ACTION] {jid}: {dist_str}")
+                        if wandb.run:
+                            for a_id, cnt in counts.items():
+                                wandb.log({f"{jid}/action_pct/phase_{a_id}": cnt / total_a * 100}, commit=False)
 
                     self.action_counts = {}
 

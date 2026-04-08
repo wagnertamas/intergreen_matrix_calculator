@@ -234,6 +234,22 @@ class SumoRLEnvironment(gym.Env):
             }
         return {}
 
+    def update_reward_params(self, jid, new_params):
+        """
+        Futásidőben felülírja vagy létrehozza a megadott junction MU/STD paramétereit.
+        Ideális transzfer tanulás előtti kalibrációhoz.
+        """
+        if not self.junction_reward_params:
+            self.junction_reward_params = {'per_junction': {}, 'global': {}}
+        elif 'per_junction' not in self.junction_reward_params:
+            self.junction_reward_params['per_junction'] = {}
+            
+        if jid not in self.junction_reward_params['per_junction']:
+            self.junction_reward_params['per_junction'][jid] = {}
+            
+        self.junction_reward_params['per_junction'][jid].update(new_params)
+        print(f"[INFO] In-memory reward params updated for {jid}: {new_params}")
+
     def _compute_reward(self, agent, jid):
         """
         Reward számítás az aktuális reward_mode alapján.
@@ -266,8 +282,19 @@ class SumoRLEnvironment(gym.Env):
 
             z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
             r_throughput = (1.0 + np.tanh(z_t)) / 2.0
-
-            return (r_speed + r_throughput) / 2.0
+            
+            # --- "Reward Hacking" Mentesítés ---
+            # Ha az ágens nyitva hagy 2 sávot és bezár 2-t, a "throughput" megnőhet (mert autók torlódnak fel).
+            # Ennek elkerülésére bekeverünk egy "starvation" (éhezési) büntetést is a megakadt autók (halt) alapján.
+            halt_ratio = agent.get_halt_ratio_metric()
+            mu_h = params.get('MU_HALT', -1.20)
+            std_h = params.get('STD_HALT', 1.10)
+            z_h = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
+            r_halt = (1.0 + np.tanh(z_h)) / 2.0  # 1.0 ha hatalmas a dugó, 0.0 ha senki nem vár
+            
+            # Súlyozás: az átlagsebesség és áteresztőképesség fontos, de ha magas a halt, az eredmény büntetődik!
+            base_reward = (r_speed + r_throughput) / 2.0
+            return base_reward * (1.0 - (r_halt * 0.8))  # Max 80% büntetés, ha teljes a dugó
 
         elif self.reward_mode == "halt_ratio":
             halt_ratio = agent.get_halt_ratio_metric()
@@ -761,6 +788,14 @@ class SumoRLEnvironment(gym.Env):
             except:
                 pass
             self.is_running = False
+
+        # Route fájl törlése (csak ha run_id-val generált egyedi fájl)
+        if self.random_traffic and hasattr(self, 'route_file') and self.route_file:
+            if os.path.exists(self.route_file) and self.run_id and self.run_id in self.route_file:
+                try:
+                    os.remove(self.route_file)
+                except Exception:
+                    pass
 
 
 class TrafficAgent:

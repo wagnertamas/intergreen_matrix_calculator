@@ -1251,15 +1251,15 @@ def reward_selection_analysis(output_dir):
     print("=" * 100)
 
     # State változók: detektor-szintű aggregáltak + fázis
-    state_cols = ['det_occ_mean', 'det_occ_max', 'det_veh_sum', 'det_veh_mean',
-                  'det_speed_mean', 'det_speed_min', 'phase', 'prev_phase']
+    state_cols = ['det_occ_mean', 'det_occ_max',  'det_veh_sum','det_speed_mean', 'det_speed_min']
+    #['det_occ_mean', 'det_occ_max', 'det_veh_sum', 'det_veh_mean','det_speed_mean', 'det_speed_min', 'phase', 'prev_phase']
 
     # Ellenőrzés: vannak-e detektor oszlopok az adatban?
     has_det_data = all(col in full_df.columns for col in state_cols[:6])
 
     if has_det_data:
         # Reward jelöltek: a szűrőn átmenők + jelenlegi
-        reward_metrics_to_test = candidate_metrics.copy()
+        reward_metrics_to_test = ['AvgSpeed','Throughput'] #candidate_metrics.copy()
 
         print(f"\n  State változók: {', '.join(state_cols)}")
         print(f"  Reward jelöltek: {', '.join(reward_metrics_to_test)}")
@@ -1615,7 +1615,7 @@ def reward_selection_analysis(output_dir):
     if has_det_data and state_reward_corr:
         n_rewards = len(reward_metrics_to_test)
         n_states = len(state_cols[:6])
-        fig, axes = plt.subplots(1, 2, figsize=(20, max(8, n_rewards * 0.8)),
+        fig, axes = plt.subplots(1, 2, figsize=(20, max(3, n_rewards * 0.8)),
                                  gridspec_kw={'width_ratios': [1.3, 1]})
 
         # 4a. State ↔ Reward korreláció heatmap

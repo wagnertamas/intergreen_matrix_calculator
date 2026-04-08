@@ -1,79 +1,30 @@
 \documentclass[11pt,a4paper]{article}
-
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[magyar]{babel}
-
 \usepackage[margin=2.2cm]{geometry}
 \usepackage{xcolor}
 \usepackage{titlesec}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins, breakable}
 \usepackage{enumitem}
-\usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{tabularx}
-\usepackage{amsmath}
-\usepackage{microtype}
 \usepackage{lmodern}
+\usepackage{amssymb}
 
-% Colors
 \definecolor{primary}{RGB}{30, 80, 150}
 \definecolor{accent}{RGB}{40, 140, 90}
 \definecolor{danger}{RGB}{180, 50, 50}
 
-\hypersetup{
-    colorlinks=true,
-    linkcolor=primary,
-    urlcolor=primary,
-    pdftitle={SUMO RL Traffic Light Control — Methodology \& Research Findings}
-}
-
-% Section formatting
-\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection.}{1em}{}[\titlerule]
+\hypersetup{colorlinks=true, linkcolor=primary, urlcolor=primary}
+\titleformat{\section}{\Large\bfseries\color{primary}}{\thesection}{1em}{}[\titlerule]
 \titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection}{1em}{}
 
-% Custom boxes
-\newtcolorbox{infobox}[1][]{
-  colback=primary!5!white,
-  colframe=primary,
-  fonttitle=\bfseries,
-  title=#1,
-  boxrule=0.8pt,
-  arc=3pt,
-  breakable,
-  top=2mm, bottom=2mm
-}
-
-\newtcolorbox{warningbox}[1][]{
-  colback=danger!5!white,
-  colframe=danger,
-  fonttitle=\bfseries,
-  title=#1,
-  boxrule=0.8pt,
-  arc=3pt,
-  breakable,
-  top=2mm, bottom=2mm
-}
-
-\newtcolorbox{codebox}[1][]{
-  colback=gray!5!white,
-  colframe=gray!60!black,
-  fonttitle=\bfseries\ttfamily,
-  title=#1,
-  boxrule=0.5pt,
-  arc=2pt,
-  breakable
-}
-
-\newcommand{\uv}[1]{\glqq#1\grqq}
-\newcommand{\code}[1]{\texttt{\color{black!80}#1}}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{0.7em}
+\setlength{\parskip}{0.5em}
 
 \begin{document}
-
 \begin{center}
     \vspace*{1em}
     {\Huge\bfseries\color{primary} SUMO RL Traffic Light Control}\vspace{0.5em}\\
@@ -81,138 +32,2274 @@
     {\large Comprehensive Documentation for Paper Writing}
     \vspace{1.5em}
 \end{center}
-
-\begin{infobox}[Meta adatok]
-\begin{itemize}[leftmargin=*, nosep]
-    \item \textbf{Generálva:} 2026-03-14
-    \item \textbf{Adatforrás:} \code{metric\_pca\_test\_v2/} (527,747 sample)
-    \item \textbf{Szimuláció:} SUMO (Simulation of Urban MObility) + traci/libsumo
-    \item \textbf{RL framework:} Stable-Baselines3 QR-DQN (Quantile Regression DQN)
-    \item \textbf{Hálózat:} \code{mega\_catalogue\_v2.net.xml} — 21 jelzőlámpás csomópont (4×5 + 2 osztott)
-\end{itemize}
-\end{infobox}
-
-\textbf{EZ A DOKUMENTUM CÉLJA:} Mindent tartalmaz, amit a cikk megírásához tudni kell:
-Mi a rendszer és hogyan működik, honnan jönnek a mérőszámok, miért pont ezeket a metrikákat választottuk a reward-hoz, a normalizáció, háló architektúra, hiperparaméter-keresés, új baseline stratégiák, a training pipeline, valamint a curriculum learning megfontolásai.
-
 \tableofcontents
 \newpage
 
-\section{System Architecture — A Rendszer Felépítése}
+================================================================================
+SUMO RL TRAFFIC LIGHT CONTROL — METHODOLOGY \& RESEARCH FINDINGS
+Comprehensive Documentation for Paper Writing
+================================================================================
+Generated: 2026-03-14
+Data source: metric\_pca\_test\_v2/ (527,747 samples)
+Simulation: SUMO (Simulation of Urban MObility) + traci/libsumo
+RL framework: Stable-Baselines3 QR-DQN (Quantile Regression DQN)
+Network: mega\_catalogue\_v2.net.xml — 21 signalized junctions (4×5 + 2 split)
+================================================================================
 
-\textbf{A Nagy Kép:} Van egy városi úthálózatunk (SUMO szimulátorban), 21 jelzőlámpás csomóponttal. Mindegyik csomóponthoz tartozik egy \uv{ágens} — egy mesterséges intelligencia, amely megtanulja, mikor melyik fázist (zöld irányt) kapcsolja be. Az ágensek egymástól függetlenül tanulnak (nincs kommunikáció köztük), de ugyanazt a hálózati architektúrát használják, külön-külön súlyokkal.
+\textbf{EZ A DOKUMENTUM CÉLJA:}
+Mindent tartalmaz, amit a cikk megírásához tudni kell:
+\par\noindent\hspace*{1em}\textbullet{} Mi a rendszer és hogyan működik (I-II.)
+\par\noindent\hspace*{1em}\textbullet{} Honnan jönnek a mérőszámok és mit jelentenek (III.)
+\par\noindent\hspace*{1em}\textbullet{} Miért pont ezeket a metrikákat választottuk a reward-hoz — PCA elemzés (IV.)
+\par\noindent\hspace*{1em}\textbullet{} Miért pont a Log-Sigmoid normalizációt használjuk (V.)
+\par\noindent\hspace*{1em}\textbullet{} A reward függvény matematikai leírása, számokkal (VI.)
+\par\noindent\hspace*{1em}\textbullet{} A neurális háló és a hiperparaméter keresés (VII-VIII.)
+\par\noindent\hspace*{1em}\textbullet{} Minden ábra részletes értelmezése (XIV.)
+\par\noindent\hspace*{1em}\textbullet{} Training pipeline: GUI, CLI, Docker (XVI.)
+\par\noindent\hspace*{1em}\textbullet{} Curriculum learning vs domain randomization (XVII.)
 
-\subsection{Multi-Agent RL Setup}
-\begin{itemize}
-    \item 21 csomópont, mindegyik önálló RL ágens. Csomópont azonosítók: \code{R1C1\_C ... R4C5\_C} (4×5 rács), \code{R4C2\_CE/R4C2\_CW} (kettéosztott).
-    \item Algoritmus: QR-DQN (Quantile Regression Deep Q-Network).
-\end{itemize}
+Ha valami nem világos, az ábrák a metric\_pca\_test\_v2/ mappában vannak.
+A kód: sumo\_rl\_environment.py (RL env), rl\_trainer.py (tanítás),
+metric\_collection\_test.py (PCA adatgyűjtés), normalization\_comparison.py.
 
-\begin{infobox}[Miért QR-DQN és nem sima DQN?]
-A hagyományos DQN egyetlen számot (átlagos várható érték) becsül minden cselekvésre. A QR-DQN viszont az EGÉSZ ELOSZLÁST becsli — tehát tudja, hogy \uv{ez a cselekvés átlagosan jó, de nagy a variancia}. Ez fontos, mert a forgalom természeténél fogva sztochasztikus: ugyanaz a jelzésprogramozás néha jól működik, néha nem.
-\end{infobox}
+\textbf{FONTOS:} XX. fejezetben leírt ARCHITEKTURÁLIS VÁLTÁS:
+A rendszer átállt junction-szintű independens tréningre.
+Többé NEM egyszerre tanul 21 junction, hanem egyenként, saját
+reward kalibrációval. A részleteket és implementációs checklistet
+lásd a XX. fejezetben.
 
-\textbf{Miért független tanulás (nem kooperatív)?}
-Kooperatív tanulás (ahol az ágensek kommunikálnak) exponenciálisan növekvő állapotteret jelent 21 ágensre. A független tanulás skálázhatóbb, és a gyakorlatban jól működik, mert a szomszédos csomópontok hatása az observation-ön keresztül implicit megjelenik.
 
-\subsection{Observation Space — Mit Lát Az Ágens?}
+\section*{I. SYSTEM ARCHITECTURE — A RENDSZER FELÉPÍTÉSE}
+\addcontentsline{toc}{section}{I. SYSTEM ARCHITECTURE — A RENDSZER FELÉPÍTÉSE}
+
+\textbf{A NAGY KÉP:}
+Van egy városi úthálózatunk (SUMO szimulátorban), 21 jelzőlámpás
+csomóponttal. Mindegyik csomóponthoz tartozik egy "ágens" — egy
+mesterséges intelligencia, amely megtanulja, mikor melyik fázist
+(zöld irányt) kapcsolja be. Az ágensek egymástól függetlenül tanulnak
+(nincs kommunikáció köztük), de ugyanazt a hálózati architektúrát
+használják, külön-külön súlyokkal.
+
+A tanulás lényege: az ágens cselekszik (fázist vált), megfigyeli mi
+történik (forgalmi metrikák), és kap egy jutalmat (reward). A jutalom
+alapján megtanulja, hogy melyik helyzetben melyik fázis a legjobb.
+
+\subsection*{1.1 Multi-Agent RL Setup}
+\addcontentsline{toc}{subsection}{1.1 Multi-Agent RL Setup}
+\par\noindent\hspace*{1em}\textbullet{} 21 csomópont, mindegyik önálló RL ágens
+\par\noindent\hspace*{1em}\textbullet{} Csomópont azonosítók: R1C1\_C ... R4C5\_C (4×5 rács), R4C2\_CE/R4C2\_CW (kettéosztott)
+\par\noindent\hspace*{1em}\textbullet{} Algoritmus: QR-DQN (Quantile Regression Deep Q-Network)
+
+MIÉRT QR-DQN ÉS NEM SIMA DQN?
+A hagyományos DQN egyetlen számot (átlagos várható érték) becsül
+minden cselekvésre. A QR-DQN viszont az EGÉSZ ELOSZLÁST becsli
+— tehát tudja, hogy "ez a cselekvés átlagosan jó, de nagy a variancia".
+\textbf{Ez fontos, mert a forgalom természeténél fogva SZTOCHASZTIKUS:}
+ugyanaz a jelzésprogramozás néha jól működik, néha nem, a véletlenszerű
+forgalmi minták miatt. A QR-DQN ezt a bizonytalanságot kezeli.
+
+MIÉRT FÜGGETLEN TANULÁS (NEM KOOPERATÍV)?
+Kooperatív tanulás (ahol az ágensek kommunikálnak) exponenciálisan
+növekvő állapotteret jelent 21 ágensre. A független tanulás
+skálázhatóbb, és a gyakorlatban jól működik, mert a szomszédos
+csomópontok hatása az observation-ön keresztül implicit megjelenik
+(a detektor adatok tükrözik a szomszéd forgalmát).
+
+\subsection*{1.2 Observation Space — MIT LÁT AZ ÁGENS?}
+\addcontentsline{toc}{subsection}{1.2 Observation Space — MIT LÁT AZ ÁGENS?}
 Minden lépésben az ágens a következő információkat kapja:
-\begin{itemize}
-    \item \textbf{phase} (1 szám): Melyik zöld fázis van éppen bekapcsolva (0, 1, 2, \dots).
-    \item \textbf{phase\_timer} (1 szám, 0.0 és 1.0 között): Mennyi ideje tart az aktuális fázis, normalizálva (pl. 120 lépés = 600 sec = 1.0).
-    \item \textbf{occupancy} (N szám): Detektorok foglaltsága 0 és 1 között (0=üres, 1=foglalt). A legfontosabb bemenet.
-    \item \textbf{flow} (N szám): Hány jármű haladt át a detektoron a lépés alatt.
-\end{itemize}
 
-\subsection{Action Space — Mit Csinálhat Az Ágens?}
-\code{Discrete(num\_phases)} — annyi lehetséges cselekvés, ahány zöld fázis van. (Pl. 4 fázis esetén \{0, 1, 2, 3\}). Ezenkívül érvényesül az \textbf{Intergreen rendszer} (átmeneti mátrix beiktatása piros és sárga időkkel fázisváltások között) és a \textbf{Minimum Zöld Idő} biztosítása (pl. legalább 5 mp).
+"phase" (1 szám):
+Melyik zöld fázis van éppen bekapcsolva (0, 1, 2, ...).
+Pl. 0 = észak-dél zöld, 1 = kelet-nyugat zöld.
 
-\subsection{Step Mechanics}
-\code{delta\_time = 5 SUMO sec / RL lépés}. Az ágens választ egy akciót, ezt követi 5 db 1 másodperces SUMO szimulációs substep. Ezek alatt a metrikákat összegezzük, majd az akkumulált értékek átlagát képezzük.
+"phase\_timer" (1 szám, 0.0 és 1.0 között):
+Mennyi ideje tart az aktuális fázis, normalizálva.
+0.0 = éppen váltott, 1.0 = már 600 másodperce fut (10 perc!).
+Képlet: min(phase\_timer / 120.0, 1.0), ahol 120 lépés = 600 sec.
+Ez azért fontos, mert az ágens tudja, hogy "már régóta zöld van
+ezen az irányon, lehet, hogy érdemes váltani".
 
-\section{Traffic Generation — Hogyan Generáljuk A Forgalmat?}
+"occupancy" (annyi szám, ahány detektor van):
+A detektorok foglaltsága 0 és 1 között.
+0 = üres (nincs jármű a detektor felett), 1 = folyamatosan foglalt.
+Ez a legfontosabb bemeneti adat — ebből "érzi" az ágens a forgalmat.
 
-\subsection{Lane-Level Random Traffic \& Target+Spread Randomizálás}
-Nem a SUMO beépített \code{randomTrips.py}-t használjuk. Helyette sáv-szintű véletlenszerű forgalmat generálunk.
-Az új megoldás epizód-szinten két fázisban randomizál a \uv{nagy számok törvénye} elkerülésére:
-\begin{itemize}
-    \item \textbf{Target:} Az epizód összforgalmának nagyságrendje (pl. 100, 500, 900 veh/h).
-    \item \textbf{Spread:} Az irányok közötti aszimmetria mértéke.
-\end{itemize}
-Ezzel az ágens kifejezetten egyenletes, de aszimmetrikus; könnyű és nehéz szituációkat egyaránt megtapasztal.
+"flow" (annyi szám, ahány detektor van):
+Hány jármű haladt át a detektoron a lépés alatt (átlag/substep).
 
-\subsection{Episode Duration Rotation \& Warm-Up kikapcsolása}
-Minden epizódban véletlenszerűen kiválasztunk egy időtartamot: 15 perctől 2 óráig. Ez meggátolja a temporális overfitting-et. Ezen kívül a random \textit{Warm-up} funkció ki lett kapcsolva, mert a megörökölt kezdeti \uv{mesterséges} dugó nehezítette a tanulást a \uv{memória nélküli} ágens számára.
+\textbf{FONTOS:} a detektorok induktív hurokdetektorok (induction loops), amelyek
+a SUMO hálózatban definiálva vannak (detectors.add.xml). Minden bejövő
+sávon van legalább egy detektor, jellemzően a jelzőlámpa előtt.
 
-\section{Metric Collection \& SUMO API}
-\subsection{Raw SUMO Metrics}
-\begin{itemize}
-    \item \textbf{TotalWaitingTime [sec/step]:} Sávon várakozó járművek összes ideje. \textbf{Fő reward metrika.}
-    \item \textbf{TotalCO2 [mg/s/step]:} Sáv összes járművének pillanatnyi CO2 kibocsátása (HBEFA modell). \textbf{Reward része.}
-    \item \textbf{AvgCO2:} Konstantishoz közeli, HIBÁS tanulási szignál.
-\end{itemize}
+\subsection*{1.3 Action Space — MIT CSINÁLHAT AZ ÁGENS?}
+\addcontentsline{toc}{subsection}{1.3 Action Space — MIT CSINÁLHAT AZ ÁGENS?}
+Discrete(num\_phases) — annyi lehetséges cselekvés, ahány zöld fázis van.
 
-\begin{warningbox}[A TravelTime Csapdája (Sentinel Values)]
-A SUMO \code{getTraveltime()} üres/bedugult sáv esetén $\approx$ 200,000 és 5,000,000 közötti sentinel értékeket ad vissza. A PCA ezt izolálja, mint ZAJDIMENZIÓ. Szűrés nélkül használhatatlan.
-\end{warningbox}
+Pl. ha 4 fázis van: \{0, 1, 2, 3\}
+0 = Észak-Dél egyenes + jobbra kanyar
+1 = Észak-Dél balra kanyar
+2 = Kelet-Nyugat egyenes + jobbra kanyar
+3 = Kelet-Nyugat balra kanyar
 
-\section{PCA Analysis — Változók Kiválasztása}
-A PCA elemzés szerint:
-\begin{itemize}
-    \item \textbf{PC1 — Congestion (44.8\%):} \code{TotalWaitingTime}, \code{QueueLength}, stb. erősen korreláltak (redundánsak). 
-    \item \textbf{PC2 — Travel Time (22.6\%):} Független torlódástól, de sentinel torzítást tartalmaz.
-\end{itemize}
-\textbf{Eredmény:} \code{TotalWaitingTime} (PC1 dom.) és \code{TotalCO2} használata az optimális a jutalom-függvény számára.
+\textbf{AZ INTERGREEN RENDSZER:}
+Ha az ágens fázist akar váltani (pl. 0$\rightarrow$2), NEM ugorhat azonnal!
+A valóságban is van egy "köztes idő" (intergreen time), ami alatt:
+1. Az aktuális fázis sárgára vált (figyelmeztetés)
+2. Egy rövid ideig minden piros (biztonság — senki se menjen!)
+3. Az új fázis zöldre vált
 
-\section{Normalization \& Reward Function}
-\subsection{Log-Sigmoid Normalizáció}
-Az online data streaming miatt a \textbf{Log-Sigmoid} normalizációs stratégia bizonyult a leghatékonyabbnak (quality=1.354). Két konstansra támaszkodik metrikánként ($\mu, \sigma$).
-Formula: $score = 1 / (1 + \exp(-((\log(x + \varepsilon) - \mu) / \sigma)))$.
+Ez az intergreen mátrixból jön — minden fázis-párra definiálja a
+szükséges átmeneti fázisokat és azok időtartamát. Ez a valóságot
+szimulálja: egy jelzőlámpa nem válthat piros-zöld pillanat alatt.
 
-\textbf{Reward Kombináció:} Az ágens a két metrika inverz-szigmoidálisan leképezett értékének átlagát kapja. Üres csomópontra szigorúan $0.0$ jutalom van garantálva a hamis pozitív megerősítés elkerülésére.
+\textbf{MINIMUM ZÖLD IDŐ:}
+Az ágens nem válthat zöldet azonnal az előző váltás után.
+min\_green\_time = 5 sec $\rightarrow$ legalább 5 másodpercig kell zöldnek lennie.
+Ez megakadályozza a "villogást" (ami a valóságban tilos és veszélyes).
 
-\section{Neural Network, Sweep \& Backends}
-\subsection{QR-DQN és Sweep}
-A háló \code{MultiInputPolicy} alapú, amely a W\&B sweep optimalizáció során hangolható paraméterekkel (\code{num\_layers}, \code{layer\_size}, tanulási ráta stb.) alakul ki. Mentés: \code{.zip} és \code{ONNX} formátumban.
-\subsection{Backend (LIBSUMO vs TRACI)}
-\begin{itemize}
-    \item \textbf{libtraci / libsumo:} Natív kliens, szimpla futás révén (30-50\%) gyorsabb, azonban \code{libsumo} esetenként singleton korlátokkal bír. 
-    \item \textbf{Traci:} Párhuzamosítható és elengedhetetlen a GUI-hoz / evaluációs szkriptekhez.
-\end{itemize}
-\textbf{SUMO Subscriptions:} A batch lekérdezések (pl. detektor adatok) implementációja mindkét backend-en drámaian meggyorsítja az adatgyűjtést.
+\subsection*{1.4 Step Mechanics — EGY LÉPÉS RÉSZLETEI}
+\addcontentsline{toc}{subsection}{1.4 Step Mechanics — EGY LÉPÉS RÉSZLETEI}
+delta\_time = 5 SUMO másodperc / RL lépés
 
-\section{Baseline Evaluation — Összehasonlító Stratégiák}
-Négy (baseline) stratégia került implementálásra a kutatás során az összehasonlításhoz (\code{baseline\_actuated.py}):
-\begin{enumerate}
-    \item \textbf{Static:} Beégetett \code{.net.xml} alapú fix ciklus, adaptáció nélkül.
-    \item \textbf{Actuated:} SUMO beépített aktuált / szenzorvezérelt fix-sorrendű szimulációja (maxGap = 3.1s).
-    \item \textbf{Random:} Determinisztikus de random fázist választó döntéshozó. Worst-case scenario.
-    \item \textbf{Max-Pressure:} A közlekedésmérnöki irodalom jelenlegi standardja. Minden döntési ciklusban kiszámítja a \uv{nyomást} (a kapott zöldágakon megállt járművek összességét), és a legmagasabb értékűt részesíti előnyben.
-\end{enumerate}
-Ezek a stratégiák (\code{random} és \code{max-pressure}) teljesen ugyanazt az értékelési rendszert és RL környezetet (transition logic, reward, env) kapják meg a fair összehasonlítás érdekéhez. W\&B fiókkal könnyen követhetőek egymás mellett a grafikonokon.
+Ez azt jelenti: az ágens NEM minden szimulációs másodpercben dönt,
+hanem 5 másodpercenként. Ez reális — a valóságban sem változtatjuk
+a jelzésprogramot másodpercenként.
 
-\section{Training Pipeline \& Curriculum Learning}
-\subsection{Kivitelezés és CLI argumentumok}
-Két módon futtatható a rendszer: GUI (Tkinter), amellyel subprocessként (\code{main\_headless.py}) aktiváljuk, vagy natívan shellből/Dockerből paraméterekkel (\code{--learning-rate}, \code{--num-layers}).
-\textbf{Prioritás:} Sweep config > CLI args > YAML defaults.
+Egy lépés belső folyamata:
+1. Az ágens kap egy observation-t és választ egy akciót (target phase).
+\textbf{2. 5× SUMO substep (5 szimuált másodperc):}
+Minden substepben:
+a) update\_logic(): a jelzőlámpa logika frissítése
+\par\noindent\hspace*{1em}\textbullet{} Ha éppen fázisváltás történik: a transition\_queue-ból
+a következő köztes fázis beállítása (sárga, piros, stb.)
+\par\noindent\hspace*{1em}\textbullet{} Ha nem: min\_green\_timer csökkentése
+b) traci.simulationStep(): a SUMO 1 másodpercet szimulál
+\par\noindent\hspace*{1em}\textbullet{} Járművek mozognak, sávot váltanak, megállnak, stb.
+c) collect\_measurements(): a metrikák gyűjtése
+\par\noindent\hspace*{1em}\textbullet{} Minden bejövő sáv várakozási ideje, CO2, sebesség, stb.
+\par\noindent\hspace*{1em}\textbullet{} Detektor foglaltság és átfolyás
+3. Observation számítás: a 5 substep alatt akkumulált értékek
+átlagolása (osztás steps\_measured-del).
+4. Reward számítás: Log-Sigmoid normalizáció (lásd VI. fejezet).
+5. Done ellenőrzés: ha a szimulációs idő $>$= traffic\_duration $\rightarrow$ vége.
 
-\subsection{Curriculum Learning megfontolásai (Domain Randomization)}
-Fokozatos nehézség (forgalom) növelés komoly \textbf{Catastrophic Forgetting} hátulütőket eredményez a Limitált DQN replay buffer mérete miatt, emellett "Exploration Gap" jelenséget is produkálhat, ahol az ágens nem ismeri meg a nehéz stratégiákat a kezdeti kapott sok zöld jelzés miatt. 
-Helyette a \textbf{Domain Randomization (Target+Spread)} nyújt stabilabb végeredményt aszimmetrikus és véletlengenerált könnyű/nehéz epizódjaival. Nincs szükség külső \code{flow\_min/max} módosításra, a diverzitás az epizód szintű logika miatt automatikus.
 
-\section{Key Conclusions \& Bibliography}
-\subsection{Összegzés}
-\begin{itemize}
-    \item \textbf{PCA Selection:} A 12 indikátorból 3 zajmentes komponens emelkedik ki: \code{WaitingTime} \& \code{TotalCO2}.
-    \item \textbf{Normalization:} Az online stream környezethez hangolt pre-kalibrált Log-Sigmoid lett beépítve.
-    \item \textbf{Baseline Eval:} Létrejött az objektív és ipari \code{max-pressure} és actuated baseline összehasonlító analitika a W\&B-en belül is.
-    \item \textbf{Traffic Generation:} Lane-level target+spread logika nyújt hatékony generalizációt "curriculum learning" helyett.
-\end{itemize}
-\subsection{Kulcs Hivatkozások}
-\begin{itemize}
-    \item \textit{SUMO} (Lopez et al., 2018), \textit{QR-DQN} (Dabney et al., 2018), \textit{HBEFA 4.2}.
-    \item \textit{Max-Pressure Control} (Varaiya 2013; Wei et al. 2019)
-    \item \textit{Stable-Baselines3} (Raffin et al., 2021)
-\end{itemize}
+\section*{II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?}
+\addcontentsline{toc}{section}{II. TRAFFIC GENERATION — HOGYAN GENERÁLJUK A FORGALMAT?}
 
+\textbf{A PROBLÉMA:}
+Az RL ágensnek forgalomra van szüksége, hogy tanulhasson. De nem egy
+fix forgalmat akarunk, hanem VÁLTOZATOSAT — különböző forgalmi
+szinteket, véletlenszerű mintákat, különböző időtartamokat.
+Így az ágens nem tanul rá egy konkrét szituációra, hanem ÁLTALÁNOSÍT.
+
+\subsection*{2.1 Lane-Level Random Traffic}
+\addcontentsline{toc}{subsection}{2.1 Lane-Level Random Traffic}
+Metódus: generate\_random\_traffic(flow\_range=(100, 900))
+Fájl: sumo\_rl\_environment.py, generate\_random\_traffic() függvény
+
+MIÉRT NEM A SUMO BEÉPÍTETT randomTrips.py-t HASZNÁLJUK?
+A randomTrips.py O-D (Origin-Destination) utazásokat generál a
+teljes hálózatra — de így nem tudjuk kontrollálni, hogy egy adott
+SÁVBA hány jármű érkezzen. A forgalommérnöki gyakorlatban a
+forgalmi terhelést SÁV SZINTEN definiáljuk (pl. "ezen a sávon
+500 jármű/óra"). Ezt a randomTrips nem tudja.
+
+\textbf{AZ ALGORITMUS LÉPÉSRŐL LÉPÉSRE:}
+1. A sumolib könyvtárral beolvassuk a hálózatot (mega\_catalogue\_v2.net.xml)
+2. Minden vezérelt csomóponthoz megkeressük a BEJÖVŐ SÁVOKAT.
+\textbf{Pl. R1C1\_C csomóponthoz:} az északi, déli, keleti, nyugati
+irányból érkező sávok (jellemzően 6-12 sáv csomópontonként).
+3. Minden sávhoz meghatározzuk a lehetséges CÉLPONTOKAT.
+A SUMO hálózatban a sávkapcsolatok (connections) definiálják,
+hogy melyik sávról melyik kimenő élre lehet eljutni.
+\textbf{4. MINDEN SÁVRA véletlenszerű forgalmi szintet generálunk:}
+flow\_per\_hour = random(flow\_min, flow\_max) — pl. random(100, 900)
+5. A járműveket egyenletes időközökkel indítjuk, ±50\% véletlenszerű
+eltolással (jitter), hogy ne legyen tökéletesen metronomikus.
+6. Minden járműhöz:
+\par\noindent\hspace*{1em}\textbullet{} departLane attribútum $\rightarrow$ a jármű a megadott sávba lép be
+\par\noindent\hspace*{1em}\textbullet{} Véletlenszerű célpont a sáv elérhető céljai közül
+7. Időrend szerinti rendezés, XML route fájl kiírása.
+
+FORGALMI TARTOMÁNY — EPIZÓD-SZINTŰ TARGET + SPREAD RANDOMIZÁLÁS
+A korábbi megoldás (flow\_range=(100, 900) uniform per lane) problémája:
+ha sok sáv van (\textasciitilde{}80), a nagy számok törvénye miatt az ÖSSZ-forgalom
+mindig \textasciitilde{}500 veh/h/lane körül áll be — az ágens nem lát igazán könnyű
+vagy nehéz epizódokat.
+
+Az ÚJ megoldás két szinten randomizál:
+1. target = random.choice([100, 200, 300, 400, 500, 600, 700, 800, 900])
+$\rightarrow$ az epizód összforgalmának nagyságrendje
+2. spread = random.choice([50, 100, 150, 200, 250, 300])
+$\rightarrow$ az irányok közötti aszimmetria mértéke
+3. flow\_range = (max(50, target-spread), min(1100, target+spread))
+4. Sávonként: flow = randint(flow\_min, flow\_max)
+
+Példák:
+target=200, spread=50  $\rightarrow$ [150, 250]  — könnyű, egyenletes forgalom
+target=200, spread=300 $\rightarrow$ [50, 500]   — könnyű átlag, nagy aszimmetria
+target=700, spread=50  $\rightarrow$ [650, 750]  — nehéz, egyenletes
+target=700, spread=300 $\rightarrow$ [400, 1000] — nehéz átlag, nagy aszimmetria
+target=500, spread=300 $\rightarrow$ [200, 800]  — hasonló a régi [100,900]-hoz
+
+Ezzel az ágens lát:
+\par\noindent\hspace*{1em}\textbullet{} Könnyű ÉS nehéz epizódokat (target variál)
+\par\noindent\hspace*{1em}\textbullet{} Egyenletes ÉS aszimmetrikus forgalmat (spread variál)
+\par\noindent\hspace*{1em}\textbullet{} Abszolút min: 50, max: 1100 veh/h/lane (gridlock elkerülése)
+
+Ha a baseline\_actuated.py vagy bármely külső hívó explicit flow\_range-t
+ad az options-ben, az felülírja a target+spread logikát.
+
+\textbf{FORGALMI SZINTEK ÉRTELMEZÉSE:}
+100 veh/h/lane $\approx$ 36 másodpercenként jön egy autó $\rightarrow$ SZABAD FORGALOM
+Ilyenkor alig van sor, szinte minden autó zöldet kap.
+A reward magas lesz (\textasciitilde{}0.8), és az ágens nem kap sok "tanulnivalót".
+
+400-600 veh/h/lane $\approx$ 6-9 másodpercenként egy autó $\rightarrow$ TIPIKUS VÁROSI
+A legtöbb városi főútvonal ebben a tartományban van.
+A jelzőlámpa programozása SZÁMÍT — rossz időzítés = sor, jó = áramlás.
+
+900 veh/h/lane $\approx$ 4 másodpercenként egy autó $\rightarrow$ TELÍTŐDÉS KÖZELÉBEN
+Egy sáv kapacitása jelzőlámpánál \textasciitilde{}1800 veh/h (zöld időarány $\approx$50\%).
+900 veh/h tehát \textasciitilde{}50\%-os kihasználtság — már komoly sorok képződhetnek.
+
+1100 veh/h/lane $\approx$ 3.3 másodpercenként $\rightarrow$ MAXIMÁLIS TRÉNING SZINT
+A target+spread logika legfeljebb 1100-ig engedi.
+1200+ a PCA elemzésben volt, de a tanításban nem — gridlock kockázat.
+
+\textbf{PCA KALIBRÁCIÓ — HÁLÓZAT-FÜGGŐ NORMALIZÁCIÓ:}
+A reward normalizációs konstansok HÁLÓZAT-FÜGGŐEK, mert a forgalmi
+metrikák skálája erősen függ a hálózat méretétől és topológiájától.
+
+\textbf{MEGA CATALOGUE (21 junction, 527K+ minta, metric\_pca\_test\_v2/):}
+\textbf{MU\_WAIT=4.5848, STD\_WAIT=1.8249 (medián wait:} 120.2 sec)
+\textbf{MU\_CO2=10.8706, STD\_CO2=0.9629  (medián CO2:} 70,129 mg/s)
+
+\textbf{OSM SINGLE JUNCTION (2632893078, 63K minta, metric\_pca\_osm/):}
+\textbf{MU\_WAIT=2.4486, STD\_WAIT=1.8586 (medián wait:} 14.6 sec)
+\textbf{MU\_CO2=9.9652,  STD\_CO2=0.7381  (medián CO2:} 23,246 mg/s)
+
+\textbf{ELTÉRÉS:} MU\_WAIT -2.14, MU\_CO2 -0.91 $\rightarrow$ az OSM junction lényegesen
+kisebb forgalmi terhelést generál. Ha a mega konstansokat használjuk
+az OSM junction-re, a sigmoid szinte minden értéket "jónak" lát
+(reward átlag 0.69, szűk range 0.35) $\rightarrow$ az agens nem tud tanulni,
+mert nincs érdemi reward grádiens a jó és rossz akciók között.
+
+\textbf{MEGOLDÁS:} sumo\_rl\_environment.py a single\_agent\_id alapján választ
+konstansokat — single agent $\rightarrow$ OSM, multi agent $\rightarrow$ mega catalogue.
+Új hálózatoknál a metric\_collection\_osm.py mintájára kell kalibrálni.
+
+\textbf{JÁRMŰTÍPUS PARAMÉTEREK (realisztikus személygépjármű):}
+accel = 0.8 m/s² (gyorsulás — átlagos személyautó)
+decel = 4.5 m/s² (fékezés — komfortos fékezés)
+sigma = 0.5 (Krauss modell noise — mennyi a "vigyázatlanság")
+length = 5m (átlag autóhossz)
+minGap = 2.5m (minimális követési távolság álló helyzetben)
+maxSpeed = 16.67 m/s (60 km/h — tipikus városi sebességhatár)
+
+\textbf{FONTOS:} Minden epizód elején (reset()) ÚJ véletlenszerű forgalmat
+generálunk. Tehát soha nem ugyanaz a forgalmi minta — az ágensnek
+alkalmazkodnia kell. Ez a kulcsa az általánosításnak.
+
+\subsection*{2.2 Episode Duration Rotation — VÁLTOZÓ SZIMULÁCIÓS HOSSZ}
+\addcontentsline{toc}{subsection}{2.2 Episode Duration Rotation — VÁLTOZÓ SZIMULÁCIÓS HOSSZ}
+Minden epizódban véletlenszerűen kiválasztunk egy időtartamot:
+[900, 1800, 2700, 3600, 5400, 7200] másodperc
+[15 perc, 30 perc, 45 perc, 1 óra, 1.5 óra, 2 óra]
+
+MIÉRT ROTÁLUNK?
+\par\noindent\hspace*{1em}\textbullet{} A valóságban a csúcsidőszakok különböző hosszúak.
+Reggeli csúcs: 1-1.5 óra. Esti csúcs: 1.5-2 óra.
+Hétvégi vásárlás: 30-45 perc.
+\par\noindent\hspace*{1em}\textbullet{} Ha mindig 1 órát szimulálnánk, az ágens MEGTANULNÁ,
+hogy "a 720. lépés után vége van" $\rightarrow$ nem általánosítana.
+\par\noindent\hspace*{1em}\textbullet{} Rövid epizódok (15-30 perc): gyorsabb feedback, de zajosabb
+metrikák (kevesebb adat az átlagoláshoz).
+\par\noindent\hspace*{1em}\textbullet{} Hosszú epizódok (1.5-2 óra): stabilabb átlagok, de lassabb tanulás.
+\par\noindent\hspace*{1em}\textbullet{} A keverés MEGAKADÁLYOZZA a temporális overfitting-et.
+
+Felülírható: options=\{'traffic\_duration': 3600\} a reset()-ben.
+
+\subsection*{2.3 Warm-up — KIKAPCSOLVA}
+\addcontentsline{toc}{subsection}{2.3 Warm-up — KIKAPCSOLVA}
+Korábbi megoldás: a reset() elején 50-150 random másodperc warm-up,
+ahol a jelzőlámpák VÉLETLENSZERŰ fázisokat kaptak. Ez dugót okozott,
+amit az ágens a legelső lépésben megörökölt.
+
+MIÉRT LETT KIKAPCSOLVA?
+1. A random fázisok kaotikus jelzésprogramot adtak $\rightarrow$ dugó képződött
+2. Az ágens memória nélküli (nincs LSTM/Transformer), tehát nem tudja
+megkülönböztetni a "megörökölt dugó" és a "saját maga által okozott
+dugó" szituációkat $\rightarrow$ zajos, nem informatív tanulási jel
+3. A forgalom a jitter miatt úgyis fokozatosan indul (depart $\approx$ 0 + jitter),
+tehát az első 1-2 másodpercben már vannak járművek a hálózatban
+4. A detektorok az első RL lépésnél (5 sec) már látnak forgalmat
+
+Felülírható: options=\{'warmup\_seconds': 60\} a reset()-ben (pl. baseline teszthez).
+
+
+\section*{III. METRIC COLLECTION \& SUMO API — HONNAN JÖNNEK A MÉRŐSZÁMOK?}
+\addcontentsline{toc}{section}{III. METRIC COLLECTION \& SUMO API — HONNAN JÖNNEK A MÉRŐSZÁMOK?}
+
+\textbf{A LÉNYEG:}
+Minden RL lépésben (5 szimuált másodperc) a SUMO szimulátorból
+kiolvasunk egy csomó adatot. Ezeket az adatokat AKKUMULÁLJUK
+(összegezzük), majd az 5 substep átlagát vesszük. Ebből lesz
+a reward kiszámítható.
+
+A kód: sumo\_rl\_environment.py $\rightarrow$ TrafficAgent.collect\_measurements()
+
+\textbf{GYŰJTÉSI MECHANIZMUS:}
+Az environment reset\_step\_metrics()-t hív minden RL lépés elején.
+Ez NULLÁZZA az akkumulátorokat (accumulated\_waiting\_time, stb.).
+Aztán 5× lefut a collect\_measurements(), ami HOZZÁADJA az
+aktuális értékeket. A végén osztunk a steps\_measured-del (=5).
+Tehát ami a reward-ba megy, az egy 5 másodperces ablak átlaga.
+
+\subsection*{3.1 Raw SUMO Metrics — RÉSZLETES LEÍRÁS}
+\addcontentsline{toc}{subsection}{3.1 Raw SUMO Metrics — RÉSZLETES LEÍRÁS}
+
+1. TotalWaitingTime [sec]
+\textbf{SUMO hívás:} traci.lane.getWaitingTime(lane)
+\textbf{MIT AD VISSZA:} Az adott sávon MOST várakozó összes jármű
+összesített várakozási ideje, másodpercben.
+"Várakozás" = a jármű sebessége $<$ 0.1 m/s (gyakorlatilag áll).
+\textbf{HOGYAN GYŰJTJÜK:} Összegezzük az összes bejövő sáv értékét,
+majd az 5 substep átlagát vesszük.
+\textbf{MIÉRT EZ A FŐ REWARD METRIKA:} Közvetlenül méri, amit
+javítani akarunk — mennyi időt töltenek az autók piros
+lámpánál várakozva. A jelzőlámpa programozása KÖZVETLENÜL
+befolyásolja ezt az értéket.
+
+2. AvgWaitingTime [sec/jármű]
+= TotalWaitingTime / VehCount
+Nem a reward-ban, csak az elemzésben (PCA) használjuk.
+Azért nem ezt használjuk reward-nak, mert kis forgalomnál
+(1-2 autó) egy rosszul járó autó extrém magas átlagot ad.
+
+3. TotalCO2 [mg/s]
+\textbf{SUMO hívás:} traci.lane.getCO2Emission(lane)
+\textbf{MIT AD VISSZA:} Az adott sáv összes járművének pillanatnyi
+CO2 kibocsátási rátája, milligramm/másodpercben.
+A HBEFA (Handbook Emission Factors for Road Transport)
+modellt használja — európai emissziós szabvány.
+A kibocsátás függ a jármű sebességétől és gyorsulásától:
+álló motor $\rightarrow$ alacsony CO2, gyorsulás $\rightarrow$ magas CO2,
+állandó sebesség $\rightarrow$ közepes CO2.
+\textbf{HOGYAN GYŰJTJÜK:} Összegezzük az összes bejövő sáv értékét.
+\textbf{MIÉRT VAN A REWARD-BAN:} Környezeti szempont. Nem teljesen
+redundáns a várakozási idővel — a stop-and-go forgalom
+több CO2-t termel, mint a lassú de egyenletes haladás.
+
+4. AvgCO2 [mg/s/jármű]
+= TotalCO2 / VehCount
+EZ SZINTE KONSTANS (\textasciitilde{}1575 mg/s/jármű)!
+Miért? Mert alacsony városi sebességeknél a HBEFA modell
+kibocsátása nagyrészt az alapjárat + lassú haladás emissziója,
+ami nem változik sokat. Az autók kb. ugyanannyit bocsátanak ki
+akár állnak, akár lassan haladnak.
+\textbf{KÖVETKEZMÉNY:} Nem alkalmas reward metrikának! Nincs benne
+információ, amiből az ágens tanulhatna. (A PCA ezt igazolta.)
+
+5. TotalTravelTime [sec] — SZŰRT VERZIÓ
+\textbf{SUMO hívás:} traci.lane.getTraveltime(lane)
+\textbf{MIT AD VISSZA:} Mennyi idő alatt lehet áthaladni a sávon
+az aktuális forgalmi viszonyok mellett.
+\textbf{VIGYÁZAT — SENTINEL ÉRTÉKEK:} Ha a sáv üres vagy teljesen
+bedugult, a SUMO \textasciitilde{}200,000 és \textasciitilde{}5,000,000 közötti értékeket
+ad vissza. Ez NEM valós menetidő, hanem a SUMO implementációs
+"jelzőértéke" (sentinel value). Lásd: 3.2.
+\textbf{SZŰRÉS:} Csak 0 $<$ tt $<$ 1000 értékeket akkumulálunk.
+1000 sec reális maximum egy \textasciitilde{}90 méteres sávra.
+
+6. AvgTravelTime [sec]
+= TotalTravelTime / valid\_tt\_lanes (szűrt)
+Elemzési metrika, nem reward.
+
+7-10. VehCount, AvgSpeed, AvgOccupancy, QueueLength
+Szintén elemzési metrikák. Részletek a korábbi verzióban.
+
+\subsection*{3.2 Sentinel Value Problem — A TRAVELTIME CSAPDÁJA}
+\addcontentsline{toc}{subsection}{3.2 Sentinel Value Problem — A TRAVELTIME CSAPDÁJA}
+Ez egy NAGYON fontos felismerés, ami a PCA elemzésből derült ki!
+
+\textbf{A SUMO traci.lane.getTraveltime(lane) függvénye:}
+\par\noindent\hspace*{1em}\textbullet{} Ha vannak járművek a sávon: normális érték (10-1000 sec)
+\par\noindent\hspace*{1em}\textbullet{} \textbf{Ha NINCS jármű:} \textasciitilde{}200,000 - \textasciitilde{}5,000,000 értéket ad vissza
+
+Ez egy SUMO implementációs artifact — a sáv hosszát elosztja
+egy nagyon kicsi sebességgel (ami üres sávnál 0.0001 m/s körüli).
+
+\textbf{Ha ezt NEM szűrjük ki, a TravelTime teljesen használhatatlan:}
+\par\noindent\hspace*{1em}\textbullet{} Az átlag 877,339 sec lesz (a valóság \textasciitilde{}725 sec)
+\par\noindent\hspace*{1em}\textbullet{} A szórás 2,175,933 (!!!)
+\par\noindent\hspace*{1em}\textbullet{} Az eloszlás extrém jobbra ferdült
+
+\textbf{A PCA IGAZOLTA a szűrés szükségességét:}
+\par\noindent\hspace*{1em}\textbullet{} Raw TT (szűretlen) $\rightarrow$ PC3-ra kerül (12.3\%) = ZAJDIMENZIÓ
+\par\noindent\hspace*{1em}\textbullet{} Filtered TT (szűrt) $\rightarrow$ PC2-ra kerül (22.6\%) = VALÓS DIMENZIÓ
+Ez azt jelenti, hogy a raw TT egy teljesen más típusú variabilitást
+mér (sentinel noise), nem menetidőt.
+
+\textbf{TANULSÁG:} A cikkben érdemes megemlíteni, hogy a sentinel értékek
+kezelése kritikus — a PCA objektíven igazolta, hogy a szűretlen
+menetidő zajt hoz be, nem információt.
+
+\subsection*{3.3 Metric Units Summary — MÉRTÉKEGYSÉGEK ÖSSZEFOGLALÁSA}
+\addcontentsline{toc}{subsection}{3.3 Metric Units Summary — MÉRTÉKEGYSÉGEK ÖSSZEFOGLALÁSA}
+Metrika             | Mértékegység | SUMO forrás                    | Reward?
+\vspace{1em}\begin{verbatim}
+  --------------------|-------------|--------------------------------|---------
+  TotalWaitingTime    | sec/step    | lane.getWaitingTime()          | IGEN ★
+  AvgWaitingTime      | sec/jármű   | TotalWaiting / VehCount        | nem
+  TotalCO2            | mg/s/step   | lane.getCO2Emission()          | IGEN ★
+  AvgCO2              | mg/s/jármű  | TotalCO2 / VehCount            | nem (≈konstans!)
+  TotalTravelTime     | sec/step    | lane.getTraveltime() szűrt     | nem
+  AvgTravelTime       | sec/jármű   | TotalTT / valid_lanes          | nem
+  VehCount            | járművek    | lane.getLastStepVehicleNumber() | nem
+  AvgSpeed            | m/s         | detektor adatokból             | nem
+  AvgOccupancy        | %           | inductionloop.getLastStepOcc() | nem
+  QueueLength         | járművek    | megállt járművek száma         | nem
+
+  ★ = a reward függvényben használt metrikák (lásd VI. fejezet)
+
+
+\end{verbatim}
+\section*{IV. PCA ANALYSIS — MIÉRT PONT EZEKET A METRIKÁKAT HASZNÁLJUK?}
+\addcontentsline{toc}{section}{IV. PCA ANALYSIS — MIÉRT PONT EZEKET A METRIKÁKAT HASZNÁLJUK?}
+
+\textbf{A NAGY KÉRDÉS:}
+Van 12 forgalmi metrikánk (WaitingTime, CO2, TravelTime, Speed, stb.).
+Mindegyiket használhatnánk reward-ként. De melyiket ÉRDEMES?
+
+\textbf{A NAIV MEGKÖZELÍTÉS ROSSZ LENNE:}
+Ha mind a 12-t beraknánk a reward-ba, az (1) lassítaná a tanulást,
+(2) egymásnak ellentmondó gradieseket adna, és (3) a redundáns
+metrikák (amelyek ugyanazt mérik) aránytalan súlyt kapnának.
+
+\textbf{A PCA (Principal Component Analysis = Főkomponens Elemzés) megoldja:}
+Megmondja, hogy a 12 metrika VALÓJÁBAN hány FÜGGETLEN információ-
+dimenziót tartalmaz, és melyik metrika melyik dimenzióhoz tartozik.
+
+\textbf{EGYSZERŰ ANALÓGIA:}
+Képzeld el, hogy 12 hőmérőd van egy szobában. 6 a szoba közepén,
+3 az ablak mellett, 3 a radiátor mellett. A 6 középső UGYANAZT méri
+\textbf{(szobahőmérséklet), csak minimális eltéréssel. A PCA megmondaná:}
+"Van 3 független dimenzió: szobahő, ablakhő, radiátorhő. A 6 középső
+hőmérő redundáns — elég egy belőlük."
+
+\subsection*{4.1 Purpose — KONKRÉT CÉL}
+\addcontentsline{toc}{subsection}{4.1 Purpose — KONKRÉT CÉL}
+Tudományosan igazolni, hogy:
+1. A TotalWaitingTime a legjobb reward metrika (PC1 domináns)
+2. A TotalCO2 hasznos kiegészítő (PC1, de más aspektus)
+3. Az AvgCO2 HASZONTALAN (közel konstans, nulla PCA loading)
+4. A raw TravelTime ZAJT hoz be (PC3 = sentinel noise)
+5. A QueueLength, VehCount, Occupancy REDUNDÁNSAK a WaitingTime-mal
+
+\subsection*{4.2 Data Collection — ADATGYŰJTÉS}
+\addcontentsline{toc}{subsection}{4.2 Data Collection — ADATGYŰJTÉS}
+HONNAN JÖNNEK AZ ADATOK?
+Ugyanabból a szimulációból, mint ami az RL tanításban fut!
+A metric\_collection\_test.py futtatta a SUMO-t 12 forgalmi szinten
+(100, 200, 300, ..., 1200 veh/h/lane), mindegyiket 3×, és minden
+lépésben kimentette mind a 12 metrikát 21 csomópontra.
+
+\textbf{MENNYISÉG:}
+12 forgalmi szint × 3 epizód × 21 csomópont × \textasciitilde{}720 lépés/epizód
+= 527,747 érvényes adatpont (VehCount $>$ 0 szűrés után)
+
+\textbf{FONTOS — KONZISZTENCIA AZ RL-LEL:}
+\textbf{Az adatok PONTOSAN úgy vannak kiszámítva, mint a reward függvényben:}
+\par\noindent\hspace*{1em}\textbullet{} Akkumulált átlag a delta\_time substepekre
+\par\noindent\hspace*{1em}\textbullet{} Ugyanazok a SUMO API hívások
+\par\noindent\hspace*{1em}\textbullet{} Ugyanaz a szűrési logika (TT $<$ 1000)
+Ha más módszerrel gyűjtenénk az adatokat, a PCA paraméterek NEM
+lennének alkalmazhatók a reward-ban! Ez volt a legfontosabb döntés.
+
+\subsection*{4.3 Preprocessing — ELŐFELDOLGOZÁS}
+\addcontentsline{toc}{subsection}{4.3 Preprocessing — ELŐFELDOLGOZÁS}
+\textbf{A PCA érzékeny a skálázásra, ezért előkészítés szükséges:}
+
+\textbf{1. SZŰRÉS:} Csak azok a sorok, ahol VehCount $>$ 0
+Üres csomópontok (nincs jármű) torzítanák az elemzést.
+
+\textbf{2. LOG TRANSZFORMÁCIÓ:} log(x + 0.00001) minden metrikára
+MIÉRT? A forgalmi metrikák JOBBRA FERDÜLTEK — néhány extrém
+nagy érték (pl. WaitingTime 31,000 sec) eltorzítja az átlagot.
+A log(x) "összenyomja" a nagy értékeket:
+log(10) = 2.3, log(100) = 4.6, log(1000) = 6.9, log(10000) = 9.2
+Így a 100× különbség csak 4× különbség lesz log skálán.
+\textbf{FONTOS:} Ugyanezt a log transzformációt használjuk a reward-ban is!
+
+\textbf{3. STANDARDIZÁLÁS:} (x - átlag) / szórás minden metrikára
+Hogy minden metrika egyforma "súlyú" legyen a PCA-ban.
+Anélkül a nagy értékű metrikák (TotalCO2 \textasciitilde{}70,000) elnyomnák
+a kicsiket (AvgWaitingTime \textasciitilde{}5).
+
+\textbf{4. PCA:} Teljes felbontás 12 komponensre
+
+\subsection*{4.4 Results — Explained Variance}
+\addcontentsline{toc}{subsection}{4.4 Results — Explained Variance}
+Component | Explained Variance | Cumulative | Interpretation
+\vspace{1em}\begin{verbatim}
+  ----------|-------------------|------------|---------------------------
+  PC1       | 44.8%             | 44.8%      | Congestion dimension
+  PC2       | 22.6%             | 67.4%      | Travel Time dimension
+  PC3       | 12.3%             | 79.7%      | Raw TT sentinel noise
+  PC4       | 6.1%              | 85.8%      | Minor variation
+  PC5-12    | <5% each          | 100%       | Negligible
+
+  3 components capture 79.7% of total variance.
+  PC1+PC2 = 67.4% → two dimensions explain most of the real information.
+
+\end{verbatim}
+\subsection*{4.5 Results — PCA Loadings (Component Weights)}
+\addcontentsline{toc}{subsection}{4.5 Results — PCA Loadings (Component Weights)}
+Metric                  PC1      PC2      PC3
+-------------------------------------------------
+\vspace{1em}\begin{verbatim}
+  TotalWaitingTime        0.4001   0.0758   0.0449   ← PC1 dominant
+  AvgWaitingTime          0.3787   0.0327   0.1027   ← PC1 dominant
+  QueueLength             0.3837   0.1152   0.0707   ← PC1 dominant
+  VehCount                0.3694   0.1752  -0.1825   ← PC1 dominant
+  TotalCO2                0.3346   0.1714  -0.2798   ← PC1 dominant
+  AvgOccupancy            0.3089   0.1915  -0.2449   ← PC1 dominant
+  -------------------------------------------------
+  TotalTravelTime        -0.0483   0.5695   0.2386   ← PC2 dominant
+  AvgTravelTime          -0.0364   0.5634   0.2584   ← PC2 dominant
+  AvgSpeed               -0.2810   0.3322   0.3046   ← PC2 (inverse)
+  -------------------------------------------------
+  TotalTravelTime_Raw     0.2509  -0.2509   0.5162   ← PC3 = sentinel noise
+  AvgTravelTime_Raw       0.2445  -0.2602   0.5225   ← PC3 = sentinel noise
+  -------------------------------------------------
+  AvgCO2                 -0.0086   0.0222  -0.2342   ← NEAR ZERO on PC1,PC2
+
+\end{verbatim}
+\subsection*{4.6 Interpretation}
+\addcontentsline{toc}{subsection}{4.6 Interpretation}
+
+\textbf{PC1 — CONGESTION DIMENSION (44.8\%):}
+\vspace{1em}\begin{verbatim}
+    TotalWaitingTime, AvgWaitingTime, QueueLength, VehCount, TotalCO2, AvgOccupancy
+    all load strongly onto PC1 (0.31-0.40).
+
+    These metrics are REDUNDANT: they all measure the same underlying phenomenon
+    (traffic congestion). Using all of them in a reward function would be
+    mathematically equivalent to using just one, multiplied by a constant.
+
+    → Choose ONE from this cluster for the reward. We choose TotalWaitingTime
+      because it has the highest PC1 loading (0.4001) and is directly
+      actionable by traffic signal timing.
+
+  PC2 — TRAVEL TIME DIMENSION (22.6%):
+    TotalTravelTime and AvgTravelTime load onto PC2 (~0.57).
+    This represents INDEPENDENT information from congestion.
+
+    However, travel time is LESS directly controllable by signal timing
+    than waiting time (it includes free-flow travel time), and its
+    filtered version discards sentinel values, reducing reliability.
+
+    → Not included in reward. Monitored as evaluation metric.
+
+  PC3 — SENTINEL NOISE (12.3%):
+    TotalTravelTime_Raw and AvgTravelTime_Raw load onto PC3 (~0.52).
+    This dimension captures the SUMO sentinel value artifacts.
+
+    → CONFIRMS that raw TT must be filtered. Never use raw TT in reward.
+
+  AvgCO2 — NEAR-ZERO LOADING (≈ constant):
+    PC1 loading = -0.0086, PC2 loading = 0.0222
+    AvgCO2 ≈ 1575 mg/s/vehicle across all conditions.
+    The per-vehicle CO2 rate is nearly constant because at low urban
+    speeds, HBEFA emission is dominated by idle+cruise emissions.
+
+    → AvgCO2 is USELESS as a reward metric. It provides no learning signal.
+    → BUT TotalCO2 (loading 0.33 on PC1) IS useful because it scales
+      with vehicle count — more vehicles = more total emissions.
+
+\end{verbatim}
+\subsection*{4.7 PCA-Based Reward Metric Selection}
+\addcontentsline{toc}{subsection}{4.7 PCA-Based Reward Metric Selection}
+\textbf{SELECTED FOR REWARD:}
+\textbf{1. TotalWaitingTime (PC1 loading:} 0.40) — primary congestion signal
+\textbf{2. TotalCO2 (PC1 loading:} 0.33) — environmental dimension
+
+\textbf{WHY THESE TWO:}
+\par\noindent\hspace*{1em}\textbullet{} Both from PC1 cluster (congestion), but TotalCO2 adds a
+secondary environmental optimization objective
+\par\noindent\hspace*{1em}\textbullet{} While correlated (both on PC1), their correlation is not perfect:
+TotalCO2 also depends on speed profile (acceleration/deceleration),
+which TotalWaitingTime doesn't capture
+\par\noindent\hspace*{1em}\textbullet{} Using 50/50 weighted combination: reward = 0.5×r\_wait + 0.5×r\_co2
+
+\textbf{WHY NOT OTHERS:}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{QueueLength, VehCount, AvgOccupancy:} redundant with TotalWaitingTime (PC1)
+\par\noindent\hspace*{1em}\textbullet{} TravelTime: less controllable, sentinel value issues
+\par\noindent\hspace*{1em}\textbullet{} AvgCO2: constant $\rightarrow$ zero gradient $\rightarrow$ no learning signal
+\par\noindent\hspace*{1em}\textbullet{} AvgSpeed: partially on PC2, but inversely $\rightarrow$ covered by TravelTime
+
+
+\section*{V. NORMALIZATION METHOD COMPARISON — MELYIK MÓDSZERREL NORMALIZÁLJUNK?}
+\addcontentsline{toc}{section}{V. NORMALIZATION METHOD COMPARISON — MELYIK MÓDSZERREL NORMALIZÁLJUNK?}
+
+\textbf{A PROBLÉMA EGYSZERŰEN:}
+Az RL ágensnek a reward-ot 0 és 1 között kell kapnia (vagy legalább
+egy kiszámítható, stabil tartományban). De a nyers forgalmi metrikák:
+\vspace{1em}\begin{verbatim}
+    TotalWaitingTime: 0.2-tól 31,348 sec-ig (150,000× különbség!)
+    TotalCO2: 6.4-től 246,813 mg/s-ig (38,000× különbség!)
+  Ezeket valahogy "össze kell préselni" a [0, 1] tartományba.
+
+  DE NEM MINDEGY, HOGYAN!
+  Egy rossz normalizáció:
+    - Az értékek 99%-át 0.01-0.02 közé nyomja → az ágens nem tud
+      különbséget tenni "közepes" és "jó" között → nem tanul
+    - Extremális értékeknél ugrásszerű változás → instabil tanulás
+    - A forgalmi szint változásával a normalizált eloszlás "elmászik"
+
+  PLUSZ: ONLINE vs OFFLINE:
+  Offline módszerek (pl. Rank Gauss) a TELJES adathalmazt igénylik.
+  De az RL tanítás során az adatok EGYENKÉNT jönnek, valós időben.
+  Nincs "teljes adathalmaz" — amit eddig láttunk, az a tanítás
+  eddigi tapasztalata, ami folyamatosan bővül. Ezért ONLINE-
+  kompatibilis módszer kell: olyan, amit 2-4 előre kiszámított
+  konstanssal paraméterezünk, és utána semmit nem kell frissíteni.
+
+\end{verbatim}
+\subsection*{5.1 The Problem — SZÁMOKKAL}
+\addcontentsline{toc}{subsection}{5.1 The Problem — SZÁMOKKAL}
+RL reward must be in a bounded, well-behaved range [0, 1].
+Raw traffic metrics span vastly different scales:
+\vspace{1em}\begin{verbatim}
+    TotalWaitingTime: 0.2 — 31,348 sec
+    TotalCO2: 6.4 — 246,813 mg/s
+    VehCount: 0 — hundreds
+
+  Additionally, for ONLINE RL training:
+    - No full dataset available a priori
+    - Parameters must be precomputed from representative data
+    - Method must work with streaming data
+
+\end{verbatim}
+\subsection*{5.2 Methods Compared (10 methods)}
+\addcontentsline{toc}{subsection}{5.2 Methods Compared (10 methods)}
+1. Raw Data          — no normalization (baseline)
+2. Tanh (Z-score)    — tanh((x - mean) / std)
+3. Algebraic          — x / sqrt(1 + x²)
+4. Log-Normal         — log(x + eps)
+5. Log-Sigmoid        — 1 - sigmoid((log(x) - μ) / σ)     $\leftarrow$ SELECTED
+6. Robust (IQR)       — tanh((x - median) / IQR)
+7. Rank Gauss         — rank transform $\rightarrow$ inverse normal CDF
+8. Box-Cox            — Box-Cox power transform
+9. Clipped 95\%        — clip to [p5, p95], then linear scale to [0, 1]
+10. Harmonic          — K / (x + eps), where K = percentile(data, 5)
+
+\subsection*{5.3 Quality Metric}
+\addcontentsline{toc}{subsection}{5.3 Quality Metric}
+quality = |skewness| + |excess\_kurtosis|
+
+Perfect Gaussian $\rightarrow$ quality = 0
+Lower = better normalized (more symmetric, fewer outliers)
+
+\subsection*{5.4 Results — Normalization Quality Ranking}
+\addcontentsline{toc}{subsection}{5.4 Results — Normalization Quality Ranking}
+Rank | Method          | Avg Quality | Online? | Notes
+\vspace{1em}\begin{verbatim}
+  -----|-----------------|-------------|---------|----------------------------
+    1  | Rank Gauss      |    0.008    |   NO    | Needs full dataset for ranking
+    2  | Log-Sigmoid     |    1.354    |   YES   | ← BEST ONLINE METHOD
+    3  | Robust (IQR)    |    1.641    |   YES   | Needs median + IQR
+    4  | Algebraic       |    2.141    |   YES   | No parameters needed
+    5  | Tanh (Z-score)  |    2.310    |   YES   | Needs mean + std
+    6  | Clipped 95%     |    2.975    |   YES   | Needs percentiles
+    7  | Log-Normal      |    4.322    |   YES   | Just log transform
+    8  | Box-Cox         |    8.393    |   NO    | Needs lambda estimation
+    9  | Harmonic        |    8.730    |   YES   | Needs K parameter
+   10  | Raw Data        |   68.020    |   —     | Baseline
+
+  Rank Gauss is the best overall (quality 0.008), but requires sorting the
+  entire dataset to compute percentile ranks → impossible during online training.
+
+  Log-Sigmoid is the best ONLINE-COMPATIBLE method (quality 1.354):
+    - Only needs two pre-computed parameters per metric: μ and σ
+    - Parameters are stable across flow levels (log transform stabilizes)
+    - Sigmoid bounds output to [0, 1] automatically
+    - Monotonic: higher raw value → higher score → lower reward
+
+\end{verbatim}
+\subsection*{5.5 Why Not Rank Gauss for Online RL?}
+\addcontentsline{toc}{subsection}{5.5 Why Not Rank Gauss for Online RL?}
+Rank Gauss transforms data by:
+1. Rank all values from smallest to largest
+2. Map ranks to uniform [0, 1]
+3. Apply inverse normal CDF (erfinv)
+
+This requires the FULL dataset to compute ranks.
+In online RL, data arrives one sample at a time — no full dataset exists.
+Running Rank Gauss on partial data causes distribution drift as the
+dataset grows, destabilizing training.
+
+
+\section*{VI. REWARD FUNCTION — A JUTALOM FÜGGVÉNY MATEMATIKÁJA}
+\addcontentsline{toc}{section}{VI. REWARD FUNCTION — A JUTALOM FÜGGVÉNY MATEMATIKÁJA}
+
+\textbf{A LÉNYEG EGY MONDATBAN:}
+A reward függvény a nyers forgalmi metrikákat (sec, mg/s)
+átalakítja egy 0 és 1 közötti számmá, ahol 0 = nagyon rossz
+forgalmi viszonyok, 1 = tökéletes forgalmi áramlás.
+
+\subsection*{6.1 Log-Sigmoid Normalization Formula — LÉPÉSRŐL LÉPÉSRE}
+\addcontentsline{toc}{subsection}{6.1 Log-Sigmoid Normalization Formula — LÉPÉSRŐL LÉPÉSRE}
+\textbf{Legyen x a nyers metrika (pl. TotalWaitingTime = 120 sec):}
+
+\textbf{1. LÉPÉS — Log transzformáció:}
+log(x + $\epsilon$) $\rightarrow$ log(120 + 0.00001) $\approx$ 4.787
+
+\textbf{MIÉRT:} A forgalmi adatok extrém jobbra ferdültek.
+Egy 30,000 sec-es WaitingTime nélküle teljesen eltorzítaná a skálát.
+A log "összenyomja" a nagy értékeket.
+
+\textbf{2. LÉPÉS — Z-score normalizáció:}
+z = (log(x) - μ) / σ = (4.787 - 4.5848) / 1.8249 $\approx$ 0.111
+
+Ez megmondja, hogy az érték hány szórásra van az ÁTLAGTÓL.
+z $\approx$ 0 $\rightarrow$ átlagos forgalmi viszonyok
+z $>$ 0 $\rightarrow$ átlag feletti (rosszabb)
+z $<$ 0 $\rightarrow$ átlag alatti (jobb)
+
+\textbf{3. LÉPÉS — Sigmoid leképezés:}
+score = 1 / (1 + exp(-z)) = 1 / (1 + exp(-0.111)) $\approx$ 0.528
+
+A sigmoid bármilyen valós számot [0, 1] közé visz:
+z = -∞ $\rightarrow$ score $\approx$ 0
+z = 0  $\rightarrow$ score = 0.5 (az "átlag" pont)
+z = +∞ $\rightarrow$ score $\approx$ 1
+
+\textbf{4. LÉPÉS — Invertálás:}
+reward\_component = 1 - score = 1 - 0.528 = 0.472
+
+\textbf{MIÉRT:} Mert a magasabb WaitingTime ROSSZABB.
+De a reward-ban a magasabb = jobb.
+Tehát megfordítjuk: alacsony WaitingTime $\rightarrow$ magas reward.
+
+\textbf{ÖSSZEFOGLALVA:}
+z = (log(x + $\epsilon$) - μ) / σ          ... z-score log térben
+score = 1 / (1 + exp(-z))          ... sigmoid $\rightarrow$ [0, 1]
+\vspace{1em}\begin{verbatim}
+    reward_component = 1 - score       ... invertálás: kevesebb = jobb
+
+  A PARAMÉTEREK:
+    ε = 1e-5 (= 0.00001) — numerikus stabilitás, hogy log(0) ne legyen -∞
+    μ = E[log(X)] — a log-transzformált metrika átlaga a kalibrációs adatból
+    σ = Std[log(X)] — a log-transzformált metrika szórása
+
+\end{verbatim}
+\subsection*{6.2 Calibration Parameters — A KONSTANSOK ÉS HONNAN JÖNNEK}
+\addcontentsline{toc}{subsection}{6.2 Calibration Parameters — A KONSTANSOK ÉS HONNAN JÖNNEK}
+Ezek a számok a PCA adatgyűjtésből származnak (527,747 minta).
+A kód: sumo\_rl\_environment.py, \textasciitilde{}490. sor körül hardcode-olva.
+
+\vspace{1em}\begin{verbatim}
+  TotalWaitingTime:
+    μ (MU_WAIT)  = 4.5848   → ez E[log(WaitingTime)] = log(~98 sec)
+    σ (STD_WAIT) = 1.8249   → a szórás log skálán
+    Median: 120.20 sec | P5: 3.20 sec | P95: 1,340.40 sec
+
+    PÉLDA ÉRTÉKEK:
+      WaitingTime = 3 sec    → z = (1.10 - 4.58) / 1.82 = -1.91 → reward = 0.87
+      WaitingTime = 120 sec  → z = (4.79 - 4.58) / 1.82 =  0.11 → reward = 0.47
+      WaitingTime = 1340 sec → z = (7.20 - 4.58) / 1.82 =  1.44 → reward = 0.19
+
+  TotalCO2:
+    μ (MU_CO2)   = 10.8706  → ez E[log(CO2)] = log(~52,000 mg/s)
+    σ (STD_CO2)  = 0.9629   → szűkebb szórás mint a WaitingTime-é!
+    Median: 70,129.35 mg/s | P5: 8,382.93 mg/s | P95: 173,544.70 mg/s
+
+    PÉLDA ÉRTÉKEK:
+      CO2 = 8,383 mg/s   → z = (9.03 - 10.87) / 0.96 = -1.91 → reward = 0.87
+      CO2 = 70,129 mg/s  → z = (11.16 - 10.87) / 0.96 =  0.30 → reward = 0.43
+      CO2 = 173,545 mg/s → z = (12.06 - 10.87) / 0.96 =  1.24 → reward = 0.22
+
+  ÉRDEKES: A P5 és P95 értékeknél mindkét metrikánál ~0.87 és ~0.19
+  körüli reward-ot kapunk. Ez szándékos — a sigmoid pont így működik
+  2σ-nyi tartományban.
+
+\end{verbatim}
+\subsection*{6.3 Combined Reward — A KÉT METRIKA ÖSSZEVONÁSA}
+\addcontentsline{toc}{subsection}{6.3 Combined Reward — A KÉT METRIKA ÖSSZEVONÁSA}
+reward = (w\_wait × r\_wait + w\_co2 × r\_co2) / (w\_wait + w\_co2)
+
+Default súlyok: w\_wait = 1.0, w\_co2 = 1.0
+$\rightarrow$ reward = (r\_wait + r\_co2) / 2 = EGYSZERŰ ÁTLAG
+
+\textbf{FONTOS:} Osztunk a súlyok összegével (w\_wait + w\_co2)!
+Enélkül w=1.0 és w=1.0 mellett a reward [0, 2] lenne, ami
+megtévesztő. Az osztással MINDIG [0, 1] marad.
+
+MIÉRT SÚLYOZOTT ÁTLAG ÉS NEM VALAMI BONYOLULTABB?
+\par\noindent\hspace*{1em}\textbullet{} Az egyszerű átlag jól kezeli a két metrika korreláltságát
+\par\noindent\hspace*{1em}\textbullet{} A súlyok (w\_wait, w\_co2) konfigurálhatók a training\_config.yaml-ból
+\par\noindent\hspace*{1em}\textbullet{} Ha valaki jobban súlyozni akarja a CO2-t (pl. környezeti szemlélet):
+w\_wait=1.0, w\_co2=2.0 $\rightarrow$ a CO2 kétszer annyit számít
+
+\textbf{OUTPUT TARTOMÁNY [0, 1]:}
+0.0 = legrosszabb (extrém dugó + magas szennyezés)
+0.5 = átlagos forgalmi viszonyok (a μ paraméterből adódóan)
+1.0 = legjobb (nincs várakozás, minimális kibocsátás)
+
+\textbf{SPECIÁLIS ESET — ÜRES CSOMÓPONT:}
+Ha avg\_waiting == 0 ÉS avg\_co2 == 0 $\rightarrow$ reward = 0.0 (semleges)
+Miért nem 1.0 (= "tökéletes")? Mert az üres csomópontnál az ágens
+NEM CSINÁLT semmi jót/rosszat. Ha max reward-ot kapna, megtanulná,
+hogy "legjobb, ha nincs forgalom" $\rightarrow$ nem az, amit akarunk.
+
+\subsection*{6.4 Reward Function Properties}
+\addcontentsline{toc}{subsection}{6.4 Reward Function Properties}
+\textbf{1. BOUNDED [0, 1]:} sigmoid guarantees finite output
+\textbf{2. SMOOTH:} differentiable everywhere $\rightarrow$ stable gradients for NN
+\textbf{3. MONOTONIC:} worse traffic $\rightarrow$ lower reward (consistent learning signal)
+\textbf{4. ONLINE-COMPATIBLE:} only needs 4 pre-computed constants
+\textbf{5. FLOW-INVARIANT:} log transform + z-score normalizes across traffic levels
+\par\noindent\hspace*{1em}\textbullet{} At 100 veh/h: waiting \textasciitilde{}3 sec $\rightarrow$ z $\approx$ -1.5 $\rightarrow$ reward $\approx$ 0.82
+\par\noindent\hspace*{1em}\textbullet{} At 900 veh/h: waiting \textasciitilde{}1340 sec $\rightarrow$ z $\approx$ +1.5 $\rightarrow$ reward $\approx$ 0.18
+\par\noindent\hspace*{1em}\textbullet{} Sigmoid maps this range smoothly, without clipping or saturation
+
+\subsection*{6.5 Measurement Units Verification — MÉRTÉKEGYSÉG-ELLENŐRZÉS}
+\addcontentsline{toc}{subsection}{6.5 Measurement Units Verification — MÉRTÉKEGYSÉG-ELLENŐRZÉS}
+Ez a szekció azért fontos, mert ha a PCA kalibrációs paraméterek
+(MU, STD) ELTÉRŐ mértékegységben lettek kiszámítva, mint amit
+a reward függvény kap bemenetként, az EGÉSZ normalizáció hibás.
+
+\vspace{1em}\begin{verbatim}
+  TotalWaitingTime:
+    SUMO: traci.lane.getWaitingTime(lane) → sec (egy sávon, egy timestepben)
+    Kód: accumulated_waiting_time += step_waiting (5× akkumulálva)
+    Reward-ba: accumulated_waiting_time / steps_measured = sec/substep
+    PCA-ban: UGYANEZ a számítás → MU = 4.5848 → log(~98 sec) ✓
+
+  TotalCO2:
+    SUMO: traci.lane.getCO2Emission(lane) → mg/s (egy sávon)
+    Kód: accumulated_co2 += step_co2 (5× akkumulálva)
+    Reward-ba: accumulated_co2 / steps_measured = mg/s/substep
+    PCA-ban: UGYANEZ → MU = 10.8706 → log(~52,000 mg/s) ✓
+
+    !!! VIGYÁZAT — EGY CSAPDA A KÓDBAN !!!
+    Van egy get_total_co2_metric() függvény, ami /1000-rel oszt
+    (mg/s → g/s konverzió). Ezt NEM használjuk a reward-ban!
+    A reward közvetlenül az accumulated_co2 / steps_measured értéket
+    használja (mg/s). Ha valaki átírná g/s-re, a MU_CO2 = 10.87
+    nem lenne érvényes (g/s-ben MU ≈ 4.0 lenne).
+
+  KONZISZTENCIA ÖSSZEFOGLALÁS:
+    PCA adatgyűjtés: accumulated / steps_measured → log() → mean, std
+    Reward függvény: accumulated / steps_measured → log() → (x-MU)/STD → sigmoid
+    → PONTOSAN UGYANAZ az adatfolyam ✓ → a kalibrációs paraméterek érvényesek
+
+
+\end{verbatim}
+\section*{VII. NEURAL NETWORK ARCHITECTURE — A HÁLÓ FELÉPÍTÉSE}
+\addcontentsline{toc}{section}{VII. NEURAL NETWORK ARCHITECTURE — A HÁLÓ FELÉPÍTÉSE}
+
+\textbf{EGY MONDATBAN:}
+Minden RL ágens "agya" egy mély neurális hálózat, amely az
+observation-ből (fázis, timer, occupancy, flow) kiszámolja,
+hogy melyik akció (melyik fázis) mennyire jó.
+
+\subsection*{7.1 Algorithm: QR-DQN (Quantile Regression DQN)}
+\addcontentsline{toc}{subsection}{7.1 Algorithm: QR-DQN (Quantile Regression DQN)}
+\textbf{SIMA DQN (mit csinál):}
+\par\noindent\hspace*{1em}\textbullet{} Egy neurális háló becsli: "Ha ebben az állapotban vagyok és
+az 'A' akciót választom, mennyi ÁTLAGOS jutalmat várhatok a jövőben?"
+\par\noindent\hspace*{1em}\textbullet{} Ez egyetlen szám (Q-value) minden akcióra.
+
+\textbf{QR-DQN (mit csinál jobban):}
+\par\noindent\hspace*{1em}\textbullet{} Ahelyett, hogy egyetlen átlagot becsülne, az ELOSZLÁST becsli.
+\par\noindent\hspace*{1em}\textbullet{} 200 kvantilis (percentilis) értéket számol akcióként.
+\par\noindent\hspace*{1em}\textbullet{} Tehát tudja: "Az 'A' akció ÁLTALÁBAN jó (Q50=0.7), de van
+20\% esély, hogy nagyon rossz (Q20=0.2) — mert néha begyűrűzik
+a szomszéd dugója."
+\par\noindent\hspace*{1em}\textbullet{} \textbf{Ez a forgalomnál KRITIKUS:} ugyanaz a jelzésprogram néha jó,
+néha rossz, a véletlenszerű forgalmi mintáktól függően.
+
+SB3 implementáció: sb3\_contrib.QRDQN
+Default kvantilisek: N=200 (a return eloszlás 200 pontban becsülve)
+
+\subsection*{7.2 Policy Network — A HÁLÓ STRUKTÚRÁJA}
+\addcontentsline{toc}{subsection}{7.2 Policy Network — A HÁLÓ STRUKTÚRÁJA}
+MultiInputPolicy (többes bemenetű policy):
+
+\textbf{BEMENET:}
+Az observation Dict-et először "laposítjuk" (flatten):
+\par\noindent\hspace*{1em}\textbullet{} "phase": 1 szám (melyik fázis van)
+\par\noindent\hspace*{1em}\textbullet{} "phase\_timer": 1 szám (hány ideje van ez a fázis)
+\par\noindent\hspace*{1em}\textbullet{} "occupancy": N szám (N detektor foglaltsága)
+\par\noindent\hspace*{1em}\textbullet{} "flow": N szám (N detektor átfolyása)
+$\rightarrow$ Összesen: 2 + 2N dimenziós vektor
+
+Pl. ha 20 detektor van (tipikus): 2 + 2×20 = 42 bemeneti neuron.
+
+\textbf{REJTETT RÉTEGEK:}
+[layer\_size] × num\_layers darab fully connected + ReLU réteg
+A layer\_size és num\_layers a SWEEP-ben keresett hiperparaméterek.
+
+Példák:
+num\_layers=2, layer\_size=64  $\rightarrow$ [64, 64]     $\rightarrow$ kis, gyors háló
+num\_layers=3, layer\_size=128 $\rightarrow$ [128, 128, 128] $\rightarrow$ közepes
+num\_layers=5, layer\_size=256 $\rightarrow$ [256, 256, 256, 256, 256] $\rightarrow$ nagy háló
+
+\textbf{A MÉRET SZÁMÍT:}
+\par\noindent\hspace*{1em}\textbullet{} Túl kicsi háló: nem tud elég komplex stratégiát tanulni
+\par\noindent\hspace*{1em}\textbullet{} Túl nagy háló: lassabb, overfitting veszélye, több adat kell
+\par\noindent\hspace*{1em}\textbullet{} Ezért a sweep ezt is keresi!
+
+\textbf{KIMENET:}
+num\_actions × num\_quantiles értékek
+Ha 4 fázis van és 200 kvantilis: 4 × 200 = 800 kimeneti neuron.
+Az ágens a LEGMAGASABB átlagos Q-értékű akciót választja
+(az exploration\_fraction-nal kontrollált $\epsilon$-greedy stratégiával).
+
+\subsection*{7.3 Model Saving — MENTÉS ÉS TRANSFER LEARNING}
+\addcontentsline{toc}{subsection}{7.3 Model Saving — MENTÉS ÉS TRANSFER LEARNING}
+A modell két formátumban mentődik:
+
+\textbf{1. SB3 .zip (PyTorch natív):}
+\par\noindent\hspace*{1em}\textbullet{} Tartalmazza a teljes modellt: háló súlyok, optimalizáló állapot,
+replay buffer, exploration rate, stb.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{TRANSFER LEARNING-hez használható:} QRDQN.load("model.zip")
+\par\noindent\hspace*{1em}\textbullet{} Checkpoint-ok: 10k, 25k, 50k, 75k, 100k lépésenként
+\par\noindent\hspace*{1em}\textbullet{} Feltöltve WandB-re $\rightarrow$ bármikor visszatölthető
+
+\textbf{2. ONNX (Open Neural Network Exchange):}
+\par\noindent\hspace*{1em}\textbullet{} Csak a háló struktúra + súlyok, futtatókörnyezet nélkül
+\par\noindent\hspace*{1em}\textbullet{} Deployment/inference céljára (gyors predikció)
+\par\noindent\hspace*{1em}\textbullet{} Bármilyen ONNX-kompatibilis runtime futtathatja (C++, Java, stb.)
+
+\textbf{MIÉRT FONTOS A ZIP MENTÉS:}
+A sweep megtalálja a legjobb hiperparamétereket. Azzal a
+konfigurációval betanítjuk a modellt. A .zip modellt aztán
+TRANSFER LEARNING-gel finomhangolhatjuk más hálózatokra
+(pl. a valódi csomópont, amire alkalmazni akarjuk).
+
+
+\section*{VIII. HYPERPARAMETER SWEEP — HOGYAN KERESSÜK A LEGJOBB BEÁLLÍTÁST?}
+\addcontentsline{toc}{section}{VIII. HYPERPARAMETER SWEEP — HOGYAN KERESSÜK A LEGJOBB BEÁLLÍTÁST?}
+
+\textbf{EGY MONDATBAN:}
+Nem tudjuk előre, milyen tanulási ráta, háló méret, stb. a legjobb.
+Ezért a WandB sweep automatikusan kipróbál sok kombinációt, és
+megkeresi azt, amelyik a legmagasabb átlagos reward-ot éri el.
+
+\subsection*{8.1 Sweep Method: Bayesian Optimization}
+\addcontentsline{toc}{subsection}{8.1 Sweep Method: Bayesian Optimization}
+Konfig fájl: data/sweep\_config.yaml
+Metódus: bayes (Bayesian optimalizáció)
+Cél: avg\_reward MAXIMALIZÁLÁSA
+
+HOGYAN MŰKÖDIK A BAYESIAN SWEEP?
+1. Első néhány futás: véletlenszerű hiperparaméter kombináció
+2. Építünk egy "surrogate model"-t: reward = f(learning\_rate, batch\_size, ...)
+3. A surrogate model alapján kiválasztjuk, melyik kombináció ÍGÉRETES
+4. Kipróbáljuk, frissítjük a modellt, ismételjük
+Ez SOKKAL hatékonyabb, mint a grid search (ahol MINDEN kombinációt
+kipróbálnánk — 4×4×100×40×6×4×4×4×4 = \textasciitilde{}24 millió kombináció!).
+
+\textbf{A SWEEP AGENT-EK:}
+Több párhuzamos "agent" futhat, mindegyik más hiperparamétert próbál.
+A start.sh megkérdezi, hányat akarsz párhuzamosan indítani.
+Az első agent libsumo-t használ (gyorsabb), a többi traci-t.
+
+\subsection*{8.2 Swept Parameters — MIT KERESÜNK?}
+\addcontentsline{toc}{subsection}{8.2 Swept Parameters — MIT KERESÜNK?}
+Paraméter             | Típus          | Tartomány        | MIT JELENT?
+\vspace{1em}\begin{verbatim}
+  ----------------------|----------------|------------------|---------------------------
+  learning_rate         | log_uniform    | [5e-5, 5e-3]    | Milyen gyorsan tanul
+  batch_size            | categorical    | [32,64,128,256]  | Hány mintából tanul egyszerre
+  gamma (discount)      | uniform        | [0.90, 0.999]    | Mennyire fontos a JÖVŐ
+  exploration_fraction  | uniform        | [0.1, 0.5]       | Meddig kísérletezik
+  num_layers            | integer        | [1, 6]           | Háló mélysége
+  layer_size            | categorical    | [32,64,128,256]  | Réteg szélessége
+  buffer_size           | categorical    | [5k,10k,25k,50k] | Replay buffer mérete
+  flow_min              | categorical    | [50,100,150,200] | Min forgalmi szint
+  flow_max              | categorical    | [600,800,1k,1.2k]| Max forgalmi szint
+
+  PARAMÉTEREK RÉSZLETESEBBEN:
+
+  learning_rate (tanulási ráta):
+    Milyen nagy "lépéseket" tesz a háló a tanulás során.
+    Túl magas: instabil, a háló "ugrákat" tesz és nem konvergál.
+    Túl alacsony: nagyon lassú tanulás, nem ér el jó eredményt időben.
+    Log-uniform: azért logaritmikus, mert az 1e-4 és 1e-3 közötti
+    különbség fontosabb, mint az 1e-3 és 9e-3 közötti.
+
+  gamma (diszkont faktor):
+    Mennyire értékeli az ágens a JÖVŐBELI jutalmat a JELENLEGIVEL szemben.
+    gamma = 0.9: "10 lépés múlva kapott jutalom = 0.9^10 ≈ 0.35× mai érték"
+    gamma = 0.99: "10 lépés múlva kapott jutalom = 0.99^10 ≈ 0.90× mai érték"
+    Magasabb gamma = "messzebbre lát" → jobb a forgalomszabályozáshoz,
+    de nehezebb megtanulni (több variancia a Q-becslésben).
+
+  exploration_fraction:
+    A total_timesteps hány százalékáig csökkenti az epsilon-t
+    (a véletlenszerű cselekvések arányát).
+    0.1 = gyorsan abbahagyja a felfedezést → ha a háló jó, gyorsan javul
+    0.5 = sokáig próbálgat → ha sok lokális optimum van, jobb lefedés
+
+  num_layers + layer_size (HÁLÓ MÉRET):
+    Ez a neurális háló kapacitását határozza meg.
+    1 réteg × 32 neuron = 32 neuron → egyszerű, gyors, de korlátozott
+    6 réteg × 256 neuron = 1536 neuron → komplex stratégiák, de lassú
+    A SWEEP EZÉRT KERESI MINDKETTŐT — nem tudjuk előre, milyen komplex
+    stratégia kell 21 csomópont kezeléséhez.
+
+\end{verbatim}
+\subsection*{8.3 Fixed Parameters — EZEKET NEM KERESSÜK}
+\addcontentsline{toc}{subsection}{8.3 Fixed Parameters — EZEKET NEM KERESSÜK}
+delta\_time = 5 (SUMO sec / RL step) — fizikai korlát, nem hiperparaméter
+reward\_weights = \{waiting: 1.0, co2: 1.0\} — a PCA alapján döntöttük el
+train\_freq = 4 (minden 4. lépésben tanul) — SB3 default, stabil
+gradient\_steps = 2 (2× gradiens frissítés / tanítás) — alacsony overhead
+es\_enabled = true — early stopping bekapcsolva
+es\_patience = 20 epizód — ha 20 epizódig nem javul, leáll
+es\_min\_delta = 0.01 — minimális javulás küszöbe
+
+\subsection*{8.4 Per-Episode Randomization — MINDEN EPIZÓDBAN MÁS}
+\addcontentsline{toc}{subsection}{8.4 Per-Episode Randomization — MINDEN EPIZÓDBAN MÁS}
+Ezek NEM hiperparaméterek, hanem RANDOMIZÁLT értékek.
+Minden epizód elején újra véletlenszerűen választjuk:
+
+traffic\_duration:  random from [900, 1800, 2700, 3600, 5400, 7200] sec
+\vspace{1em}\begin{verbatim}
+  flow_per_lane:     random uniform from [flow_min, flow_max] veh/h
+
+  Ez biztosítja, hogy az ágens NE tanuljon rá egyetlen forgalmi mintára.
+
+
+\end{verbatim}
+\section*{IX. SIMULATION BACKEND — LIBSUMO vs TRACI}
+\addcontentsline{toc}{section}{IX. SIMULATION BACKEND — LIBSUMO vs TRACI}
+
+\textbf{A LÉNYEG:} Kétféleképpen lehet a SUMO szimulátorral kommunikálni.
+A libsumo gyorsabb, de csak egy példányban futhat. A traci lassabb,
+de több példányt tud egyszerre.
+
+\subsection*{9.1 Two SUMO Connection Methods}
+\addcontentsline{toc}{subsection}{9.1 Two SUMO Connection Methods}
+traci (Traffic Control Interface):
+\par\noindent\hspace*{1em}\textbullet{} Kliens-szerver architektúra TCP socket-en keresztül
+\par\noindent\hspace*{1em}\textbullet{} A Python kód "üzeneteket küld" a SUMO-nak, ami egy külön processben fut
+\par\noindent\hspace*{1em}\textbullet{} \textasciitilde{}30-50\% overhead a szerializáció miatt
+\par\noindent\hspace*{1em}\textbullet{} Támogat TÖBB egyidejű SUMO példányt (más-más porton)
+\par\noindent\hspace*{1em}\textbullet{} GUI módhoz KÖTELEZŐ (a sumo-gui csak így működik)
+
+\textbf{libsumo (Library SUMO):}
+\par\noindent\hspace*{1em}\textbullet{} Közvetlen C++ könyvtár hívások, nincs hálózati kommunikáció
+\par\noindent\hspace*{1em}\textbullet{} 30-50\% GYORSABB mint a traci
+\par\noindent\hspace*{1em}\textbullet{} \textbf{SINGLETON:} csak EGY példány futhat processzenként!
+Ha két libsumo-t próbálsz indítani, összeakadnak.
+\par\noindent\hspace*{1em}\textbullet{} Nem használható sumo-gui-val
+
+\textbf{libtraci (Library TraCI):}
+\par\noindent\hspace*{1em}\textbullet{} C++ natív kliens, teljes TraCI API kompatibilitás
+\par\noindent\hspace*{1em}\textbullet{} Gyors, mint a libsumo, de subscription-ök is működnek
+\par\noindent\hspace*{1em}\textbullet{} Nem singleton (több példány is futhat)
+\par\noindent\hspace*{1em}\textbullet{} macOS-en nincs PyPI csomag (csak ha a SUMO framework tartalmazza)
+
+\subsection*{9.2 Selection Logic — AUTOMATIKUS VÁLASZTÁS}
+\addcontentsline{toc}{subsection}{9.2 Selection Logic — AUTOMATIKUS VÁLASZTÁS}
+Import prioritás: libtraci $>$ libsumo $>$ traci
+
+\textbf{A USE\_LIBSUMO környezeti változó irányítja:}
+USE\_LIBSUMO=1  $\rightarrow$ libsumo/libtraci (ha elérhető)
+USE\_LIBSUMO=0  $\rightarrow$ mindig traci (párhuzamos futáshoz)
+nincs beállítva $\rightarrow$ libtraci próba $\rightarrow$ libsumo próba $\rightarrow$ traci fallback
+
+\textbf{PÁRHUZAMOS TANÍTÁS (start.sh):}
+Futás \#1: USE\_LIBSUMO=1 (a leggyorsabb)
+Futás \#2+: USE\_LIBSUMO=0 (traci, mert a libsumo singleton)
+$\rightarrow$ Az első futás \textasciitilde{}30-50\%-kal gyorsabb lesz, mint a többi.
+
+\textbf{DOCKER:} USE\_LIBSUMO=1 mindig (minden konténer külön process)
+GUI: mindig traci (a libsumo nem tud GUI-t)
+\textbf{BASELINE EVAL:} mindig traci (hogy ne ütközzön a futó traininggel)
+
+\textbf{macOS (Apple Silicon) megjegyzés:}
+A PyPI-ról telepíthető libsumo/libtraci csomagok x86\_64 binárisok,
+amelyek nem futnak arm64-en. Megoldás: a SUMO framework natív
+arm64 libsumo-ját kell symlinkkelni a venv site-packages-be:
+/Library/Frameworks/EclipseSUMO.framework/.../tools/libsumo/
+
+A kód: sumo\_rl\_environment.py, \textasciitilde{}60-114. sor
+
+\subsection*{9.3 SUMO Subscriptions — BATCH DATA RETRIEVAL}
+\addcontentsline{toc}{subsection}{9.3 SUMO Subscriptions — BATCH DATA RETRIEVAL}
+Az egyes TraCI API hívások (pl. traci.lane.getWaitingTime()) egyenként
+küldik az üzeneteket. 21 junction × 7 sáv × 5 metrika = 735 hívás/step.
+50k step $\rightarrow$ \textasciitilde{}36M API hívás $\rightarrow$ extrém lassú.
+
+Megoldás: subscription-ök. Egyszer feliratkozunk, és minden simulationStep()
+után batch-ben visszakapjuk az összes adatot:
+traci.inductionloop.subscribe(det\_id, [0x10, 0x13])
+traci.lane.subscribe(lane\_id, [0x5a, 0x7a, 0x60, 0x10])
+
+A subscription-ök működnek traci-val és libsumo-val is (az alap
+subscription-ök, amelyek nem igényelnek extra argumentumokat).
+A \_setup\_subscriptions() metódus egy próba-subscription-nel teszteli,
+hogy a használt SUMO könyvtár támogatja-e.
+
+
+\section*{X. CORRELATION MATRIX — MIT MUTAT A KORRELÁCIÓS MÁTRIX?}
+\addcontentsline{toc}{section}{X. CORRELATION MATRIX — MIT MUTAT A KORRELÁCIÓS MÁTRIX?}
+
+\textbf{EGY MONDATBAN:}
+A korreláció megmutatja, hogy melyik metrikák "mozognak együtt".
+Ha két metrika korrelációja $>$0.8, szinte UGYANAZT mérik — elég
+az egyiket használni.
+
+\subsection*{10.1 Strong Positive Correlations ($>$0.8) — EGYÜTT MOZGÓK}
+\addcontentsline{toc}{subsection}{10.1 Strong Positive Correlations ($>$0.8) — EGYÜTT MOZGÓK}
+\vspace{1em}\begin{verbatim}
+  TotalWaitingTime ↔ QueueLength:         r ≈ 0.95  ← szinte azonosak!
+  TotalWaitingTime ↔ AvgOccupancy:        r ≈ 0.85  ← nagyon hasonlók
+  TotalWaitingTime ↔ VehCount:            r ≈ 0.80
+  TotalCO2 ↔ VehCount:                    r ≈ 0.90
+
+  MIT JELENT: Ha a WaitingTime nő, a QueueLength is nő (r=0.95).
+  Ez logikus: több várakozás = hosszabb sor. De ha MINDKETTŐT
+  beraknánk a reward-ba, az nem adna többlet információt —
+  gyakorlatilag 2× WaitingTime-ot használnánk.
+
+\end{verbatim}
+\subsection*{10.2 Negative Correlations — ELLENTÉTES MOZGÁS}
+\addcontentsline{toc}{subsection}{10.2 Negative Correlations — ELLENTÉTES MOZGÁS}
+\vspace{1em}\begin{verbatim}
+  AvgSpeed ↔ TotalWaitingTime:            r ≈ -0.50
+  AvgSpeed ↔ QueueLength:                r ≈ -0.45
+
+  MIT JELENT: Amikor nő a várakozás, csökken a sebesség. Logikus.
+  De a korreláció "csak" -0.5, nem -0.9 — tehát a sebesség
+  NEM teljesen fordítottja a várakozásnak (van benne más is).
+
+\end{verbatim}
+\subsection*{10.3 Near-Zero Correlations — FÜGGETLEN METRIKÁK}
+\addcontentsline{toc}{subsection}{10.3 Near-Zero Correlations — FÜGGETLEN METRIKÁK}
+\vspace{1em}\begin{verbatim}
+  AvgCO2 ↔ szinte minden:                |r| < 0.15
+
+  MIT JELENT: Az AvgCO2 (jármű szintű kibocsátás) NEM korrelál
+  semmivel. Nem nő a forgalommal, nem csökken a sebességgel.
+  Ez azért van, mert ~1575 mg/s/jármű MINDIG, függetlenül a
+  forgalomtól. KÖVETKEZMÉNY: teljesen haszontalan mint reward.
+
+\end{verbatim}
+\subsection*{10.4 Interpretation for Reward Design — MIT JELENT EZ NEKÜNK?}
+\addcontentsline{toc}{subsection}{10.4 Interpretation for Reward Design — MIT JELENT EZ NEKÜNK?}
+\textbf{KONKRÉT KONKLÚZIÓ:}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{WaitingTime, QueueLength, VehCount, Occupancy:} REDUNDÁNSAK
+$\rightarrow$ Elég EGY belőlük. Mi a WaitingTime-ot választjuk (legmagasabb PC1).
+\par\noindent\hspace*{1em}\textbullet{} TotalCO2: korrelál a torlódással (r$\approx$0.8), de NEM tökéletesen.
+A stop-and-go forgalom (gyorsulás-fékezés) TÖBB CO2-t termel,
+mint az egyenletes lassú haladás, UGYANAKKORA WaitingTime mellett.
+\textbf{$\rightarrow$ Hozzáad EGY EXTRA DIMENZIÓT:} a sebességprofilt.
+$\rightarrow$ Ezért van a reward-ban is.
+\par\noindent\hspace*{1em}\textbullet{} AvgCO2: r$\approx$0 mindennel $\rightarrow$ SOHA nem használjuk.
+
+
+\section*{XI. DATA STATISTICS — REFERENCE VALUES}
+\addcontentsline{toc}{section}{XI. DATA STATISTICS — REFERENCE VALUES}
+
+\subsection*{11.1 Per-Metric Distributions (527,747 samples, flow 100-1200 veh/h/lane)}
+\addcontentsline{toc}{subsection}{11.1 Per-Metric Distributions (527,747 samples, flow 100-1200 veh/h/lane)}
+
+\vspace{1em}\begin{verbatim}
+  TotalWaitingTime [sec/step]:
+    Mean:    367.82          Std:     1,100.94
+    Median:  120.20          IQR:     323.60
+    P5:      3.20            P95:     1,340.40
+    Min:     0.20            Max:     31,348.00
+
+  AvgWaitingTime [sec/vehicle]:
+    Mean:    5.50            Std:     11.45
+    Median:  2.89            IQR:     5.12
+    P5:      0.30            P95:     16.87
+    Min:     0.003           Max:     287.60
+
+  TotalCO2 [mg/s/step]:
+    Mean:    74,066           Std:     51,360
+    Median:  70,129           IQR:     76,659
+    P5:      8,383            P95:     173,545
+    Min:     6.39             Max:     246,813
+
+  AvgCO2 [mg/s/vehicle]:
+    Mean:    1,674            Std:     263
+    Median:  1,576            IQR:     198
+    P5:      1,468            P95:     2,262
+    → Almost constant! Coefficient of variation = 15.7%
+    → Useless as reward metric (no discriminative power)
+
+  TotalTravelTime [sec/step] (filtered, <1000s):
+    Mean:    725.25           Std:     571.25
+    Median:  594.13           IQR:     728.77
+    P5:      79.31            P95:     1,830.34
+
+  TotalTravelTime_Raw [sec/step] (unfiltered, includes sentinels):
+    Mean:    877,339          Std:     2,175,933
+    Median:  6,063            P5:      145.49
+    P95:     4,800,842        Max:     52,307,835
+    → Extremely right-skewed due to sentinel values
+
+  VehCount [vehicles]:
+    Mean:    44.4             Std:     ~35
+    Median:  44.4             IQR:     52.1
+
+  AvgSpeed [m/s]:
+    Mean:    ~2.3             Std:     ~2.5
+    Median:  1.59             IQR:     2.62
+    P5:      0.38             P95:     7.54
+
+  AvgOccupancy [%]:
+    Mean:    ~45              Std:     ~30
+    Median:  57.23            IQR:     37.41
+
+  QueueLength [vehicles]:
+    Mean:    ~23              Std:     ~25
+    Median:  18.00            IQR:     27.80
+
+
+\end{verbatim}
+\section*{XII. LOG-SIGMOID NORMALIZATION PARAMETERS — ALL METRICS}
+\addcontentsline{toc}{section}{XII. LOG-SIGMOID NORMALIZATION PARAMETERS — ALL METRICS}
+
+Formula: z = (log(x + eps) - MU) / STD $\rightarrow$ sigmoid(z) $\rightarrow$ reward = 1 - sigmoid
+
+Metric               |    MU      |    STD     | Median      | P5          | P95
+\vspace{1em}\begin{verbatim}
+  ----------------------|-----------|-----------|-------------|-------------|-------------
+  TotalTravelTime       |  6.2194   |  0.9644   |      594.13 |       79.31 |    1,830.34
+  AvgTravelTime         |  4.5295   |  0.8580   |      113.26 |       16.72 |      279.93
+  TotalTravelTime_Raw   |  9.8353   |  3.6341   |    6,063.10 |      145.49 | 4,800,842.0
+  AvgTravelTime_Raw     |  7.9540   |  3.5175   |      862.36 |       27.50 |  609,354.2
+  TotalWaitingTime      |  4.5848   |  1.8249   |      120.20 |        3.20 |    1,340.40
+  AvgWaitingTime        |  0.9783   |  1.2590   |        2.89 |        0.30 |       16.87
+  TotalCO2              | 10.8706   |  0.9629   |   70,129.35 |    8,382.93 |  173,544.70
+  AvgCO2                |  7.4120   |  0.1457   |    1,575.70 |    1,467.66 |    2,262.16
+  VehCount              |  3.4558   |  1.0533   |       44.40 |        4.00 |      113.80
+  AvgSpeed              |  0.4792   |  1.0377   |        1.59 |        0.38 |        7.54
+  AvgOccupancy          |  3.6915   |  0.9950   |       57.23 |        3.75 |       88.95
+  QueueLength           |  2.5926   |  1.2683   |       18.00 |        1.00 |       71.40
+
+  USED IN REWARD FUNCTION:
+    MU_WAIT  = 4.5848   STD_WAIT = 1.8249
+    MU_CO2   = 10.8706  STD_CO2  = 0.9629
+
+
+\end{verbatim}
+\section*{XIII. ROBUST IQR NORMALIZATION PARAMETERS (alternative method)}
+\addcontentsline{toc}{section}{XIII. ROBUST IQR NORMALIZATION PARAMETERS (alternative method)}
+
+Formula: tanh((x - median) / IQR) $\rightarrow$ reward = -tanh(...)
+
+Metric               | Median       | IQR
+\vspace{1em}\begin{verbatim}
+  ----------------------|-------------|-------------
+  TotalTravelTime       |      594.13 |      728.77
+  AvgTravelTime         |      113.26 |      116.78
+  TotalWaitingTime      |      120.20 |      323.60
+  AvgWaitingTime        |        2.89 |        5.12
+  TotalCO2              |   70,129.35 |   76,658.74
+  AvgCO2                |    1,575.70 |      198.41
+  VehCount              |       44.40 |       52.10
+  AvgSpeed              |        1.59 |        2.62
+  AvgOccupancy          |       57.23 |       37.41
+  QueueLength           |       18.00 |       27.80
+
+
+\end{verbatim}
+\section*{XIV. GENERATED ANALYSIS CHARTS — DETAILED INTERPRETATION}
+\addcontentsline{toc}{section}{XIV. GENERATED ANALYSIS CHARTS — DETAILED INTERPRETATION}
+
+All charts in: metric\_pca\_test\_v2/
+
+============================================================================
+PCA CHARTS
+============================================================================
+
+pca\_01\_scree.png — SCREE PLOT (Explained Variance)
+---------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Oszlopdiagram, ahol minden oszlop egy főkomponens (PC1-PC12).
+Az Y tengely: az adott PC által megmagyarázott variancia százalékban.
+Kumulatív vonal is van rajta (piros).
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{PC1 = 44.8\%:} ez az első "dimenzió" a 12 metrikából. Önmagában
+majdnem az adatok felét megmagyarázza.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{PC2 = 22.6\%:} a második független dimenzió.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{PC3 = 12.3\%:} harmadik dimenzió (de ez a sentinel noise!).
+\par\noindent\hspace*{1em}\textbullet{} \textbf{PC1+PC2 = 67.4\%:} két dimenzió az adatok 2/3-át lefedi.
+\par\noindent\hspace*{1em}\textbullet{} A többi PC ($<$6\% egyenként) elhanyagolható.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"Az ábra igazolja, hogy 12 forgalmi metrikánk lényegében 2-3
+független információdimenziót tartalmaz. A maradék 9 komponens
+redundáns — a mérőszámok egymás lineáris kombinációi."
+
+pca\_02\_correlation.png — CORRELATION MATRIX (12×12)
+----------------------------------------------------
+\textbf{MIT LÁTUNK:}
+12×12-es hőtérkép, RdYlBu\_r színezéssel (kék=negatív, piros=pozitív).
+A cellákban a Pearson korrelációs együttható (r, -1 és +1 között).
+Szöveg színe kontrasztos: sötét háttéren fehér, világoson fekete.
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} Átló: mindig 1.00 (önmagával korreláció)
+\par\noindent\hspace*{1em}\textbullet{} \textbf{Bal felső 6×6 blokk (WaitingTime, Queue, VehCount, CO2, Occ):}
+erősen piros, r $>$ 0.75 $\rightarrow$ ezek a TORLÓDÁSI KLASZTER.
+Mind ugyanazt mérik, más szemszögből.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{TotalTT és AvgTT:} egymással r$\approx$0.95, de a torlódási klaszterrel
+gyenge korreláció $\rightarrow$ FÜGGETLEN dimenzió (PC2).
+\par\noindent\hspace*{1em}\textbullet{} Raw TT: sem a torlódási klaszterrel, sem a filtered TT-vel
+nem korrelál erősen $\rightarrow$ ZAJDIMENZIÓ (PC3).
+\par\noindent\hspace*{1em}\textbullet{} AvgCO2: szinte minden sorban alacsony r $\rightarrow$ NINCS INFORMÁCIÓTARTALMA.
+\par\noindent\hspace*{1em}\textbullet{} AvgSpeed: negatív korreláció a torlódási metrikákkal (r$\approx$-0.5)
+$\rightarrow$ logikus: több dugó = kisebb sebesség.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A korrelációs mátrix azt mutatja, hogy a 12 metrika nem
+tartalmaz 12 független információt. A torlódási metrikák
+(WaitingTime, QueueLength, VehCount, TotalCO2, Occupancy)
+korrelációja r$>$0.75, tehát egy az egyben helyettesíthetők.
+Az AvgCO2 szinte semmivel nem korrelál — a jármű szintű
+kibocsátás közel konstans alacsony városi sebességeknél."
+
+pca\_03\_biplot.png — PCA BIPLOT (Loading Arrows + Confidence Ellipses)
+-----------------------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Két tengelyes scatter plot, ahol:
+\par\noindent\hspace*{1em}\textbullet{} X tengely = PC1 (44.8\% — Congestion dimenzió)
+\par\noindent\hspace*{1em}\textbullet{} Y tengely = PC2 (22.6\% — Travel Time dimenzió)
+\par\noindent\hspace*{1em}\textbullet{} Színes ellipszisek = flow level-ek (100-1200 veh/h/lane)
+Mindegyik ellipszis az adott forgalmi szint 2σ konfidencia-
+tartománya a PCA térben.
+\par\noindent\hspace*{1em}\textbullet{} Nyilak (vektorok) = metrikák "iránya" a PCA térben.
+Hosszabb nyíl = erősebb hatás. Irány = melyik PC-re hat.
+
+\textbf{HOGYAN OLVASSUK:}
+Ellipszisek:
+\par\noindent\hspace*{1em}\textbullet{} Zöldes (100-300 veh/h): balra alul $\rightarrow$ alacsony torlódás, alacsony TT
+\par\noindent\hspace*{1em}\textbullet{} Sárgás (500-700 veh/h): középen $\rightarrow$ közepes forgalom
+\par\noindent\hspace*{1em}\textbullet{} Pirosas (900-1200 veh/h): jobbra $\rightarrow$ magas torlódás
+\par\noindent\hspace*{1em}\textbullet{} Az ellipszisek NEM fedik le egymást teljesen $\rightarrow$ a PCA valóban
+szétválasztja a forgalmi szinteket.
+\par\noindent\hspace*{1em}\textbullet{} Ha az ellipszisek teljesen átfednék egymást, a PCA nem lenne
+hasznos (a metrikák nem tudnák megkülönböztetni a forgalmi szinteket).
+
+Nyilak (loading vektorok):
+\par\noindent\hspace*{1em}\textbullet{} \textbf{TotalWaitingTime, QueueLength, VehCount:} jobbra mutatnak (PC1+)
+$\rightarrow$ a torlódás irányába. Egymás közelében $\rightarrow$ REDUNDÁNSAK.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{TotalTravelTime, AvgTravelTime:} felfelé mutatnak (PC2+)
+$\rightarrow$ a TT dimenzióba. Független a torlódástól.
+\par\noindent\hspace*{1em}\textbullet{} AvgSpeed: balra-felfelé $\rightarrow$ anti-korrelál a torlódással, de van
+TT komponense is.
+\par\noindent\hspace*{1em}\textbullet{} AvgCO2: a NYÍL ALIG LÁTSZIK, mert közel van az origóhoz.
+Ez azt jelenti, hogy AvgCO2-nak szinte nulla hatása van
+mindkét főkomponensre $\rightarrow$ HASZONTALAN mint reward metrika.
+\par\noindent\hspace*{1em}\textbullet{} TotalCO2: jobbra mutat (PC1+), de rövidebb mint WaitingTime
+$\rightarrow$ korrelál a torlódással, de kisebb mértékben.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{TotalTT\_Raw, AvgTT\_Raw:} más irányba mutatnak, mint a filtered
+verzióik $\rightarrow$ ezek a SENTINEL NOISE-t képviselik.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A biplot vizuálisan igazolja, hogy a forgalmi metrikák két
+fő klasztert alkotnak: a torlódási metrikák (jobb irány) és
+a menetidő metrikák (felső irány). A nyilak közelsége mutatja
+a redundanciát — WaitingTime, QueueLength és VehCount gyakorlatilag
+ugyanazt mérik. Az AvgCO2 nyíl az origón ül, megerősítve hogy
+nem alkalmas reward metrikának."
+
+pca\_04\_waitingtime\_boxplot.png — WAITING TIME PER FLOW LEVEL
+--------------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Boxplot, ahol minden box egy forgalmi szint (100-1200 veh/h/lane).
+Y tengely: TotalWaitingTime [sec/step].
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} 100-300 veh/h: medián közel 0, kevés outlier $\rightarrow$ szabad forgalom
+\par\noindent\hspace*{1em}\textbullet{} 400-600 veh/h: medián emelkedik, IQR szélesedik $\rightarrow$ telítődés kezdete
+\par\noindent\hspace*{1em}\textbullet{} 700-900 veh/h: medián 200-500 sec, nagy szórás $\rightarrow$ időszakos dugók
+\par\noindent\hspace*{1em}\textbullet{} 1000-1200 veh/h: medián 500+ sec, extreme outlierek $\rightarrow$ krónikus dugó
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A WaitingTime exponenciálisan nő a forgalmi terheléssel,
+nem lineárisan. Ez igazolja a log-transzformáció szükségességét
+a reward normalizációban — lineáris skálán a magas forgalmi
+szintek teljesen elnyomnák az alacsonyakat."
+
+============================================================================
+NORMALIZATION CHARTS
+============================================================================
+
+01\_Normalization\_Matrix.png — HISTOGRAM MATRIX (8 metrics × 10 methods)
+-------------------------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+8 sor (metrikák) × 10 oszlop (normalizációs módszerek) hisztogram mátrix.
+Minden cella: az adott metrika eloszlása az adott módszerrel normalizálva.
+Ideális: szimmetrikus, harang alakú eloszlás (Gauss-szerű).
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} Raw Data oszlop (1.): erősen jobbra ferdült, extrém outlierekkel
+\par\noindent\hspace*{1em}\textbullet{} Rank Gauss oszlop: tökéletesen szimmetrikus harang $\rightarrow$ ez a legjobb,
+DE offline módszer (nem használható RL-ben online).
+\par\noindent\hspace*{1em}\textbullet{} Log-Sigmoid oszlop: majdnem szimmetrikus, enyhe ferdeség $\rightarrow$ legjobb
+online módszer.
+\par\noindent\hspace*{1em}\textbullet{} Box-Cox: néhány metrikánál hosszú jobb farok $\rightarrow$ instabil.
+\par\noindent\hspace*{1em}\textbullet{} Harmonic: erős csúcsosság 0 közelében $\rightarrow$ rossz differenciálás.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A hisztogram mátrix vizuálisan mutatja a normalizációs módszerek
+hatását. A Raw Data erős jobbra-ferdeséget mutat minden metrikánál,
+amit a Log-Sigmoid transzformáció közel szimmetrikus eloszlássá alakít."
+
+02\_Normalization\_Quality.png — QUALITY BARPLOT
+------------------------------------------------
+\textbf{MIT LÁTUNK:}
+2×4 grid, minden subplot egy metrika.
+Oszlopdiagram: minden oszlop egy normalizációs módszer.
+Y tengely: quality = |skewness| + |excess\_kurtosis|.
+Alacsonyabb = jobb (közelebb a Gauss-hoz).
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} Rank Gauss: mindig a legalacsonyabb ($\approx$0) $\rightarrow$ tökéletes Gauss
+\par\noindent\hspace*{1em}\textbullet{} Log-Sigmoid: következő legjobb $\rightarrow$ 1-2 közötti quality
+\par\noindent\hspace*{1em}\textbullet{} Raw Data: mindig a legmagasabb $\rightarrow$ 10-200+ quality (extremális)
+\par\noindent\hspace*{1em}\textbullet{} Ha egy metrikánál MINDEN módszer magas quality-t mutat,
+az a metrika inherensen nehezen normalizálható.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A quality metrika (|ferdeség| + |excess kurtosis|) objektíven
+rangsorolja a módszereket. A Log-Sigmoid 1.354-es átlagos quality-
+értékkel a legjobb online-kompatibilis módszer, mindössze egy
+nagyságrenddel rosszabb a Rank Gauss offline módszernél (0.008)."
+
+03\_Traffic\_Dependency.png — NORMALIZED VALUE vs FLOW LEVEL
+-----------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Scatter plotok: X = forgalmi szint (veh/h/lane), Y = normalizált érték.
+Minden metrika és módszer kombinációra egy subplot.
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} Ideális: az Y értékek EGYENLETESEN szétterjednek a [0,1] tartományban
+minden forgalmi szintnél, nem csomósodnak.
+\par\noindent\hspace*{1em}\textbullet{} Ha egy módszernél a pontok egy vékony sávba tömörülnek $\rightarrow$ rossz
+differenciálás (az ágens nem tud tanulni a reward különbségekből).
+\par\noindent\hspace*{1em}\textbullet{} Log-Sigmoid: jól szétterített, monoton növekvő trend $\rightarrow$ a reward
+valóban tükrözi a forgalmi terhelést.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A forgalomfüggőségi scatter plotok igazolják, hogy a Log-Sigmoid
+normalizáció megőrzi a monoton kapcsolatot a forgalmi terhelés és
+a normalizált érték között, miközben a teljes [0,1] tartományt
+kihasználja."
+
+04\_Reward\_Comparison.png — REWARD DISTRIBUTION PER FLOW LEVEL
+---------------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Boxplotok forgalmi szintenként, a végső reward értékkel.
+12 box (100-1200 veh/h), Y tengely = reward [0-1].
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} 100 veh/h: magas medián (\textasciitilde{}0.8) $\rightarrow$ szabad forgalom $\rightarrow$ jó reward
+\par\noindent\hspace*{1em}\textbullet{} 600 veh/h: medián \textasciitilde{}0.5 $\rightarrow$ közepes $\rightarrow$ a sigmoid "közepe"
+\par\noindent\hspace*{1em}\textbullet{} 1200 veh/h: alacsony medián (\textasciitilde{}0.2) $\rightarrow$ dugó $\rightarrow$ rossz reward
+\par\noindent\hspace*{1em}\textbullet{} A boxok IQR-je (szélessége) mutatja a reward varianciáját.
+Túl nagy variancia $\rightarrow$ zajos tanulás. Túl kicsi $\rightarrow$ nincs differenciálás.
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A reward disztribúció forgalmi szintenként igazolja, hogy a
+Log-Sigmoid normalizáció értelmes reward grádienst biztosít
+a teljes [100, 1200] veh/h/lane tartományban."
+
+05\_Ranking\_Heatmap.png — METHOD × METRIC QUALITY SCORES
+---------------------------------------------------------
+\textbf{MIT LÁTUNK:}
+Hőtérkép: sorok = normalizációs módszerek, oszlopok = metrikák.
+Cellák: quality score (|skewness| + |excess kurtosis|).
+Színek:
+\textbf{ZÖLD ($<$1):} kiváló normalizáció
+\textbf{PIROS (1-10):} elfogadható de nem tökéletes
+\textbf{LILA ($>$10):} rossz normalizáció, nagy torzítás
+
+\textbf{HOGYAN OLVASSUK:}
+\par\noindent\hspace*{1em}\textbullet{} Rank Gauss sora: csupa zöld $\rightarrow$ minden metrikánál tökéletes
+\par\noindent\hspace*{1em}\textbullet{} Log-Sigmoid sora: túlnyomóan zöld, néhol sárgás $\rightarrow$ jó kompromisszum
+\par\noindent\hspace*{1em}\textbullet{} Raw Data sora: csupa lila/piros $\rightarrow$ a nyers adatok nem normalizálhatók
+\par\noindent\hspace*{1em}\textbullet{} Box-Cox sora: vegyes (néhol zöld, néhol lila) $\rightarrow$ instabil módszer
+\par\noindent\hspace*{1em}\textbullet{} Ha egy OSZLOP (metrika) minden sorra lila $\rightarrow$ az a metrika
+inherensen problémás (pl. Raw TT a sentinel értékek miatt)
+
+\textbf{MIT JELENT A CIKKBEN:}
+"A heatmap összefoglalja, hogy a Log-Sigmoid módszer az egyetlen,
+amely minden reward-jelölt metrikánál egyformán jó minőséget ad,
+miközben online (streaming) környezetben is alkalmazható."
+
+============================================================================
+CORRELATION MATRIX OLVASÁSI TIPPEK (pca\_02\_correlation.png)
+============================================================================
+
+A szöveges értékek a cellákban:
++1.00 = tökéletes pozitív korreláció (együtt nőnek)
+-1.00 = tökéletes negatív korreláció (ellentétesen mozognak)
+0.00 = nincs lineáris kapcsolat
+
+\textbf{Színkódolás (RdYlBu\_r colormap):}
+Sötétkék = -1.0 (erős negatív)
+Fehér/sárga = 0.0 (nincs korreláció)
+Sötétpiros = +1.0 (erős pozitív)
+
+Amit keresünk:
+\par\noindent\hspace*{1em}\textbullet{} Piros blokkok: redundáns metrikák $\rightarrow$ egy is elég a reward-ba
+\par\noindent\hspace*{1em}\textbullet{} Kék cellák: ellentétes irányú metrikák $\rightarrow$ potenciálisan komplementerek
+\par\noindent\hspace*{1em}\textbullet{} Fehér sorok/oszlopok: független metrikák $\rightarrow$ más dimenziót mérnek
+
+============================================================================
+BIPLOT TENGELYEK ÉRTELMEZÉSE (pca\_03\_biplot.png)
+============================================================================
+
+\textbf{X tengely (PC1 — Congestion):}
+Jobbra = TÖBB torlódás (magasabb WaitingTime, QueueLength, VehCount)
+Balra = KEVESEBB torlódás (szabadabb forgalom)
+Ez az első és legfontosabb dimenzió (44.8\%).
+
+\textbf{Y tengely (PC2 — Travel Time):}
+Felfelé = HOSSZABB menetidő (magasabb TravelTime)
+Lefelé = RÖVIDEBB menetidő
+Ez a második dimenzió (22.6\%), független a torlódástól.
+
+\textbf{FONTOS:} a tengelyek NEM fizikai mennyiségek, hanem a PCA algoritmus
+által megtalált "optimális nézőpontok". PC1 az a szempont, ahonnan
+a legtöbb variancia látszik; PC2 a második legtöbb, PC1-re merőlegesen.
+
+A nyilak (loading vektorok) megmutatják, hogy az eredeti metrikák
+hogyan "vetülnek" erre a két szempont-tengelyre.
+
+
+\section*{XV. BASELINE EVALUATION — ÖSSZEHASONLÍTÓ STRATÉGIÁK}
+\addcontentsline{toc}{section}{XV. BASELINE EVALUATION — ÖSSZEHASONLÍTÓ STRATÉGIÁK}
+
+Az RL ágens teljesítményének értékeléséhez 4 baseline stratégiát
+hasonlítunk össze, amelyek közül 2 a SUMO saját vezérlését használja
+(eltérő döntési tér), 2 pedig PONTOSAN UGYANAZT az action space-t és
+transition logic-ot, mint az RL ágens (fair összehasonlítás).
+
+Script: baseline\_actuated.py
+Használat: python baseline\_actuated.py --episodes 20 --wandb-project $<$project$>$
+
+\subsection*{15.1 Stratégiák Összefoglalása}
+\addcontentsline{toc}{subsection}{15.1 Stratégiák Összefoglalása}
+
+\vspace{1em}\begin{verbatim}
+  +----------------+-------------------+----------------------------------------+
+  | Stratégia      | Döntési tér       | Leírás                                 |
+  +----------------+-------------------+----------------------------------------+
+  | static         | SUMO fix ciklus   | A .net.xml-beli program, nincs adaptáció|
+  | actuated       | SUMO fix sorrend  | Ciklus nyújtás/rövidítés detektorokkal |
+  | random         | RL action space   | Random fázisválasztás (worst case)     |
+  | max_pressure   | RL action space   | Legtöbb várakozó sávot zöldíti        |
+  +----------------+-------------------+----------------------------------------+
+
+  A "random" és "max_pressure" stratégiák a SumoRLEnvironment-et használják,
+  tehát a transition logic (intergreen matrix, yellow/all-red fázisok),
+  a reward függvény, és az observation space mind 100%-ban azonos az RL-lel.
+
+\end{verbatim}
+\subsection*{15.2 Static Baseline}
+\addcontentsline{toc}{subsection}{15.2 Static Baseline}
+A SUMO .net.xml-ben definiált fix ciklusidejű jelzésprogram.
+\textbf{Pl. R1C1\_C:} 42s zöld (É-D) $\rightarrow$ 3s sárga $\rightarrow$ 42s zöld (K-Ny) $\rightarrow$ 3s sárga = 90s ciklus.
+Semmilyen adaptáció nincs — a forgalmi helyzettől függetlenül mindig
+ugyanaz a ciklus fut.
+
+\subsection*{15.3 Actuated Baseline}
+\addcontentsline{toc}{subsection}{15.3 Actuated Baseline}
+A SUMO beépített actuated vezérlése. Az eredeti fix fázisokból készül
+runtime-ban, TraCI-n keresztül:
+
+Green fázisok:  minDur = max(5s, duration × 0.5)
+maxDur = max(duration × 2.0, 60s)
+\vspace{1em}\begin{verbatim}
+  Yellow/Red:     minDur = maxDur = duration (FIX, nem módosítható)
+
+  Működés: a green fázis legalább minDur-ig tart. Ezután, ha a detektor
+  maxGap (default 3.1s) ideig nem érzékel járművet, a fázis véget ér.
+  Ha folyamatosan jönnek járművek, a fázis maxDur-ig nyúlhat.
+  A ciklus sorrendje FIX (nem választhat fázist, csak nyújthat/rövidíthet).
+
+  FONTOS: az actuated NEM ugyanazt a döntési teret használja, mint az RL!
+  Az RL tetszőleges fázist választhat bármikor, az actuated csak a fix
+  sorrendű ciklust nyújtogatja. Ezért ez NEM fair összehasonlítás az RL-lel,
+  de az iparban ez a legelterjedtebb adaptív módszer, ezért referenciának
+  hasznos.
+
+\end{verbatim}
+\subsection*{15.4 Random Baseline}
+\addcontentsline{toc}{subsection}{15.4 Random Baseline}
+Az RL environment-et használja, de random fázist választ:
+action = random.randint(0, num\_phases - 1)
+
+Ez a "worst case" baseline — ha az RL agent nem veri meg a random-ot,
+az azt jelenti, hogy a tanulás teljesen sikertelen.
+
+\textbf{FONTOS:} a random sem vált azonnal — ha átmenet (transition) van folyamatban,
+az intergreen matrix szerint lejátssza a yellow $\rightarrow$ all-red $\rightarrow$ red-yellow
+szekvenciát, pont úgy, mint az RL ágens. Ezért ez fair összehasonlítás.
+
+\subsection*{15.5 Max-Pressure Baseline (irodalmi referencia)}
+\addcontentsline{toc}{subsection}{15.5 Max-Pressure Baseline (irodalmi referencia)}
+A max-pressure a közlekedési RL irodalom standard baseline-ja.
+(Varaiya, 2013; Wei et al., 2019)
+
+Működés: minden döntési lépésnél kiszámítja az összes lehetséges green
+fázis "nyomását" (pressure), és a legnagyobb nyomásút választja:
+
+pressure(action) = Σ halting\_vehicles(lane)
+∀ lane $\in$ green\_lanes(action)
+
+Ahol:
+\par\noindent\hspace*{1em}\textbullet{} green\_lanes(action) = azok a bemenő sávok, amelyek az adott fázisban
+zöldet kapnak (a state string + getControlledLinks alapján)
+\par\noindent\hspace*{1em}\textbullet{} halting\_vehicles = traci.lane.getLastStepHaltingNumber()
+(megállt járművek száma a sávon)
+
+A fázis $\rightarrow$ sáv hozzárendelés felépítése:
+1. getControlledLinks(junction\_id) $\rightarrow$ link lista
+2. Minden logic\_phase-hez a phase\_registry-ből kiolvassuk a state stringet
+3. A state string i. karaktere 'G' vagy 'g' $\rightarrow$ link[i] zöldet kap
+4. link[i] $\rightarrow$ incoming lane (a link tuple első eleme)
+
+\textbf{Példa (R1C1\_C, 4 fázis):}
+Action 0 $\rightarrow$ state "GGGrrr" $\rightarrow$ link 0,1,2 zöld $\rightarrow$ e11\_e\_0, e11\_s\_0, ... sávok
+Action 1 $\rightarrow$ state "GrGrGr" $\rightarrow$ link 0,2,4 zöld $\rightarrow$ más sávkombináció
+stb.
+
+A max-pressure UGYANAZT az environment-et (SumoRLEnvironment) használja,
+mint az RL, ezért a transition logic, reward számítás mind azonos.
+Ha az RL agent nem veri meg a max-pressure-t, nincs hozzáadott értéke
+a neurális hálónak.
+
+\subsection*{15.6 WandB Integráció}
+\addcontentsline{toc}{subsection}{15.6 WandB Integráció}
+A baseline script minden stratégiát külön WandB run-ként logol:
+\par\noindent\hspace*{1em}\textbullet{} Run neve: "baseline-\{strategy\}" (pl. "baseline-max\_pressure")
+\par\noindent\hspace*{1em}\textbullet{} Tag-ek: ["baseline", "\{strategy\}"]
+\par\noindent\hspace*{1em}\textbullet{} Logolt metrikák: avg\_reward, episode, episode\_length, global\_step,
+és junction-szintű reward-ok (reward/R1C1\_C, reward/R1C2\_C, ...)
+
+Így a WandB dashboard-on az RL training run-ok és a baseline-ok
+UGYANAZON a grafikonon megjeleníthetők, az avg\_reward közvetlenül
+összehasonlítható.
+
+\subsection*{15.7 Futtatás}
+\addcontentsline{toc}{subsection}{15.7 Futtatás}
+\# Mind a 4 stratégia, 20 epizód, WandB-be is:
+python baseline\_actuated.py --episodes 20 --wandb-project sumo-rl-single-2
+
+\# Csak a fair összehasonlítók (RL action space):
+python baseline\_actuated.py --episodes 20 --strategies random,max\_pressure
+
+\# Specifikus forgalmi tartomány:
+python baseline\_actuated.py --episodes 30 --flow-min 300 --flow-max 800
+
+\# Párhuzamos futtatás a traininggel (traci-t használ, nem ütközik libsumo-val):
+python baseline\_actuated.py --episodes 20 \&
+python main\_headless.py --config training\_config.yaml \&
+
+Kimenet:
+eval\_results/baseline\_summary.csv       — epizódonkénti eredmények
+eval\_results/baseline\_per\_junction.csv   — junction-szintű részletek
+eval\_results/baseline\_comparison.png     — box plot + junction diff chart
+
+
+\section*{XVI. TRAINING PIPELINE — GUI ÉS CLI HIPERPARAMÉTER ÁTADÁS}
+\addcontentsline{toc}{section}{XVI. TRAINING PIPELINE — GUI ÉS CLI HIPERPARAMÉTER ÁTADÁS}
+
+A rendszer két módot támogat a tanítás indítására:
+1. GUI (rl\_trainer.py) — grafikus felületen beállítható hiperparaméterek
+2. CLI (main\_headless.py) — parancssori argumentumokkal (Docker, Colab, sweep)
+
+\subsection*{16.1 GUI $\rightarrow$ Subprocess Hiperparaméter Átadás}
+\addcontentsline{toc}{subsection}{16.1 GUI $\rightarrow$ Subprocess Hiperparaméter Átadás}
+A GUI (Tkinter) a tanítást KÜLÖN SUBPROCESS-ként indítja (main\_headless.py).
+\textbf{A hiperparamétereket CLI argumentumként adja át:}
+
+GUI mező           $\rightarrow$ CLI argument           $\rightarrow$ main\_headless.py feldolgozás
+-----------------------------------------------------------------------------
+Learning Rate       $\rightarrow$ --learning-rate        $\rightarrow$ hp["learning\_rate"]
+Batch Size          $\rightarrow$ --batch-size           $\rightarrow$ hp["batch\_size"]
+Buffer Size         $\rightarrow$ --buffer-size          $\rightarrow$ hp["buffer\_size"]
+Gamma               $\rightarrow$ --gamma               $\rightarrow$ hp["gamma"]
+Exploration Frac.   $\rightarrow$ --exploration-fraction $\rightarrow$ hp["exploration\_fraction"]
+Num Layers          $\rightarrow$ --num-layers           $\rightarrow$ hp["num\_layers"]
+Layer Size          $\rightarrow$ --layer-size           $\rightarrow$ hp["layer\_size"]
+W (waiting)         $\rightarrow$ --w-waiting            $\rightarrow$ reward\_weights["waiting"]
+W (CO2)             $\rightarrow$ --w-co2               $\rightarrow$ reward\_weights["co2"]
+
+Logika (main\_headless.py):
+1. YAML-ból betölti a default hiperparamétereket (training\_config.yaml)
+2. CLI argumentumok felülírják a YAML default-ot (cli\_hp\_map dict)
+3. WandB sweep paraméterek felülírják a CLI-t (ha sweep fut)
+
+Prioritás: sweep config $>$ CLI args $>$ YAML defaults
+
+\subsection*{16.2 WandB Sweep Integráció}
+\addcontentsline{toc}{subsection}{16.2 WandB Sweep Integráció}
+A sweep\_runner.py (vagy WandB agent) a main\_headless.py-t hívja.
+A sweep config (data/sweep\_config.yaml) felülírja a wandb.config-on
+keresztül a hiperparamétereket.
+
+Több párhuzamos sweep agent futtatható:
+\# Ugyanaz a sweep ID, több terminál:
+wandb agent $<$USERNAME$>$/$<$PROJECT$>$/$<$SWEEP\_ID$>$    \# Terminal 1
+wandb agent $<$USERNAME$>$/$<$PROJECT$>$/$<$SWEEP\_ID$>$    \# Terminal 2
+\# Docker-ben:
+docker-compose run -d sumo-trainer wandb agent $<$SWEEP\_ID$>$  \# x N
+
+\textbf{FONTOS:} az első agent libsumo-t használhat (gyorsabb), de ha több
+agent fut PÁRHUZAMOSAN, mindegyiknek traci-t kell használnia
+(USE\_LIBSUMO=0), mert a libsumo nem thread-safe.
+
+\subsection*{16.3 Docker Pipeline}
+\addcontentsline{toc}{subsection}{16.3 Docker Pipeline}
+A Docker container (docker-compose.yml) nem indít automatikusan tanítást.
+A command: ["echo", "..."] csak a használati utasítást írja ki.
+
+Futtatás:
+docker-compose run --rm sumo-trainer python main\_headless.py --config training\_config.yaml
+docker-compose run --rm sumo-trainer python baseline\_actuated.py --episodes 20
+docker-compose run -d sumo-trainer wandb agent $<$SWEEP\_ID$>$
+
+\subsection*{16.4 Episode Logging}
+\addcontentsline{toc}{subsection}{16.4 Episode Logging}
+Minden epizód végén a következő metrikák logolódnak (WandB + konzol):
+\par\noindent\hspace*{1em}\textbullet{} episode\_count: hányadik epizód
+\par\noindent\hspace*{1em}\textbullet{} episode\_steps: lépések száma az epizódban
+\par\noindent\hspace*{1em}\textbullet{} avg\_reward: átlagos reward az epizódon belül
+\par\noindent\hspace*{1em}\textbullet{} epsilon: jelenlegi exploration ráta
+\par\noindent\hspace*{1em}\textbullet{} traffic\_duration: az epizód forgalmi időtartama
+\par\noindent\hspace*{1em}\textbullet{} flow\_range: forgalmi tartomány [min, max]
+
+
+\section*{XVII. CURRICULUM LEARNING — FOKOZATOS FORGALOMNÖVELÉS}
+\addcontentsline{toc}{section}{XVII. CURRICULUM LEARNING — FOKOZATOS FORGALOMNÖVELÉS}
+
+\textbf{KÉRDÉS:} Gyorsítja-e a tanulást, ha először könnyű (kevés) forgalmat
+adunk, és fokozatosan növeljük a nehézséget?
+
+\subsection*{17.1 Potenciális Előnyök}
+\addcontentsline{toc}{subsection}{17.1 Potenciális Előnyök}
+\par\noindent\hspace*{1em}\textbullet{} Gyorsabb korai konvergencia: kevés forgalommal az ágens hamar megtanulja
+az alapvető fázisváltási logikát
+\par\noindent\hspace*{1em}\textbullet{} Stabilabb gradiens: kevesebb "lehetetlen" szituáció az elején
+\par\noindent\hspace*{1em}\textbullet{} Egyre komplexebb stratégiák: a nehezebb szintek építenek az alapokra
+
+\subsection*{17.2 Problémák a Megközelítéssel}
+\addcontentsline{toc}{subsection}{17.2 Problémák a Megközelítéssel}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{CATASTROPHIC FORGETTING:} a replay buffer fixed méretű (buffer\_size).
+Ha növeljük a forgalmat, a régi "könnyű" tapasztalatok kiszorulnak,
+és az ágens elveszti a generalizáló képességét.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{EXPLORATION GAP:} ha az exploration phase ($\epsilon$-greedy, exploration\_fraction)
+alatt csak könnyű forgalmat lát, a nehéz szituációkra nem fedez fel
+jó stratégiákat. Ez különösen problémás magas exploration\_fraction (0.85)
+mellett.
+\par\noindent\hspace*{1em}\textbullet{} \textbf{DQN-SPECIFIKUS PROBLÉMA:} a DQN/QR-DQN replay buffer-re épít.
+A curriculum megváltoztatja az adateloszlást, amit a buffer tartalmaz,
+így a Q-value becslések "elavulnak" az új nehézségi szinten.
+
+\subsection*{17.3 A Jelenlegi Megoldás: Domain Randomization + Target+Spread}
+\addcontentsline{toc}{subsection}{17.3 A Jelenlegi Megoldás: Domain Randomization + Target+Spread}
+A generate\_random\_traffic() függvény MINDEN epizódban véletlenszerű
+forgalmat generál, de NEM fix tartományból. A forgalomgenerálás
+két szinten randomizál (target+spread logika):
+
+1. target = random.choice([100, 200, 300, 400, 500, 600, 700, 800, 900])
+$\rightarrow$ az epizód összforgalmának nagyságrendje (9 diszkrét szint)
+2. spread = random.choice([50, 100, 150, 200, 250, 300])
+$\rightarrow$ az irányok közötti aszimmetria mértéke (6 szint)
+3. flow\_range = (max(50, target-spread), min(1100, target+spread))
+4. Sávonként: flow = randint(flow\_min, flow\_max)
+\par\noindent\hspace*{1em}\textbullet{} Időtartam: random [900, 1800, 2700, 3600, 5400, 7200] sec
+
+MIÉRT NEM FIX TARTOMÁNY?
+A korábbi fix Uniform(100, 900) per lane megoldás problémája:
+ha sok sáv van (\textasciitilde{}80-146), a nagy számok törvénye miatt az összforgalom
+mindig \textasciitilde{}500 veh/h/lane körül áll be — az ágens nem lát igazán
+könnyű vagy nehéz epizódokat.
+
+A target+spread logikával:
+\par\noindent\hspace*{1em}\textbullet{} target variál $\rightarrow$ az ágens lát könnyű ÉS nehéz epizódokat
+\par\noindent\hspace*{1em}\textbullet{} spread variál $\rightarrow$ egyenletes ÉS aszimmetrikus forgalom is előfordul
+(pl. észak-délről 800, kelet-nyugatról 200 — reggeli csúcs főúton)
+\par\noindent\hspace*{1em}\textbullet{} Abszolút min: 50, max: 1100 veh/h/lane (gridlock elkerülése)
+
+MIÉRT NEM A SWEEP KERESI A FORGALMI SZINTET?
+A forgalmi tartomány NEM hiperparaméter — a sweep dolga a háló
+architektúráját (learning\_rate, num\_layers, stb.) optimalizálni.
+A forgalomnak minden epizódban változatosnak kell lennie, hogy az
+ágens általánosítani tudjon. Ezért a flow\_min/flow\_max kikerült
+a sweep\_config.yaml-ból.
+
+\textbf{Ez JOBBAN MŰKÖDIK, mint a curriculum, mert:}
+1. Az ágens MINDIG lát könnyű ÉS nehéz forgalmat
+2. A replay bufferben vegyes nehézségű tapasztalatok vannak
+3. Nem kell a curriculum ütemezéssel bajlódni (schedule design)
+4. Az aszimmetrikus forgalom is megjelenik (spread randomizálás)
+
+\textbf{MEGJEGYZÉS:} Ha egy külső hívó (pl. baseline\_actuated.py) explicit
+flow\_range-t ad az options-ben, az felülírja a target+spread logikát.
+
+\subsection*{17.4 Ha Mégis Kipróbálnánk Curriculum-ot}
+\addcontentsline{toc}{subsection}{17.4 Ha Mégis Kipróbálnánk Curriculum-ot}
+A legjobb kompromisszum: az exploration phase alatt széles tartomány
+(pl. flow\_range=[50, 1200]), utána szűkíteni a nehezebb tartományra.
+De a domain randomization már biztosítja ezt a hatást automatikusan.
+
+\textbf{KONKLÚZIÓ:} A jelenlegi domain randomization + target+spread megközelítés
+preferált a curriculum learning-gel szemben, mert robusztusabb a
+catastrophic forgetting ellen, és nem igényel manuális schedule tervezést.
+
+
+\section*{XVIII. KEY CONCLUSIONS FOR THE PAPER}
+\addcontentsline{toc}{section}{XVIII. KEY CONCLUSIONS FOR THE PAPER}
+
+\textbf{1. PCA-BASED METRIC SELECTION:}
+\par\noindent\hspace*{1em}\textbullet{} 12 traffic metrics reduce to 3 meaningful dimensions (79.7\%)
+\par\noindent\hspace*{1em}\textbullet{} PC1 (44.8\%) = congestion cluster — 6 metrics carry the same information
+\par\noindent\hspace*{1em}\textbullet{} PC2 (22.6\%) = travel time — independent but less controllable
+\par\noindent\hspace*{1em}\textbullet{} PC3 (12.3\%) = sentinel noise — confirms TT filtering is mandatory
+\par\noindent\hspace*{1em}\textbullet{} Optimal reward: TotalWaitingTime + TotalCO2 (PC1, complementary aspects)
+
+\textbf{2. NORMALIZATION FOR ONLINE RL:}
+\par\noindent\hspace*{1em}\textbullet{} Rank Gauss is theoretically best (quality 0.008) but requires full dataset
+\par\noindent\hspace*{1em}\textbullet{} Log-Sigmoid is the best online-compatible method (quality 1.354)
+\par\noindent\hspace*{1em}\textbullet{} Only needs 4 pre-computed constants (2 per metric)
+\par\noindent\hspace*{1em}\textbullet{} Calibrated on 527K+ representative samples
+
+\textbf{3. SENTINEL VALUE HANDLING:}
+\par\noindent\hspace*{1em}\textbullet{} SUMO getTraveltime() returns 200K-5M for empty/jammed lanes
+\par\noindent\hspace*{1em}\textbullet{} Filtering (0 $<$ tt $<$ 1000) moves TT from PC3 (noise) to PC2 (signal)
+\par\noindent\hspace*{1em}\textbullet{} Raw TT is unusable in reward functions
+
+\textbf{4. AvgCO2 IS UNINFORMATIVE:}
+\par\noindent\hspace*{1em}\textbullet{} Nearly constant (\textasciitilde{}1575 mg/s/vehicle) across all traffic conditions
+\par\noindent\hspace*{1em}\textbullet{} PCA loadings $\approx$ 0 on PC1 and PC2
+\par\noindent\hspace*{1em}\textbullet{} HBEFA emission at low urban speeds is dominated by idle+cruise
+\par\noindent\hspace*{1em}\textbullet{} TotalCO2 (= AvgCO2 × VehCount) IS useful because it scales with congestion
+
+\textbf{5. REWARD DESIGN:}
+\par\noindent\hspace*{1em}\textbullet{} Bounded [0, 1] via sigmoid
+\par\noindent\hspace*{1em}\textbullet{} Weighted average: (w\_wait × r\_wait + w\_co2 × r\_co2) / (w\_wait + w\_co2)
+\par\noindent\hspace*{1em}\textbullet{} Flow-invariant through log-transform normalization
+\par\noindent\hspace*{1em}\textbullet{} Empty junction $\rightarrow$ 0.0 (neutral, no false positive reward)
+
+\textbf{6. TRAFFIC GENERATION:}
+\par\noindent\hspace*{1em}\textbullet{} Lane-level control (not O-D based) for reproducible per-lane density
+\par\noindent\hspace*{1em}\textbullet{} Epizód-szintű target+spread randomizálás (NEM fix tartomány)
+\par\noindent\hspace*{1em}\textbullet{} target $\in$ \{100..900\}, spread $\in$ \{50..300\} $\rightarrow$ flow\_range = [max(50, t-s), min(1100, t+s)]
+\par\noindent\hspace*{1em}\textbullet{} A forgalmi szint NEM hiperparaméter — kikerült a sweep-ből
+\par\noindent\hspace*{1em}\textbullet{} Episode duration rotation [15min - 2h] prevents temporal overfitting
+
+\textbf{7. SIMULATION ENGINE SELECTION:}
+\par\noindent\hspace*{1em}\textbullet{} Import priority: libtraci $>$ libsumo $>$ traci
+\par\noindent\hspace*{1em}\textbullet{} libsumo/libtraci for speed (30-50\% faster), traci for parallel/GUI
+\par\noindent\hspace*{1em}\textbullet{} Automatic selection based on environment (local/docker/parallel)
+\par\noindent\hspace*{1em}\textbullet{} SUMO subscriptions for batch data retrieval (735 calls/step $\rightarrow$ 0)
+
+\textbf{8. BASELINE EVALUATION:}
+\par\noindent\hspace*{1em}\textbullet{} 4 strategies: static, actuated, random, max-pressure
+\par\noindent\hspace*{1em}\textbullet{} random and max\_pressure use the SAME environment as RL (fair comparison)
+\par\noindent\hspace*{1em}\textbullet{} Max-pressure: choose phase with most halting vehicles on green lanes
+\par\noindent\hspace*{1em}\textbullet{} Max-pressure is the standard baseline in traffic RL literature
+\par\noindent\hspace*{1em}\textbullet{} All baselines compute identical log-sigmoid reward for direct comparison
+\par\noindent\hspace*{1em}\textbullet{} WandB integration: baselines appear on same dashboard as RL runs
+
+\textbf{9. TRAINING PIPELINE:}
+\par\noindent\hspace*{1em}\textbullet{} GUI (Tkinter) $\rightarrow$ subprocess (main\_headless.py) $\rightarrow$ CLI args $\rightarrow$ WandB
+\par\noindent\hspace*{1em}\textbullet{} Hyperparameter priority: sweep config $>$ CLI args $>$ YAML defaults
+\par\noindent\hspace*{1em}\textbullet{} Docker: nem auto-start, explicit parancsokkal futtatandó
+\par\noindent\hspace*{1em}\textbullet{} Parallel sweep agents: USE\_LIBSUMO=0 (traci) kötelező
+
+\textbf{10. DOMAIN RANDOMIZATION OVER CURRICULUM:}
+\par\noindent\hspace*{1em}\textbullet{} Domain randomization (target+spread per episode) preferred over curriculum learning
+\par\noindent\hspace*{1em}\textbullet{} Curriculum learning risks catastrophic forgetting in fixed-size replay buffer
+\par\noindent\hspace*{1em}\textbullet{} Exploration gap: easy-only exploration $\rightarrow$ poor strategies for hard scenarios
+\par\noindent\hspace*{1em}\textbullet{} Target+spread ensures both easy/hard episodes AND symmetric/asymmetric traffic
+\par\noindent\hspace*{1em}\textbullet{} Flow\_min/flow\_max removed from sweep — traffic diversity is automatic, not a hyperparameter
+
+\textbf{11. WARM-UP KIKAPCSOLVA:}
+\par\noindent\hspace*{1em}\textbullet{} Korábban 50-150 sec random fázisokkal $\rightarrow$ dugó az ágens első lépésekor
+\par\noindent\hspace*{1em}\textbullet{} Memória nélküli ágens (nincs LSTM) nem tudja megkülönböztetni az
+"örökölt dugó" és "saját hiba" szituációkat $\rightarrow$ zajos tanulási jel
+\par\noindent\hspace*{1em}\textbullet{} A forgalom jitter miatt úgyis fokozatosan indul (depart $\approx$ 0 + jitter)
+
+\textbf{12. TRAINING LOOP PERFORMANCE PROFILING:}
+\par\noindent\hspace*{1em}\textbullet{} Inline profiler 100 lépésenként kiírja: predict, env.step, train, buffer
+\par\noindent\hspace*{1em}\textbullet{} Fő bottleneck: env.step (SUMO szimuláció, 53-97\% a forgalomtól függően)
+\par\noindent\hspace*{1em}\textbullet{} Második: train (14-35\%) — 21 ágens gradient update
+\par\noindent\hspace*{1em}\textbullet{} \textbf{KRITIKUS BUG JAVÍTVA:} train\_freq=4 és gradient\_steps=1 a configban volt,
+de a kód MINDEN lépésben 2 gradient step-et csinált (8x több mint kellett)
+\par\noindent\hspace*{1em}\textbullet{} Javítás után: FPS 3 $\rightarrow$ 8-9 (3x gyorsulás)
+\par\noindent\hspace*{1em}\textbullet{} Predict idő nő a lépésszámmal (1.9ms $\rightarrow$ 16ms) — PyTorch memória fragmentáció
+
+\textbf{13. JUNCTION-SZINTŰ INDEPENDENS TRÉNING (ARCHITEKTURÁLIS VÁLTÁS):}
+\par\noindent\hspace*{1em}\textbullet{} A multi-agent (21 junction egyszerre) megközelítés ELHAGYVA
+\par\noindent\hspace*{1em}\textbullet{} OK: a globális normalizáció nem működik junction-szinten
+(OSM MU\_WAIT=2.45 vs MEGA MU\_WAIT=4.58 $\rightarrow$ 2.1 eltérés log-skálán)
+\par\noindent\hspace*{1em}\textbullet{} ÚJ: minden junction-re külön RL ágens, külön reward konstansok
+\par\noindent\hspace*{1em}\textbullet{} A teljes hálózat továbbra is szimulálódik (realisztikus cross-traffic)
+\par\noindent\hspace*{1em}\textbullet{} Per-junction metrika kalibráció $\rightarrow$ junction\_reward\_params.json
+\par\noindent\hspace*{1em}\textbullet{} WandB: egy projekt, group=junction\_id, külön sweep-ek
+\par\noindent\hspace*{1em}\textbullet{} Transfer learning: katalógus $\rightarrow$ OSM junction, reward rekalibráció
+\par\noindent\hspace*{1em}\textbullet{} Lásd: XX. fejezet a részletekért
+
+
+\section*{XX. ARCHITEKTURÁLIS VÁLTÁS — JUNCTION-SZINTŰ INDEPENDENS TRÉNING}
+\addcontentsline{toc}{section}{XX. ARCHITEKTURÁLIS VÁLTÁS — JUNCTION-SZINTŰ INDEPENDENS TRÉNING}
+
+\textbf{HÁTTÉR ÉS MOTIVÁCIÓ:}
+Az eddigi megközelítés (multi-agent, 21 junction egyszerre) egy globális
+reward normalizációs készletet használt. A metric\_collection\_osm.py
+eredményei bizonyították, hogy a normalizációs konstansok HÁLÓZAT- ÉS
+JUNCTION-FÜGGŐEK. Egyetlen junction metrikái drasztikusan eltérhetnek
+a globális átlagtól (OSM: MU\_WAIT=2.45 vs MEGA: MU\_WAIT=4.58 $\rightarrow$ 2.1
+eltérés log-skálán). Ez lehetetlenné teszi az egységes reward-al
+való érdemi tanulást.
+
+\textbf{KUTATÁSI CÉL:}
+Átfogó módszertan kidolgozása arra, hogyan lehet a valóságban
+DEPLOYOLNI traffic RL megoldásokat tetszőleges kereszteződésekre.
+A kereszteződés-könyvtár (catalogue) megmarad a pre-training
+alapjaként, de az ágensek egyenként tanulnak, egyedi reward
+kalibrációval.
+
+--------------------------------------------------------------------
+XX.1 AZ ÚJ PIPELINE ÁTTEKINTÉSE
+--------------------------------------------------------------------
+
+A módszertan 4 fázisból áll:
+
+\textbf{FÁZIS 1:} PER-JUNCTION METRIKA KALIBRÁCIÓ
+-----------------------------------------
+Minden egyes junction-re (pl. R1C1\_C, R2C3\_C, ...) külön lefut
+a metric\_collection teszt:
+\par\noindent\hspace*{1em}\textbullet{} Input: mega\_catalogue\_v2.net.xml (teljes hálózat)
+\par\noindent\hspace*{1em}\textbullet{} De CSAK az adott junction forgalmát és metrikáit gyűjtjük
+\par\noindent\hspace*{1em}\textbullet{} Flow szintek: 100, 200, 300, ..., 1100 veh/h/lane
+\par\noindent\hspace*{1em}\textbullet{} Epizódok szintenként: 3
+\par\noindent\hspace*{1em}\textbullet{} Kimenet per junction: MU\_WAIT, STD\_WAIT, MU\_CO2, STD\_CO2
+\par\noindent\hspace*{1em}\textbullet{} PCA opcionális de hasznos: ellenőrzi, hogy a metrikák jellege
+(mely PC-re loadolnak) megegyezik-e a globálissal
+
+A gyűjtés a meglévő metric\_collection\_test.py és
+metric\_collection\_osm.py mintájára történik, de automatizálva
+mind a 21 junction-re.
+
+\textbf{OUTPUT:} data/junction\_reward\_params.json
+Formátum:
+\{
+"R1C1\_C": \{
+\textbf{"MU\_WAIT":} 3.21, "STD\_WAIT": 1.65,
+\textbf{"MU\_CO2":} 10.12, "STD\_CO2": 0.85
+\},
+"R1C2\_C": \{ ... \},
+...
+\}
+
+Ez a fájl a "katalógus tudásbázisa" — minden junction-höz
+tartalmazza az optimális reward paramétereket.
+
+\textbf{FÁZIS 2:} ÖSSZEHASONLÍTÁS A GLOBÁLIS ÉRTÉKEKKEL
+-------------------------------------------------
+Minden junction paraméterei összehasonlítva a korábbi globális
+\textbf{értékekkel (MU\_WAIT=4.5848, MU\_CO2=10.8706):}
+\par\noindent\hspace*{1em}\textbullet{} Eltérés mértéke (abszolút és \%-os)
+\par\noindent\hspace*{1em}\textbullet{} Reward szimulálás mindkét paraméter-készlettel
+\par\noindent\hspace*{1em}\textbullet{} Reward range (p10-p90) — mekkora a tanulható grádiens?
+\par\noindent\hspace*{1em}\textbullet{} Heatmap: junction × paraméter eltérés mátrix
+
+\textbf{ELVÁRT EREDMÉNY:}
+\par\noindent\hspace*{1em}\textbullet{} A szélső junction-ök (R1C1, R4C5 — kevesebb szomszéd,
+kevesebb bejövő forgalom) lényegesen eltérhetnek a belső
+junction-öktől (R2C3 — sok szomszéd, magas cross-traffic)
+\par\noindent\hspace*{1em}\textbullet{} \textbf{A split junction (R4C2\_CE, R4C2\_CW) különleges eset:}
+fél annyi sáv $\rightarrow$ fél annyi forgalom $\rightarrow$ alacsonyabb MU\_WAIT
+
+\textbf{VALIDÁCIÓ:}
+\par\noindent\hspace*{1em}\textbullet{} A reward függvény FORMÁJA (Log-Sigmoid) megmarad
+\par\noindent\hspace*{1em}\textbullet{} A metrika KIVÁLASZTÁS (TotalWaitingTime + TotalCO2) megmarad
+\par\noindent\hspace*{1em}\textbullet{} CSAK a 4 normalizációs konstans változik junction-önként
+
+\textbf{FÁZIS 3:} EGYENKÉNTI JUNCTION TRAINING
+--------------------------------------
+\textbf{LÉNYEGI VÁLTOZÁS:} többé NEM egyszerre tanítunk 21 ágenst!
+Minden junction-re külön-külön fut a tréning, saját reward
+paraméterekkel.
+
+\textbf{3.1 SZIMULÁCIÓS BEÁLLÍTÁS:}
+\par\noindent\hspace*{1em}\textbullet{} Hálózat: MARAD a mega\_catalogue\_v2.net.xml (nem vágjuk szét!)
+\par\noindent\hspace*{1em}\textbullet{} MIÉRT? A szomszédos junction-ök nélkül a forgalmi minta
+irreális: nem lennének eltorlaszolódó sorok, upstream
+visszahatás, stb. A teljes hálózat szimulálásával az ágens
+természetes forgalmi környezetet lát.
+\par\noindent\hspace*{1em}\textbullet{} RL ágens: CSAK az adott junction kapja az RL ágenst
+\par\noindent\hspace*{1em}\textbullet{} Többi junction: actuated control (SUMO beépített) vagy
+fix időzítéssel, hogy realisztikus legyen
+\par\noindent\hspace*{1em}\textbullet{} Forgalomgenerálás: az egész hálózatra generálunk forgalmat
+(target+spread), de a reward CSAK az adott junctionből számolódik
+\par\noindent\hspace*{1em}\textbullet{} Detektorok: csak az adott junction detektorai kellenek az
+observation-höz
+
+\textbf{3.2 IMPLEMENTÁCIÓ — sumo\_rl\_environment.py MÓDOSÍTÁSOK:}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{single\_agent\_id KITERJESZTÉSE:} nem csak OSM junction-re,
+hanem bármely mega\_catalogue junction-re is használható
+\par\noindent\hspace*{1em}\textbullet{} ÚJ: junction\_reward\_params.json betöltése \_\_init\_\_-ben
+\par\noindent\hspace*{1em}\textbullet{} A reward konstansok kiválasztása az aktuális junction alapján:
+params = self.junction\_params.get(junction\_id, global\_defaults)
+MU\_WAIT = params['MU\_WAIT']
+STD\_WAIT = params['STD\_WAIT']
+MU\_CO2 = params['MU\_CO2']
+STD\_CO2 = params['STD\_CO2']
+\par\noindent\hspace*{1em}\textbullet{} A többi junction-re NEM kell RL — static/actuated control
+
+\textbf{3.3 WANDB STRUKTÚRA:}
+\textbf{PROJEKT STRUKTÚRA (egy WandB projekt, csoportosítva):}
+Projekt neve: pl. "sumo-rl-catalogue"
+
+\textbf{CSOPORTOK (wandb.init group= paraméter):}
+\par\noindent\hspace*{1em}\textbullet{} "R1C1\_C" — R1C1\_C junction összes futása
+\par\noindent\hspace*{1em}\textbullet{} "R1C2\_C" — R1C2\_C junction összes futása
+\par\noindent\hspace*{1em}\textbullet{} ...
+
+\textbf{TAGS:}
+\par\noindent\hspace*{1em}\textbullet{} junction neve (pl. "R1C1\_C")
+\par\noindent\hspace*{1em}\textbullet{} "sweep" vagy "manual"
+\par\noindent\hspace*{1em}\textbullet{} "pre-training" vagy "fine-tuning"
+
+\textbf{SWEEP SETUP:}
+\textbf{Minden junction-höz KÜLÖN sweep futtatható:}
+wandb sweep data/sweep\_config.yaml \textbackslash\{\}
+--project sumo-rl-catalogue \textbackslash\{\}
+--name "sweep-R1C1\_C"
+A sweep\_runner.py paraméterként kapja a junction ID-t:
+python sweep\_runner.py --junction R1C1\_C
+A sweep az avg\_reward-ot optimalizálja, de a reward
+az adott junction SAJÁT paramétereivel számolódik.
+
+\textbf{DASHBOARD:}
+\par\noindent\hspace*{1em}\textbullet{} Filter by group $\rightarrow$ egy junction összes run-ja
+\par\noindent\hspace*{1em}\textbullet{} Runs table: junction oszlop a gyors szűréshez
+\par\noindent\hspace*{1em}\textbullet{} Panel: avg\_reward, episode\_length, epsilon, FPS
+\par\noindent\hspace*{1em}\textbullet{} Az avg\_reward értékek junction-ök KÖZÖTT NEM összehasonlíthatók
+közvetlenül (más normalizáció!), de junction-ÖN BELÜL igen
+
+\textbf{FONTOS:} A különböző junction-ök más-más optimális reward-al
+\textbf{fognak bírni! Ez NEM hiba:}
+\par\noindent\hspace*{1em}\textbullet{} Egyszerű junction (2 fázis, alacsony forgalom) $\rightarrow$ reward 0.7-0.8
+\par\noindent\hspace*{1em}\textbullet{} Komplex junction (4 fázis, magas cross-traffic) $\rightarrow$ reward 0.5-0.6
+\par\noindent\hspace*{1em}\textbullet{} A sweep minden junction-re KÜLÖN keresi a legjobb hiperparamétereket
+
+\textbf{3.4 MODELL MENTÉS:}
+\par\noindent\hspace*{1em}\textbullet{} \textbf{Minden junction modellje KÜLÖN mentődik:}
+runs/sumo-rl-catalogue/R1C1\_C\_$<$timestamp$>$/
++-- model\_R1C1\_C.zip (SB3 model)
++-- model\_R1C1\_C.onnx (exportált)
++-- reward\_params.json (a használt MU/STD értékek)
++-- training\_config.yaml (hiperparaméterek)
+\par\noindent\hspace*{1em}\textbullet{} A reward\_params.json MINDIG mentődik a modellel együtt,
+mert a modell CSAK a saját normalizációjával működik helyesen
+
+\textbf{3.5 CLI HASZNÁLAT:}
+\# Egy junction tréning
+python main\_headless.py \textbackslash\{\}
+--junction R1C1\_C \textbackslash\{\}
+--project sumo-rl-catalogue \textbackslash\{\}
+--timesteps 50000
+
+\# Sweep egy junction-re
+wandb sweep data/sweep\_config.yaml --project sumo-rl-catalogue
+python sweep\_runner.py --junction R1C1\_C
+
+\# Összes junction szekvenciálisan (shell script)
+for jid in R1C1\_C R1C2\_C R1C3\_C ...; do
+python main\_headless.py --junction \$jid --timesteps 50000
+done
+
+\textbf{3.6 BACKGROUND JUNCTIONS KEZELÉSE:}
+\textbf{A teljes hálózaton a NEM RL-es junction-ök jelzőlámpái:}
+Opció A: SUMO actuated program (beépített, adaptív)
+$\rightarrow$ Reális háttérforgalmi mintákat ad
+$\rightarrow$ A SUMO traffic\_lights.json tartalmazza az alap programot
+Opció B: Random fázisváltás (mint a metric collection tesztben)
+$\rightarrow$ Gyorsabb, de kevésbé realisztikus
+\textbf{AJÁNLÁS:} Opció A (actuated), mert a tanult ágens végül
+ilyen környezetben fog működni
+
+\textbf{FÁZIS 4:} TRANSFER LEARNING — VALÓS DEPLOYMENT
+----------------------------------------------
+\textbf{ÚJ MÓDSZERTANI LÉPÉS:} a katalógus-beli junction-re tanított
+modellt alkalmazni egy VALÓS (OSM) junction-re.
+
+\textbf{4.1 A FOLYAMAT:}
+1. METRIKA KALIBRÁCIÓ az OSM junction-re
+\par\noindent\hspace*{1em}\textbullet{} Lefut a metric\_collection\_osm.py (vagy analóg script)
+\par\noindent\hspace*{1em}\textbullet{} Kiszámítja az OSM junction MU\_WAIT, STD\_WAIT, MU\_CO2, STD\_CO2-t
+\par\noindent\hspace*{1em}\textbullet{} Menti: data/osm\_reward\_params.json
+
+2. TOPOLÓGIAI MATCHING
+\par\noindent\hspace*{1em}\textbullet{} Az OSM junction obs\_space méretét összehasonlítjuk a
+katalógus junction-ökkel
+\par\noindent\hspace*{1em}\textbullet{} \textbf{MATCH feltétel:} azonos phase count + azonos detektor szám
+\par\noindent\hspace*{1em}\textbullet{} Pl. OSM 4 fázis, 6 detektor $\rightarrow$ match R1C1\_C (4 fázis, 6 det)
+
+3. SÚLY TRANSZFER
+\par\noindent\hspace*{1em}\textbullet{} A matchelő katalógus junction modelljét töltjük be
+\par\noindent\hspace*{1em}\textbullet{} A policy háló súlyai változatlanul átkerülnek
+\par\noindent\hspace*{1em}\textbullet{} CSAK a reward normalizáció változik (OSM paraméterekre)
+
+4. FINE-TUNING
+\par\noindent\hspace*{1em}\textbullet{} Kis learning rate-tel (1/10 az eredeti) tovább tréningel
+\par\noindent\hspace*{1em}\textbullet{} Az OSM junction SAJÁT reward paramétereivel
+\par\noindent\hspace*{1em}\textbullet{} Kevesebb timestep kell (az ágens már "tud" jelzőlámpát kezelni)
+\par\noindent\hspace*{1em}\textbullet{} WandB: tag = "fine-tuning", group = OSM junction ID
+
+4.2 MIÉRT GYORSÍT A TRANSFER LEARNING?
+A katalógus pre-training megtanítja:
+\par\noindent\hspace*{1em}\textbullet{} A "jelzőlámpa kezelés alapjait" (ne villogj, tartsd a zöldet)
+\par\noindent\hspace*{1em}\textbullet{} A detektorfoglaltság és akció közötti kapcsolatot
+\par\noindent\hspace*{1em}\textbullet{} Az intergreen mátrix kezelését (átmeneti fázisok)
+\textbf{A fine-tuning CSAK az adott junction sajátosságait tanulja:}
+\par\noindent\hspace*{1em}\textbullet{} Konkrét forgalmi minták (aszimmetria, csúcsirányok)
+\par\noindent\hspace*{1em}\textbullet{} Konkrét fázis-kombináció optimuma
+\par\noindent\hspace*{1em}\textbullet{} Az adott junction méretéhez igazított reward grádiens
+
+\textbf{4.3 VALIDÁCIÓ:}
+\par\noindent\hspace*{1em}\textbullet{} Pre-training nélküli tréning vs transfer learning:
+Összehasonlítjuk a konvergencia sebességet és végső reward-ot
+\par\noindent\hspace*{1em}\textbullet{} Különböző source junction-ök hatása: melyik katalógus junction
+ad jobb transzfert az adott OSM junction-re?
+
+--------------------------------------------------------------------
+XX.2 IMPLEMENTÁCIÓS CHECKLIST
+--------------------------------------------------------------------
+
+A program NEM tanítási részei (GUI, intergreen matrix, netedit,
+transition planner, stb.) VÁLTOZATLANOK MARADNAK.
+
+\textbf{IMPLEMENTÁLANDÓ MÓDOSÍTÁSOK:}
+
+\par\noindent\hspace*{1em}$\square$ 1. metric\_collection\_per\_junction.py
+Automatizált PCA + metrika gyűjtés mind a 21 junction-re,
+egyenként. Kimenet: junction\_reward\_params.json
+Alap: metric\_collection\_test.py + metric\_collection\_osm.py
+
+\par\noindent\hspace*{1em}$\square$ 2. data/junction\_reward\_params.json
+Per-junction normalizációs konstansok (MU/STD)
+Generálja: metric\_collection\_per\_junction.py
+
+\par\noindent\hspace*{1em}$\square$ 3. sumo\_rl\_environment.py — reward konstans betöltés
+junction\_reward\_params.json betöltése \_\_init\_\_-ben
+Per-junction MU/STD kiválasztás a reward számításnál
+A jelenlegi if single\_agent $\rightarrow$ OSM logika általánosítva
+
+\par\noindent\hspace*{1em}$\square$ 4. sumo\_rl\_environment.py — background junction kezelés
+single\_agent módban a többi junction actuated/static
+NEM kapnak RL ágenst, de a forgalomgenerálás rájuk is vonatkozik
+
+\par\noindent\hspace*{1em}$\square$ 5. rl\_trainer.py — wandb group + junction tag
+wandb.init(group=junction\_id, tags=[junction\_id, "pre-training"])
+Per-junction sweep támogatás
+
+\par\noindent\hspace*{1em}$\square$ 6. sweep\_runner.py — --junction CLI arg
+A junction ID-t paraméterként kapja
+Továbbadja a trainer-nek mint single\_agent\_id
+
+\par\noindent\hspace*{1em}$\square$ 7. main\_headless.py — --junction CLI arg
+Az eddigi --single-agent analógiájára, de a mega\_catalogue-ra
+
+\par\noindent\hspace*{1em}$\square$ 8. transfer\_learning.py — reward rekalibráció
+Fine-tuning előtt automatikusan kiszámítja az OSM junction
+reward paramétereit (ha még nincs meg)
+A pre-trained modell source junction-jét kiírja logba
+
+\par\noindent\hspace*{1em}$\square$ 9. start.sh — junction választó menü
+Junction lista megjelenítése, választás lehetősége
+"Összes junction" opció szekvenciális futtatáshoz
+
+\par\noindent\hspace*{1em}$\square$ 10. Dokumentáció + Colab + Docker frissítés
+Az új pipeline tükrözése minden platformon
+
+--------------------------------------------------------------------
+XX.3 FONTOS MEGKÖTÉSEK ÉS TRADE-OFF-OK
+--------------------------------------------------------------------
+
+\textbf{1. A TELJES HÁLÓZAT SZIMULÁLÓDIK (nem vágjuk szét):}
+PRO: Realisztikus cross-traffic, upstream visszahatás
+CON: Lassabb, mint egy egyetlen junction szimuláció
+\textbf{TRADE-OFF:} A sebesség elfogadható, mert az RL ágens predict
+csak 1 junction-re fut (nem 21-re), és a train is csak 1 modellre
+
+\textbf{2. JUNCTION-ÖK KÖZÖTTI REWARD NEM ÖSSZEHASONLÍTHATÓ:}
+Más normalizáció $\rightarrow$ más reward skála. Ez rendben van, mert
+a cél NEM a junction-ök rangsorolása, hanem minden junction-re
+a SAJÁT optimum megtalálása. WandB-ben a group szűrés segít.
+
+\textbf{3. SWEEP IDÉNYESSÉG:}
+21 junction × N sweep run = sok GPU/CPU idő. Lehetséges
+optimalizáció: ha két junction hasonló topológiájú (pl.
+R1C1\_C és R1C3\_C mindkettő 4 fázis, 6 det), a sweep
+eredmények átvihetők (warm start).
+
+\textbf{4. A REWARD PARAMS STABIL, NEM KELL GYAKRAN FRISSÍTENI:}
+A normalizációs konstansok a HÁLÓZAT TOPOLÓGIÁJÁTÓL függnek,
+nem a tréning állapotától. Ha a net file nem változik, a
+junction\_reward\_params.json is érvényes marad.
+
+
+\section*{XIX. BIBLIOGRAPHY / REFERENCES}
+\addcontentsline{toc}{section}{XIX. BIBLIOGRAPHY / REFERENCES}
+
+\textbf{SUMO:}
+Lopez, P.A. et al. (2018). "Microscopic Traffic Simulation using SUMO."
+IEEE Intelligent Transportation Systems Conference (ITSC).
+
+\textbf{QR-DQN:}
+Dabney, W. et al. (2018). "Distributional Reinforcement Learning with
+Quantile Regression." AAAI Conference on Artificial Intelligence.
+
+\textbf{HBEFA:}
+Handbook Emission Factors for Road Transport, Version 4.2.
+https://www.hbefa.net/
+
+PCA:
+Jolliffe, I.T. (2002). "Principal Component Analysis." Springer.
+
+Stable-Baselines3:
+\textbf{Raffin, A. et al. (2021). "Stable-Baselines3:} Reliable RL Implementations."
+JMLR, 22(268), 1-8.
+
+Log-Sigmoid Normalization:
+Custom method developed for this work, combining log-transform
+(variance stabilization) with sigmoid (bounded output).
+
+Max-Pressure (baseline):
+Varaiya, P. (2013). "Max pressure control of a network of signalized
+intersections." Transportation Research Part C, 36, 177-195.
+
+\textbf{Wei, H. et al. (2019). "PressLight:} Learning Max Pressure Control to
+Coordinate Traffic Signals in Arterial Network." KDD 2019.
+
+
+\section*{END OF DOCUMENT}
+\addcontentsline{toc}{section}{END OF DOCUMENT}
 \end{document}

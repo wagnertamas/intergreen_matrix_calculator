@@ -1,0 +1,1638 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /Users/wagnertamas/.netrc.
+wandb: Currently logged in as: wagnertamas (wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run 7f4v2l4s
+wandb: Tracking run with wandb version 0.25.1
+wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260408_005059-7f4v2l4s
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run ppo_speed_throughput_1x16_2_R1C1_C
+wandb: ⭐️ View project at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2
+wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/7f4v2l4s
+[INFO] Config: training_config.yaml
+[INFO] Net: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml
+[INFO] Timesteps: 100000 | Project: sumo-rl-stat-2
+[INFO] Junction: R1C1_C
+[INFO] Algorithm: ppo | Reward: speed_throughput
+[INFO] Load model: None (fresh)
+[INFO] Traffic: random target+spread (epizódonként)
+Initializing Environment (algorithm=ppo, reward=speed_throughput)...
+[INFO] Algorithm: ppo (on_policy)
+[INFO] Reward mode: speed_throughput
+WandB config applied (Sweep compatible).
+[INFO] Junction reward params auto-loaded from /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/junction_reward_params.json
+[INFO] Using 'traci' (USE_LIBSUMO=0, parallel slave).
+Starting SUMO...
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5847
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5847s
+ Retrying in 1 seconds
+[INFO] Network mapped: 1 agents, 3 detectors, 3 lanes
+[INFO] Subscriptions active: 6 (traci, fast mode)
+Agents discovered: ['R1C1_C']
+[INFO] RL device: mps
+[INFO] On-policy training: ppo → R1C1_C
+[INFO] Env reset az observation/action space inicializálásához...
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6329
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6329s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+Using mps device
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+Starting on-policy training: 100000 timesteps...
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0908
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0908s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat-2/R1C1_C/PPO_3
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1283
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1283s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (82) a1=26% (93) a2=30% (107) a3=22% (78)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8816
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8816s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (115) a1=25% (136) a2=28% (149) a3=26% (140)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2377
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2377s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (169) a1=25% (183) a2=23% (166) a3=28% (202)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8048
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8048s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (173) a1=27% (194) a2=24% (171) a3=25% (182)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3853
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3853s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (134) a1=25% (135) a2=23% (123) a3=27% (148)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5049
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5049s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (97) a1=22% (79) a2=28% (99) a3=24% (85)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3906
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3906s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (46) a1=26% (46) a2=26% (46) a3=23% (42)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.8451
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8451s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (48) a1=23% (42) a2=26% (47) a3=24% (43)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.368
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3680s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (86) a1=26% (93) a2=25% (91) a3=25% (90)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9403
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9403s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (44) a1=23% (42) a2=24% (44) a3=28% (50)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2864
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2864s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (40) a1=24% (44) a2=28% (50) a3=26% (46)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6783
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6783s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (131) a1=24% (128) a2=30% (160) a3=22% (121)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7181
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7181s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (146) a1=24% (128) a2=22% (118) a3=27% (148)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4268
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4268s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (193) a1=22% (156) a2=26% (186) a3=26% (185)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7525
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7525s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (197) a1=21% (151) a2=28% (203) a3=23% (169)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6794
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6794s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (140) a1=23% (124) a2=25% (134) a3=26% (142)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1912
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1912s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (182) a1=24% (176) a2=24% (176) a3=26% (186)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4162
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4162s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (100) a1=20% (71) a2=24% (86) a3=29% (103)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3924
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3924s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (136) a1=18% (96) a2=33% (177) a3=24% (131)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4253
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4253s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (36) a1=20% (36) a2=30% (54) a3=30% (54)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4864
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4864s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (167) a1=20% (144) a2=31% (226) a3=25% (183)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4419
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4419s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (128) a1=20% (107) a2=28% (153) a3=28% (152)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3147
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3147s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (141) a1=18% (99) a2=29% (157) a3=26% (143)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4851
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4851s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (146) a1=19% (104) a2=27% (148) a3=26% (142)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6317
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6317s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=29% (206) a1=17% (119) a2=26% (190) a3=28% (205)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9455
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9455s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (82) a1=24% (87) a2=25% (90) a3=28% (101)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9239
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9239s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (184) a1=19% (136) a2=27% (191) a3=29% (209)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8908
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8908s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (82) a1=17% (62) a2=30% (107) a3=30% (109)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3899
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3899s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (163) a1=18% (127) a2=30% (214) a3=30% (216)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3932
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3932s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (186) a1=16% (115) a2=31% (225) a3=27% (194)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5447
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5447s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (136) a1=15% (83) a2=36% (193) a3=24% (128)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8144
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8144s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (140) a1=17% (90) a2=31% (165) a3=27% (145)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.745
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7450s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (43) a1=16% (28) a2=32% (58) a3=28% (51)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0094
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0094s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (191) a1=17% (123) a2=28% (202) a3=28% (204)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7457
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7457s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (124) a1=18% (99) a2=29% (154) a3=30% (163)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7383
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7383s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (125) a1=15% (81) a2=30% (164) a3=31% (170)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7628
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7628s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (161) a1=15% (106) a2=34% (242) a3=29% (211)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9891
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9891s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (159) a1=15% (105) a2=34% (244) a3=29% (212)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9809
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9809s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (150) a1=15% (107) a2=35% (249) a3=30% (214)
+------------------------------------------
+| rollout/                |              |
+|    ep_len_mean          | 522          |
+|    ep_rew_mean          | 60.4         |
+| time/                   |              |
+|    fps                  | 79           |
+|    iterations           | 10           |
+|    time_elapsed         | 257          |
+|    total_timesteps      | 20480        |
+| train/                  |              |
+|    approx_kl            | 0.0032016803 |
+|    clip_fraction        | 0            |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.34        |
+|    explained_variance   | -0.732       |
+|    learning_rate        | 0.0001       |
+|    loss                 | 0.46         |
+|    n_updates            | 90           |
+|    policy_gradient_loss | -0.00138     |
+|    value_loss           | 1.29         |
+------------------------------------------
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9266
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9266s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (39) a1=18% (33) a2=24% (43) a3=36% (65)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3551
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3551s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (34) a1=16% (28) a2=33% (60) a3=32% (58)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2518
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2518s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (155) a1=14% (99) a2=30% (219) a3=34% (247)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1011
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1011s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (33) a1=12% (22) a2=36% (65) a3=33% (60)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.433
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4330s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (151) a1=16% (113) a2=30% (214) a3=34% (242)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5078
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5078s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (138) a1=12% (88) a2=35% (250) a3=34% (244)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7318
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7318s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (103) a1=12% (63) a2=34% (183) a3=35% (191)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6824
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6824s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (158) a1=12% (83) a2=34% (244) a3=33% (235)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9887
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9887s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (141) a1=13% (94) a2=38% (275) a3=29% (210)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1522
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1522s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=14% (77) a1=11% (62) a2=39% (212) a3=35% (189)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2279
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2279s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (31) a1=15% (27) a2=41% (73) a3=27% (49)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.76
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7600s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (75) a1=16% (58) a2=34% (124) a3=29% (103)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2951
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2951s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (65) a1=11% (40) a2=39% (141) a3=32% (114)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5046
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5046s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (129) a1=12% (87) a2=36% (260) a3=34% (244)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2614
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2614s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (60) a1=15% (54) a2=40% (145) a3=28% (101)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.311
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3110s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (124) a1=12% (89) a2=38% (271) a3=33% (236)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2841
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2841s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=15% (80) a1=12% (65) a2=42% (228) a3=31% (167)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4272
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4272s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (96) a1=9% (50) a2=37% (198) a3=36% (196)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0373
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0373s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (98) a1=12% (64) a2=41% (219) a3=29% (159)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5382
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5382s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (94) a1=9% (49) a2=39% (212) a3=34% (185)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9202
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9202s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (139) a1=9% (68) a2=38% (271) a3=34% (242)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9217
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9217s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (76) a1=11% (38) a2=35% (126) a3=33% (120)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0667
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0667s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (79) a1=9% (31) a2=44% (157) a3=26% (93)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1814
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1814s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (98) a1=8% (42) a2=40% (217) a3=34% (183)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9116
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9116s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (129) a1=8% (55) a2=37% (264) a3=38% (272)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6287
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6287s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (66) a1=9% (34) a2=34% (124) a3=38% (136)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9928
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9928s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (113) a1=9% (62) a2=39% (278) a3=37% (267)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.242
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2420s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (121) a1=11% (76) a2=35% (252) a3=38% (271)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.353
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3530s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (104) a1=9% (49) a2=35% (187) a3=37% (200)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2618
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2618s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (140) a1=9% (68) a2=38% (271) a3=33% (241)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3177
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3177s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (96) a1=9% (51) a2=37% (200) a3=36% (193)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0131
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0131s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (38) a1=15% (27) a2=28% (51) a3=36% (64)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1063
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1063s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=15% (82) a1=7% (38) a2=41% (220) a3=37% (200)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1305
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1305s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (86) a1=10% (56) a2=39% (208) a3=35% (190)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7738
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7738s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (130) a1=11% (82) a2=34% (243) a3=37% (265)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2736
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2736s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (84) a1=8% (44) a2=40% (217) a3=36% (195)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5724
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5724s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (62) a1=9% (31) a2=37% (133) a3=37% (134)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1687
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1687s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (85) a1=9% (50) a2=36% (192) a3=39% (213)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6952
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6952s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (115) a1=9% (63) a2=41% (292) a3=35% (250)
+------------------------------------------
+| rollout/                |              |
+|    ep_len_mean          | 524          |
+|    ep_rew_mean          | 62.3         |
+| time/                   |              |
+|    fps                  | 79           |
+|    iterations           | 20           |
+|    time_elapsed         | 514          |
+|    total_timesteps      | 40960        |
+| train/                  |              |
+|    approx_kl            | 0.0006299644 |
+|    clip_fraction        | 0            |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.22        |
+|    explained_variance   | -0.0276      |
+|    learning_rate        | 0.0001       |
+|    loss                 | 0.275        |
+|    n_updates            | 190          |
+|    policy_gradient_loss | -0.00123     |
+|    value_loss           | 1.66         |
+------------------------------------------
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.883
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8830s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (145) a1=9% (68) a2=39% (284) a3=31% (223)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4401
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4401s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (109) a1=11% (62) a2=36% (197) a3=32% (172)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4635
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4635s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (116) a1=9% (47) a2=35% (187) a3=35% (190)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5403
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5403s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (64) a1=8% (30) a2=40% (144) a3=34% (122)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1497
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1497s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=13% (72) a1=10% (52) a2=38% (207) a3=39% (209)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6615
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6615s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (86) a1=9% (48) a2=39% (210) a3=36% (196)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4178
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4178s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (87) a1=7% (40) a2=38% (204) a3=39% (209)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4377
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4377s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=14% (50) a1=8% (29) a2=39% (142) a3=39% (139)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5691
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5691s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (38) a1=12% (21) a2=34% (62) a3=33% (59)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1847
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1847s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=15% (110) a1=11% (79) a2=39% (278) a3=35% (253)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8544
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8544s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (115) a1=8% (58) a2=42% (300) a3=34% (247)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7088
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7088s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (134) a1=7% (53) a2=42% (300) a3=32% (233)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2028
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2028s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (146) a1=9% (67) a2=35% (252) a3=35% (255)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2588
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2588s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (64) a1=8% (27) a2=37% (134) a3=38% (135)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0847
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0847s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (79) a1=8% (28) a2=41% (146) a3=30% (107)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1694
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1694s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (28) a1=6% (10) a2=36% (65) a3=43% (77)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3188
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3188s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (37) a1=10% (18) a2=34% (62) a3=35% (63)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3504
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3504s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=31% (55) a1=8% (15) a2=28% (50) a3=33% (60)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5817
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5817s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (37) a1=11% (20) a2=31% (55) a3=38% (68)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.473
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4730s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (169) a1=6% (45) a2=38% (270) a3=33% (236)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7142
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7142s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (159) a1=10% (69) a2=32% (230) a3=36% (262)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4485
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4485s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=16% (28) a1=4% (8) a2=39% (70) a3=41% (74)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5491
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5491s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (37) a1=9% (17) a2=29% (53) a3=41% (73)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9339
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9339s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (97) a1=6% (33) a2=35% (189) a3=41% (221)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4044
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4044s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (75) a1=6% (23) a2=39% (140) a3=34% (122)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6589
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6589s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (158) a1=7% (47) a2=42% (302) a3=30% (213)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9307
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9307s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (37) a1=9% (16) a2=37% (67) a3=33% (60)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1903
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1903s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (138) a1=8% (57) a2=39% (282) a3=34% (243)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6414
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6414s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (136) a1=5% (36) a2=48% (345) a3=28% (203)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6435
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6435s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (79) a1=6% (23) a2=44% (160) a3=27% (98)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.501
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5010s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (158) a1=6% (45) a2=43% (308) a3=29% (209)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4996
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4996s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (156) a1=5% (37) a2=45% (323) a3=28% (204)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3455
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3455s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=17% (31) a1=3% (6) a2=43% (78) a3=36% (65)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1118
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1118s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (115) a1=4% (21) a2=48% (257) a3=27% (147)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6308
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6308s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=20% (73) a1=6% (22) a2=42% (153) a3=31% (112)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2243
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2243s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (40) a1=6% (11) a2=41% (74) a3=31% (55)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1976
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1976s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (135) a1=10% (55) a2=41% (219) a3=24% (131)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6981
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6981s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (154) a1=7% (49) a2=48% (344) a3=24% (173)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3234
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3234s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (80) a1=8% (28) a2=45% (163) a3=25% (89)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1573
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1573s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (168) a1=5% (38) a2=47% (339) a3=24% (175)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2064
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2064s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (180) a1=6% (42) a2=44% (318) a3=25% (180)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7779
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7779s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (45) a1=8% (14) a2=44% (80) a3=23% (41)
+------------------------------------------
+| rollout/                |              |
+|    ep_len_mean          | 517          |
+|    ep_rew_mean          | 62.8         |
+| time/                   |              |
+|    fps                  | 79           |
+|    iterations           | 30           |
+|    time_elapsed         | 771          |
+|    total_timesteps      | 61440        |
+| train/                  |              |
+|    approx_kl            | 0.0007046347 |
+|    clip_fraction        | 0            |
+|    clip_range           | 0.2          |
+|    entropy_loss         | -1.21        |
+|    explained_variance   | 0.00287      |
+|    learning_rate        | 0.0001       |
+|    loss                 | 1.85         |
+|    n_updates            | 290          |
+|    policy_gradient_loss | -0.000645    |
+|    value_loss           | 2.3          |
+------------------------------------------
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7906
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7906s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (168) a1=6% (43) a2=44% (320) a3=26% (189)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5058
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5058s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (49) a1=10% (18) a2=39% (70) a3=24% (43)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8116
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8116s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (173) a1=8% (61) a2=40% (287) a3=28% (199)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3119
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3119s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (32) a1=10% (18) a2=48% (86) a3=24% (44)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6486
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6486s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (165) a1=5% (38) a2=46% (328) a3=26% (189)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5264
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5264s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (148) a1=6% (41) a2=43% (313) a3=30% (218)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6797
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6797s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (34) a1=7% (12) a2=44% (79) a3=31% (55)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9821
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9821s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (122) a1=6% (31) a2=45% (243) a3=27% (144)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.125
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1250s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=18% (32) a1=3% (5) a2=47% (84) a3=33% (59)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6954
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6954s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (114) a1=4% (23) a2=44% (239) a3=30% (164)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7414
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7414s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (78) a1=5% (17) a2=45% (163) a3=28% (102)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6669
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6669s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (119) a1=6% (33) a2=37% (198) a3=35% (190)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8593
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8593s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (113) a1=5% (27) a2=44% (239) a3=30% (161)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.05
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0500s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (46) a1=6% (11) a2=40% (72) a3=28% (51)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2935
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2935s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (148) a1=6% (31) a2=41% (219) a3=26% (142)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.7224
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7224s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (136) a1=7% (37) a2=41% (219) a3=27% (148)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6845
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6845s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=29% (158) a1=7% (37) a2=38% (206) a3=26% (139)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3353
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3353s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (96) a1=6% (21) a2=41% (147) a3=27% (96)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.6612
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.6612s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (94) a1=7% (26) a2=36% (128) a3=31% (112)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3595
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3595s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (40) a1=8% (15) a2=38% (69) a3=31% (56)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5872
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5872s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (42) a1=9% (17) a2=42% (76) a3=25% (45)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0809
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.0809s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (105) a1=9% (46) a2=40% (214) a3=32% (175)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2362
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2362s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (184) a1=8% (59) a2=39% (278) a3=28% (199)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2803
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2803s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (135) a1=8% (45) a2=38% (205) a3=29% (155)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3656
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3656s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (132) a1=4% (24) a2=43% (230) a3=29% (154)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9919
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9919s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (139) a1=7% (39) a2=37% (198) a3=30% (164)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3045
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3045s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=19% (69) a1=9% (31) a2=36% (128) a3=37% (132)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4915
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4915s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (161) a1=8% (54) a2=38% (276) a3=32% (229)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5438
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5438s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (96) a1=7% (25) a2=37% (132) a3=30% (107)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1404
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1404s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (100) a1=5% (19) a2=40% (144) a3=27% (97)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.708
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.7080s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (50) a1=7% (12) a2=33% (60) a3=32% (58)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.616
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6160s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (43) a1=6% (11) a2=43% (78) a3=27% (48)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8253
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8253s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (120) a1=7% (39) a2=41% (220) a3=30% (161)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5145
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5145s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (79) a1=5% (18) a2=42% (153) a3=31% (110)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5902
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5902s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (51) a1=5% (9) a2=37% (66) a3=30% (54)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7907
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7907s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (100) a1=7% (25) a2=39% (141) a3=26% (94)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4764
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4764s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (153) a1=8% (41) a2=37% (202) a3=27% (144)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2427
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2427s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (189) a1=7% (53) a2=34% (245) a3=32% (233)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.984
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9840s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (94) a1=9% (32) a2=36% (130) a3=29% (104)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8731
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8731s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (199) a1=8% (58) a2=34% (246) a3=30% (217)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2354
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2354s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (51) a1=7% (13) a2=30% (54) a3=34% (62)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0576
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0576s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (173) a1=6% (45) a2=39% (282) a3=31% (220)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1012
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1012s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (167) a1=7% (53) a2=35% (251) a3=35% (249)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7233
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7233s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=31% (113) a1=4% (16) a2=36% (130) a3=28% (101)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4559
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4559s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (42) a1=8% (15) a2=37% (66) a3=32% (57)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.1461
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.1461s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (83) a1=8% (27) a2=35% (125) a3=35% (125)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.2276
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2276s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (204) a1=6% (45) a2=39% (281) a3=26% (190)
+-------------------------------------------
+| rollout/                |               |
+|    ep_len_mean          | 470           |
+|    ep_rew_mean          | 59.5          |
+| time/                   |               |
+|    fps                  | 79            |
+|    iterations           | 40            |
+|    time_elapsed         | 1025          |
+|    total_timesteps      | 81920         |
+| train/                  |               |
+|    approx_kl            | 0.00046598952 |
+|    clip_fraction        | 0             |
+|    clip_range           | 0.2           |
+|    entropy_loss         | -1.25         |
+|    explained_variance   | 0.0462        |
+|    learning_rate        | 0.0001        |
+|    loss                 | 0.838         |
+|    n_updates            | 390           |
+|    policy_gradient_loss | -0.000419     |
+|    value_loss           | 2.37          |
+-------------------------------------------
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6525
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6525s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=32% (57) a1=4% (7) a2=34% (62) a3=30% (54)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5736
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5736s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (46) a1=6% (11) a2=36% (64) a3=33% (59)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.64
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6400s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (45) a1=9% (17) a2=33% (60) a3=32% (58)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9966
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9966s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (149) a1=9% (50) a2=40% (216) a3=23% (125)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.103
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1030s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=29% (157) a1=10% (55) a2=31% (165) a3=30% (163)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.8143
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8143s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=32% (114) a1=7% (25) a2=36% (129) a3=26% (92)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2415
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2415s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (174) a1=8% (56) a2=37% (267) a3=31% (223)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3294
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3294s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=31% (167) a1=5% (29) a2=40% (217) a3=24% (127)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7017
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7017s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (95) a1=7% (26) a2=42% (151) a3=24% (88)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8037
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8037s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (153) a1=8% (42) a2=36% (195) a3=28% (150)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3849
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3849s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (42) a1=7% (12) a2=43% (78) a3=27% (48)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0481
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0481s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (43) a1=8% (15) a2=44% (80) a3=23% (42)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4991
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4991s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (46) a1=3% (6) a2=46% (82) a3=26% (46)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9283
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9283s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (99) a1=8% (27) a2=41% (149) a3=24% (85)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7317
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7317s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (44) a1=6% (10) a2=41% (73) a3=29% (53)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1148
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1148s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (88) a1=8% (30) a2=45% (163) a3=22% (79)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5386
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5386s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (113) a1=6% (31) a2=50% (269) a3=24% (127)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.92
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9200s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (48) a1=8% (14) a2=40% (72) a3=26% (46)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8402
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8402s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (111) a1=6% (31) a2=46% (248) a3=28% (150)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7424
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7424s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (166) a1=4% (28) a2=47% (339) a3=26% (187)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8363
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8363s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (77) a1=9% (32) a2=48% (171) a3=22% (80)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4188
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4188s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (176) a1=7% (51) a2=41% (294) a3=28% (199)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9815
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9815s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=23% (164) a1=7% (49) a2=43% (311) a3=27% (196)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.9631
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.9631s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (121) a1=7% (37) a2=40% (215) a3=31% (167)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2199
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2199s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (130) a1=8% (41) a2=40% (215) a3=29% (154)
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8942
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8942s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=22% (40) a1=8% (14) a2=36% (65) a3=34% (61)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2595
+Found 6 valid OD pairs for R1C1_C
+wandb: WARNING Symlinked 1 file into the W&B run directory; call wandb.save again to sync new files.
+/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/rl_trainer.py:992: UserWarning: Exporting a model while it is in training mode. Please ensure that this is intended, as it may lead to different behavior during inference. Calling model.eval() before export is recommended.
+  torch.onnx.export(
+/Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/rl_trainer.py:992: UserWarning: # 'dynamic_axes' is not recommended when dynamo=True, and may lead to 'torch._dynamo.exc.UserError: Constraints violated.' Supply the 'dynamic_shapes' argument instead if export is unsuccessful.
+  torch.onnx.export(
+wandb: updating run metadata
+wandb: uploading pytorch_models/R1C1_C.zip; uploading output.log; uploading wandb-summary.json
+wandb: uploading output.log
+wandb: 
+wandb: Run history:
+wandb:         R1C1_C/action_pct/phase_0 ▄▆▅▆▆▇▃▅▄▂▃▁▃▄▂▁▁▃▄▄▄▄▅▅▅▃▄▅▄▆▇▇▆▇▇█▃▄▅▆
+wandb:         R1C1_C/action_pct/phase_1 ██▇▆▆▅▅▅▆▅▄▃▃▂▃▃▃▂▃▂▂▂▃▃▂▂▁▁▂▂▂▃▂▂▃▂▃▂▂▂
+wandb:         R1C1_C/action_pct/phase_2 ▃▁▁▃▂▆▅▅▆▄▆▅▅▆▄▃▅▇▇▆▆▇▅▇▇▆▄▅▆▄▄▃▄▅▆█▅▅▄▅
+wandb:         R1C1_C/action_pct/phase_3 ▂▃▂▂▄▄▃▄▄▆▅▆▇▅█▇▇▄▃▃▃▂▅▄▄▃▄▄▇▃▄▆▃▅▄▂▁▃▂▅
+wandb:         R1C1_C/train/entropy_loss ▁▁▁▁▂▃▄▆▆▆▇▇▇▇█▇▇██████▇▇▇▇▆▆▆▆▆▆▆▇█▇▇▇▇
+wandb:        R1C1_C/train/learning_rate ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:                 R1C1_C/train/loss ▂▂▃▂▃▁▄▂▂▂▂▁▁▂▂▆▆▆▃▄▁▁▂▁▁█▁▂▂▂▂▁▄▄▄▄▁▁▁▇
+wandb: R1C1_C/train/policy_gradient_loss ▆▇▇▇▇▇▇▇▆▇▆▆▄▄█▇▅▇▄▄▇▇▇▁▁▇▇▇▇▆▆▇▇▇▆▆▇██▇
+wandb:           R1C1_C/train/value_loss ▄▅▅▅▅▄▄▄▄▁▄▁▁▄▃▃▁▁▄▄▂▂▄▅▂▆▆▂▂▂▆▅██▃▅██▃▅
+wandb:                        avg_reward ▂▁▁▃▄▂▃▃▃▃▇▄▂▁▄▂▃▄▂▃▂▂▃▄▅▃▃▆▆▆█▆▄▄▃▃▄█▂▄
+wandb:                                +9 ...
+wandb: 
+wandb: Run summary:
+wandb:         R1C1_C/action_pct/phase_0 25
+wandb:         R1C1_C/action_pct/phase_1 6.11111
+wandb:         R1C1_C/action_pct/phase_2 37.77778
+wandb:         R1C1_C/action_pct/phase_3 31.11111
+wandb:         R1C1_C/train/entropy_loss -1.22482
+wandb:        R1C1_C/train/learning_rate 0.0001
+wandb:                 R1C1_C/train/loss 3.25194
+wandb: R1C1_C/train/policy_gradient_loss -0.0011
+wandb:           R1C1_C/train/value_loss 2.24197
+wandb:                        avg_reward 0.18466
+wandb:                                +9 ...
+wandb: 
+wandb: 🚀 View run ppo_speed_throughput_1x16_2_R1C1_C at: https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/7f4v2l4s
+wandb: ⭐️ View project at: https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 1 other file(s)
+wandb: Find logs at: ./wandb/run-20260408_005059-7f4v2l4s/logs
+Generating focused traffic: Period 4.2595s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (48) a1=5% (9) a2=43% (77) a3=26% (46)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6458
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.6458s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=28% (101) a1=6% (20) a2=41% (149) a3=25% (90)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2324
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2324s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (136) a1=7% (36) a2=39% (208) a3=30% (160)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0666
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0666s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=29% (155) a1=6% (34) a2=41% (224) a3=24% (127)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3346
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3346s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (175) a1=5% (39) a2=42% (299) a3=29% (207)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6134
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6134s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (194) a1=6% (41) a2=41% (294) a3=27% (191)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4036
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4036s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (98) a1=5% (19) a2=44% (157) a3=24% (86)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5735
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5735s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (88) a1=7% (26) a2=38% (137) a3=30% (109)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2834
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2834s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=27% (145) a1=5% (25) a2=37% (199) a3=32% (171)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4036
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4036s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=24% (131) a1=7% (40) a2=36% (195) a3=32% (174)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7472
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7472s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (134) a1=5% (27) a2=40% (218) a3=30% (161)
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4929
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4929s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=21% (150) a1=7% (53) a2=36% (261) a3=36% (256)
+[INFO] Episode duration: 3600s (60 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2301
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2301s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (135) a1=7% (38) a2=36% (196) a3=32% (171)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5798
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5798s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=26% (185) a1=4% (32) a2=37% (265) a3=33% (238)
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7371
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7371s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+  [ACTION PPO] R1C1_C: a0=25% (90) a1=6% (22) a2=38% (136) a3=31% (112)
+On-policy training completed.
+Closing environment and EXPORTING models...
+Saving PyTorch ZIP models to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/pytorch_models...
+Saved PyTorch R1C1_C to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/pytorch_models/R1C1_C.zip
+Exporting ONNX models to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/onnx_models...
+Failed to export R1C1_C: # Failed to convert 'dynamic_axes' to 'dynamic_shapes'. Please provide 'dynamic_shapes' directly. Refer to the documentation for 'torch.export.export' for more information on dynamic shapes.
+Cleanup done.

@@ -956,6 +956,86 @@ def make_curve_plots(df, histories, output_dir="grid_results/curves"):
 
 
 # ================================================================
+# CUSTOM PLOT (PPO + Speed+Throughput + All Networks + Outlier Clipped)
+# ================================================================
+def make_custom_ppo_plot(df, histories, output_dir="grid_results"):
+    print("Custom PPO — Speed+Throughput (All networks, outliers clipped, hungarian)...")
+    os.makedirs(output_dir, exist_ok=True)
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    algo = 'ppo'
+    reward = 'speed_throughput'
+    
+    sub_df = df[(df['algorithm'] == algo) & (df['reward_mode'] == reward)]
+    # Sort networks by total params
+    net_labels = sorted(sub_df['net_label'].unique(), key=lambda x: int(x.split('x')[0]) * int(x.split('x')[1]) if 'x' in x else 0)
+    
+    cmap = plt.cm.tab20(np.linspace(0, 1, len(net_labels)))
+    sigma = 8
+    
+    # Store performance in the last 50 steps to rank them
+    last_50_perf = []
+    
+    for rank, nl_label in enumerate(net_labels):
+        curves = get_curves_for_filter(df, histories, {'algorithm': algo, 'reward_mode': reward, 'net_label': nl_label})
+        if not curves: continue
+        
+        max_len = max(len(c) for c in curves)
+        arr = np.full((len(curves), max_len), np.nan)
+        for i, c in enumerate(curves):
+            arr[i, :len(c)] = c
+            
+        # Outlier clipping: if a run's value is outside 1.5 std from the mean, clip it
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            mean = np.nanmean(arr, axis=0)
+            std = np.nanstd(arr, axis=0)
+            # Fill exact 0 std with a tiny value to avoid division issues 
+            std_safe = np.where(std == 0, 1e-6, std)
+            arr_clipped = np.clip(arr, mean - 1.5*std_safe, mean + 1.5*std_safe)
+            mean_c = np.nanmean(arr_clipped, axis=0)
+            std_c = np.nanstd(arr_clipped, axis=0)
+        
+        y = smooth_curve(mean_c, sigma=sigma)
+        y_std = smooth_curve(std_c, sigma=sigma)
+        
+        # Calculate performance in the last 50 steps
+        perf = np.nanmean(y[-50:]) if len(y) >= 50 else np.nan
+        
+        x = np.arange(max_len)
+        line = ax.plot(x, y, color=cmap[rank], linewidth=2, label=nl_label)[0]
+        ax.fill_between(x, y - y_std, y + y_std, color=cmap[rank], alpha=0.15)
+        
+        last_50_perf.append((nl_label, perf, cmap[rank], line))
+        
+    ax.set_xlabel('Tanítási lépések', fontsize=14)
+    ax.set_ylabel('Átlagos jutalom (avg_reward)', fontsize=14)
+    ax.set_title('PPO | Speed+Throughput — Összes Hálózat (Kiemelve az outlierek)', fontweight='bold', fontsize=16)
+    
+    # Sort by performance in last 50 steps
+    last_50_perf.sort(key=lambda x: x[1], reverse=True)
+    
+    # Add textbox for the top 3
+    top3_text = "Legjobbak az utolsó 50 lépésben:\n"
+    for i in range(min(3, len(last_50_perf))):
+        top3_text += f"{i+1}. {last_50_perf[i][0]} (Jutalom: {last_50_perf[i][1]:.3f})\n"
+        
+    # Plot top3 text box
+    props = dict(boxstyle='round', facecolor='white', alpha=0.8)
+    ax.text(0.02, 0.95, top3_text.strip(), transform=ax.transAxes, fontsize=12,
+            verticalalignment='top', bbox=props, fontweight='bold')
+    
+    # Legend sorted by performance, including the score in the label
+    handles = [item[3] for item in last_50_perf]
+    labels = [f"{item[0]} ({item[1]:.2f})" for item in last_50_perf]
+    ax.legend(handles, labels, title="Hálózat (Végső pontszám)", fontsize=10, loc='center left', bbox_to_anchor=(1.02, 0.5))
+    ax.grid(alpha=0.3)
+    
+    plt.tight_layout()
+    fig.savefig(f'{output_dir}/custom_ppo_all_networks.png', bbox_inches='tight')
+    plt.close(fig)
+
+# ================================================================
 # MAIN
 # ================================================================
 if __name__ == "__main__":
@@ -963,3 +1043,4 @@ if __name__ == "__main__":
     valid_df, grouped = make_summary_plots(df, histories)
     export_latex_tables(df, grouped)
     make_curve_plots(df, histories)
+    make_custom_ppo_plot(df, histories)
