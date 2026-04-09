@@ -231,18 +231,30 @@ class _LightAgent:
         self.next_logic_cache  = 0
         self.min_green_timer   = 0
         self.phase_timer       = 0
-        self._reset_metrics()
+        self._reset_obs()
+        self._reset_episode()
 
+    # ── Obs akkumulátorok: reset minden delta_time ablak elején ──────────────
+    def _reset_obs(self):
+        """Per-lépés obs reset. Minden delta_time ablak elején hívandó."""
+        self.steps_measured = 0
+        self.det_occ  = {d: 0.0 for d in self.detectors}
+        self.det_flow = {d: 0   for d in self.detectors}
+
+    # ── Epizód-szintű metrika akkumulátorok: csak epizód elején resetelni ───
+    def _reset_episode(self):
+        """Epizód metrika reset. Csak egyszer hívandó az epizód legelején."""
+        self.ep_speed       = 0.0
+        self.ep_speed_lanes = 0
+        self.ep_halt        = 0
+        self.ep_veh         = 0
+        self.ep_tp          = 0
+        self.ep_co2         = 0.0
+
+    # Backward compat: régi hívók is működjenek
     def _reset_metrics(self):
-        self.steps_measured  = 0
-        self.det_flow        = {d: 0 for d in self.detectors}
-        self.det_occ         = {d: 0.0 for d in self.detectors}
-        self.acc_speed       = 0.0
-        self.acc_speed_lanes = 0
-        self.acc_halt        = 0
-        self.acc_veh         = 0
-        self.acc_tp          = 0
-        self.acc_co2         = 0.0  # Teljes CO2 kibocsátás [mg]
+        self._reset_obs()
+        self._reset_episode()
 
     def is_ready(self):
         return (not self.is_transitioning) and (self.min_green_timer <= 0)
@@ -302,35 +314,42 @@ class _LightAgent:
     def collect(self, incoming_lanes: list):
         if self.is_transitioning:
             return
+        # ── Obs akkumulátorok (per delta_time ablak) ─────────────────────────
         self.steps_measured += 1
         for det in self.detectors:
-            self.det_flow[det] += traci.inductionloop.getLastStepVehicleNumber(det)
             self.det_occ[det]  += traci.inductionloop.getLastStepOccupancy(det)
+            self.det_flow[det] += traci.inductionloop.getLastStepVehicleNumber(det)
+        # ── Epizód metrikák ──────────────────────────────────────────────────
         for lane_id in incoming_lanes:
             try:
                 veh  = traci.lane.getLastStepVehicleNumber(lane_id)
                 halt = traci.lane.getLastStepHaltingNumber(lane_id)
-                self.acc_halt += halt
-                self.acc_veh  += veh
-                # getLastStepMeanSpeed: járművek tényleges átlagsebesége [m/s]
-                # (getMeanSpeed() egyes SUMO verziókban a sávlimitet adja vissza!)
+                self.ep_halt += halt
+                self.ep_veh  += veh
                 if veh > 0:
-                    self.acc_speed       += traci.lane.getLastStepMeanSpeed(lane_id)
-                    self.acc_speed_lanes += 1
-                # CO2 kibocsátás [mg/s] → összegyűjtjük
-                self.acc_co2 += traci.lane.getCO2Emission(lane_id)
+                    self.ep_speed       += traci.lane.getLastStepMeanSpeed(lane_id)
+                    self.ep_speed_lanes += 1
+                self.ep_co2 += traci.lane.getCO2Emission(lane_id)
             except Exception:
                 pass
-        # Throughput: összeg detektor flow
-        self.acc_tp = sum(self.det_flow.values())
+        # Throughput: detektor flow kumulált összege az epizódban
+        self.ep_tp = sum(self.det_flow[d] for d in self.detectors)
 
     def get_obs(self) -> dict:
+        """Megfigyelés — pontosan ugyanúgy mint az edzésnél (SumoRLEnvironment).
+
+        A modell a delta_time ablak alatt akkumulált átlagokat kapta edzéskor:
+          occ[i]  = (Σ occupancy / steps_measured) / 100
+          flow[i] = Σ vehicle_count / steps_measured
+        Ezért itt is ezeket adjuk vissza, nem pillanatfelvételt.
+        Ha steps_measured == 0 (pl. átmenet alatt), nullákat adunk.
+        """
         n = len(self.detectors)
         occ  = np.zeros(n, dtype=np.float32)
         flow = np.zeros(n, dtype=np.float32)
         if self.steps_measured > 0:
             for i, d in enumerate(self.detectors):
-                occ[i]  = (self.det_occ[d] / self.steps_measured) / 100.0
+                occ[i]  = (self.det_occ[d]  / self.steps_measured) / 100.0
                 flow[i] = (self.det_flow[d] / self.steps_measured)
         return {
             "phase":       np.array([self.current_logic_idx], dtype=np.int32),
@@ -340,11 +359,10 @@ class _LightAgent:
         }
 
     def metrics(self) -> dict:
-        avg_spd  = self.acc_speed / max(self.acc_speed_lanes, 1)
-        halt_r   = self.acc_halt  / max(self.acc_veh, 1)
-        tp       = float(self.acc_tp)
-        # CO2: mg/s → g (teljes epizódra integrálva 1 mp lépésenként)
-        total_co2_g = self.acc_co2 / 1000.0
+        avg_spd     = self.ep_speed / max(self.ep_speed_lanes, 1)
+        halt_r      = self.ep_halt  / max(self.ep_veh, 1)
+        tp          = float(self.ep_tp)
+        total_co2_g = self.ep_co2 / 1000.0   # mg → g
         return {"avg_speed": avg_spd, "throughput": tp,
                 "halt_ratio": halt_r, "total_co2_g": total_co2_g}
 
@@ -442,41 +460,35 @@ def run_episode(strategy: str, route_file: str,
         traci.simulationStep()
 
     # Fő szimuláció
+    # Loop sorrend = SumoRLEnvironment.step() sorrendje:
+    #   1. reset  2. delta_time lépés + collect  3. obs a gyűjtött átlagokból
+    #   4. predict → set_target a KÖVETKEZŐ periódushoz
     total_steps = (DURATION - WARMUP) // DELTA_TIME
-    step_speeds = []
-    step_tps    = []
+    _model_keys = (set(model.policy.observation_space.spaces.keys())
+                   if strategy == "nn" and model is not None else set())
+
+    agent._reset_episode()   # Epizód metrikák: egyszer, itt
 
     for _ in range(total_steps):
-        agent._reset_metrics()
+        agent._reset_obs()   # Obs akkumulátorok: minden delta_time ablak elején
 
-        if strategy == "nn" and agent.is_ready():
-            obs = agent.get_obs()
-            # Csak azokat a kulcsokat adjuk át, amiket a modell elvár.
-            # Régebbi modelleknél pl. 'phase_timer' hiányozhat az obs space-ből.
-            model_keys = set(model.policy.observation_space.spaces.keys())
-            obs_filtered = {k: v for k, v in obs.items() if k in model_keys}
-            obs_batch = {k: v.reshape(1, *v.shape) for k, v in obs_filtered.items()}
-            action, _ = model.predict(obs_batch, deterministic=True)
-            agent.set_target(int(action[0]))
-
-        # Szimuláció lépésein belül
+        # Szimuláció lépések + mérés ebben az ablakban
         for _ in range(DELTA_TIME):
-            # fixed:    SUMO saját fix-time programja fut → nem nyúlunk hozzá
-            # actuated: SUMO saját actuated programja fut → nem nyúlunk hozzá
-            # nn:       az NN dönt, agent.update() alkalmazza a fázist
             if strategy == "nn":
                 agent.update()
             traci.simulationStep()
             agent.collect(list(incoming_lanes))
 
-        m = agent.metrics()
-        step_speeds.append(m['avg_speed'])
-        step_tps.append(m['throughput'])
+        # Ablak lefutott → obs a most gyűjtött átlagokból (= edzéskori megfigyelés)
+        if strategy == "nn" and agent.is_ready() and model is not None:
+            obs = agent.get_obs()
+            obs_filtered = {k: v for k, v in obs.items() if k in _model_keys}
+            obs_batch    = {k: v.reshape(1, *v.shape) for k, v in obs_filtered.items()}
+            action, _    = model.predict(obs_batch, deterministic=True)
+            agent.set_target(int(action[0]))
 
-    result = agent.metrics()
+    result = agent.metrics()   # Epizód összesítő
     result['strategy'] = strategy
-    result['step_speeds'] = step_speeds
-    result['step_tps']    = step_tps
     return result
 
 

@@ -494,23 +494,26 @@ def _run_episode(strategy, route_file, model, duration, log_fn, use_gui=False):
         traci.simulationStep()
 
     total_steps = (duration - WARMUP) // DELTA_TIME
-    # Metrikákat egyszer reseteljük az egész epizódra (ne lépésenként!)
-    agent._reset_metrics()
+    _model_keys = (set(model.policy.observation_space.spaces.keys())
+                   if strategy == "nn" and model is not None else set())
+
+    agent._reset_episode()   # Epizód metrikák egyszer, itt
+
     for _ in range(total_steps):
-        if strategy == "nn" and agent.is_ready():
-            obs = agent.get_obs()
-            model_keys = set(model.policy.observation_space.spaces.keys())
-            obs_f = {k: v for k, v in obs.items() if k in model_keys}
-            obs_b = {k: v.reshape(1, *v.shape) for k, v in obs_f.items()}
-            action, _ = model.predict(obs_b, deterministic=True)
-            agent.set_target(int(action[0]))
+        agent._reset_obs()   # Obs akkumulátorok minden delta_time ablak elején
 
         for _ in range(DELTA_TIME):
-            # fixed/actuated: SUMO saját programja fut, NE írjuk felül!
-            # nn: az agent.update() alkalmazza a fázist
             if strategy == "nn":
                 agent.update()
             traci.simulationStep()
             agent.collect(list(incoming_lanes))
+
+        # Ablak lefutott → obs akkumulált átlagokból (= edzéskori megfigyelés)
+        if strategy == "nn" and agent.is_ready() and model is not None:
+            obs = agent.get_obs()
+            obs_f = {k: v for k, v in obs.items() if k in _model_keys}
+            obs_b = {k: v.reshape(1, *v.shape) for k, v in obs_f.items()}
+            action, _ = model.predict(obs_b, deterministic=True)
+            agent.set_target(int(action[0]))
 
     return agent.metrics()
