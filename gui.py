@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 
 from geometry_utils import calculate_junction_data
 from transition_planner import TransitionPlannerDialog
+from strategy_compare_dialog import StrategyCompareDialog
 from export_utils import export_to_colab_package
 
 class JunctionApp:
@@ -96,6 +97,9 @@ class JunctionApp:
 
         ttk.Button(top_frame, text="Colab Csomag", command=self.export_for_colab).pack(
             side=tk.RIGHT, padx=10)
+
+        ttk.Button(top_frame, text="RL Összehasonlítás",
+                   command=self.open_strategy_compare).pack(side=tk.RIGHT, padx=10)
 
         content_frame = tk.Frame(main_container)
         content_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -180,6 +184,10 @@ class JunctionApp:
         # Színeket már nem kell átadni, mert fix traffic light színeket használunk
         TransitionPlannerDialog(self.root, self.ids_for_table, self.phases_data,
                                 self.current_data_cache['matrix'])
+
+    def open_strategy_compare(self):
+        """Megnyitja az RL stratégia-összehasonlító ablakot."""
+        StrategyCompareDialog(self.root)
 
     # --- EGÉRGÖRGŐ KEZELÉS ---
 

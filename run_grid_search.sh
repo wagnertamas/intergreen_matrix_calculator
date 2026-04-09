@@ -33,8 +33,8 @@ ALGORITHMS=(qrdqn ppo)
 #ALGORITHMS=(qrdqn dqn ppo a2c)
 
 # Reward módok
-REWARDS=(speed_throughput)
-#REWARDS=(speed_throughput halt_ratio co2_speedstd)
+REWARDS=(speed_throughput speed_throughput_freq)
+#REWARDS=(speed_throughput speed_throughput_freq halt_ratio co2_speedstd)
 
 # Neurális háló méretek
 LAYERS=(1 2 3)

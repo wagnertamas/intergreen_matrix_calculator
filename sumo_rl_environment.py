@@ -144,7 +144,8 @@ class SumoRLEnvironment(gym.Env):
                 jid, 
                 self.logic_data[jid], 
                 min_green_time=self.min_green_time,
-                measure_during_transition=self.measure_during_transition
+                measure_during_transition=self.measure_during_transition,
+                delta_time=self.delta_time
             )
             for jid in self.junction_ids
         }
@@ -261,9 +262,12 @@ class SumoRLEnvironment(gym.Env):
           r = (1 + tanh(z)) / 2    →  [0, 1]
 
         Módok:
-          speed_throughput: (r_speed + r_throughput) / 2
-          halt_ratio:       1 - r_halt  (alacsonyabb halt → magasabb reward)
-          co2_speedstd:     (1 - r_co2 + r_speedstd) / 2
+          speed_throughput:      (r_speed + r_throughput) / 2
+          speed_throughput_freq: (r_speed + r_throughput) / 2 - freq_penalty
+                                 ahol freq_penalty bünteti ha egy fázis >85%-ban
+                                 szerepel az utolsó 90 másodpercben
+          halt_ratio:            1 - r_halt  (alacsonyabb halt → magasabb reward)
+          co2_speedstd:          (1 - r_co2 + r_speedstd) / 2
         """
         params = self._get_reward_params(jid)
 
@@ -285,18 +289,41 @@ class SumoRLEnvironment(gym.Env):
             z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
             r_throughput = (1.0 + np.tanh(z_t)) / 2.0
             
-            # --- "Reward Hacking" Mentesítés ---
-            # Ha az ágens nyitva hagy 2 sávot és bezár 2-t, a "throughput" megnőhet (mert autók torlódnak fel).
-            # Ennek elkerülésére bekeverünk egy "starvation" (éhezési) büntetést is a megakadt autók (halt) alapján.
-            halt_ratio = agent.get_halt_ratio_metric()
-            mu_h = params.get('MU_HALT', -1.20)
-            std_h = params.get('STD_HALT', 1.10)
-            z_h = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
-            r_halt = (1.0 + np.tanh(z_h)) / 2.0  # 1.0 ha hatalmas a dugó, 0.0 ha senki nem vár
-            
-            # Súlyozás: az átlagsebesség és áteresztőképesség fontos, de ha magas a halt, az eredmény büntetődik!
             base_reward = (r_speed + r_throughput) / 2.0
-            return base_reward #* (1.0 - (r_halt * 0.8))  # Max 80% büntetés, ha teljes a dugó
+            return base_reward
+
+        elif self.reward_mode == "speed_throughput_freq":
+            avg_speed = agent.get_avg_speed_metric()
+            throughput = agent.get_throughput_metric()
+
+            if avg_speed == 0.0 and throughput == 0.0:
+                return 0.0
+
+            mu_s = params.get('MU_SPEED', 0.617)
+            std_s = params.get('STD_SPEED', 0.951)
+            mu_t = params.get('MU_THROUGHPUT', 2.996)
+            std_t = params.get('STD_THROUGHPUT', 0.814)
+
+            z_s = (np.log(avg_speed + 1e-5) - mu_s) / (std_s + 1e-9)
+            r_speed = (1.0 + np.tanh(z_s)) / 2.0
+
+            z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
+            r_throughput = (1.0 + np.tanh(z_t)) / 2.0
+
+            # --- 85% Frekvencia Büntetés (Flicker/Starvation védelem) ---
+            # Ha egy fázis az utolsó 90 másodpercben (action_history ablakban)
+            # 85%-nál többet tette ki, progresszív büntetést adunk.
+            freq_penalty = 0.0
+            if len(agent.action_history) == agent.action_history.maxlen:
+                phase_count = sum(1 for p in agent.action_history if p == agent.current_logic_idx)
+                ratio = phase_count / len(agent.action_history)
+                if ratio > 0.85:
+                    # Pl. 90% → (0.90-0.85)/0.15 * 0.5 = 0.167 levonás
+                    #     100% → (1.00-0.85)/0.15 * 0.5 = 0.500 levonás
+                    freq_penalty = ((ratio - 0.85) / 0.15) * 0.5
+
+            base_reward = (r_speed + r_throughput) / 2.0
+            return base_reward - freq_penalty
 
         elif self.reward_mode == "halt_ratio":
             halt_ratio = agent.get_halt_ratio_metric()
@@ -767,6 +794,10 @@ class SumoRLEnvironment(gym.Env):
             for agent in self.agents.values():
                 agent.collect_measurements()
 
+        # Akció naplózása a csúszóablakba fázis frekvencia büntetéshez
+        for agent in self.agents.values():
+            agent.action_history.append(agent.current_logic_idx)
+
         observations = {}
         rewards = {}
         dones = {}
@@ -815,10 +846,14 @@ class SumoRLEnvironment(gym.Env):
 
 
 class TrafficAgent:
-    def __init__(self, jid, logic_data, min_green_time, measure_during_transition):
+    def __init__(self, jid, logic_data, min_green_time, measure_during_transition, delta_time=5):
         self.jid = jid
         self.min_green_const = min_green_time
         self.measure_during_transition = measure_during_transition
+        
+        import collections
+        window_size = 90 // delta_time
+        self.action_history = collections.deque(maxlen=window_size)
         
         self.phase_registry = {}
         if 'phases' in logic_data:

@@ -380,9 +380,9 @@ class IndependentDQNTrainer:
         """Reset options összeállítása fix forgalom beállításokkal."""
         options = {}
         if self.fixed_flow:
-            target = self.fixed_flow.get('target', 500)
-            spread = self.fixed_flow.get('spread', 0)
-            flow_range = (max(50, target - spread), min(1100, target + spread))
+            target = self.fixed_flow.get('target', 300)
+            spread = self.fixed_flow.get('spread', 50)
+            flow_range = (max(100, target - spread), min(650, target + spread))
             options['flow_range'] = flow_range
             # Single agent focused traffic: period-re konvertálás
             # target veh/h/lane → period = 3600 / target sec/veh

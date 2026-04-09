@@ -53,7 +53,7 @@ def main():
                         choices=list(SUPPORTED_ALGORITHMS.keys()),
                         help=f"RL algoritmus ({', '.join(SUPPORTED_ALGORITHMS.keys())}). Default: qrdqn")
     parser.add_argument("--reward-mode", type=str, default=None,
-                        choices=["speed_throughput", "halt_ratio", "co2_speedstd"],
+                        choices=["speed_throughput", "speed_throughput_freq", "halt_ratio", "co2_speedstd"],
                         help="Reward számítási mód. Default: speed_throughput")
     parser.add_argument("--junction-params", type=str, default=None,
                         help="junction_reward_params.json útvonal (default: auto-keresés)")
