@@ -1,15 +1,15 @@
 wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /Users/wagnertamas/.netrc.
 wandb: Currently logged in as: wagnertamas (wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
-wandb: setting up run x5jsvk4n
+wandb: setting up run jxwwnv5v
 wandb: Tracking run with wandb version 0.25.1
-wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260408_232746-x5jsvk4n
+wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260409_120004-jxwwnv5v
 wandb: Run `wandb offline` to turn off syncing.
 wandb: Syncing run ppo_speed_throughput_3x128_1_R1C1_C
 wandb: ⭐️ View project at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2
-wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/x5jsvk4n
+wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/jxwwnv5v
 [INFO] Config: training_config.yaml
 [INFO] Net: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml
-[INFO] Timesteps: 100000 | Project: sumo-rl-stat-2
+[INFO] Timesteps: 150000 | Project: sumo-rl-stat-2
 [INFO] Junction: R1C1_C
 [INFO] Algorithm: ppo | Reward: speed_throughput
 [INFO] Load model: None (fresh)
@@ -22,11 +22,11 @@ WandB config applied (Sweep compatible).
 [INFO] Junction reward params auto-loaded from /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/junction_reward_params.json
 [INFO] Using 'traci' (USE_LIBSUMO=0, parallel slave).
 Starting SUMO...
-[INFO] Episode duration: 600s (10 min)
+[INFO] Episode duration: 2700s (45 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5362
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1629
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 7.5362s
+Generating focused traffic: Period 7.1629s
  Retrying in 1 seconds
 [INFO] Network mapped: 1 agents, 3 detectors, 3 lanes
 [INFO] Subscriptions active: 6 (traci, fast mode)
@@ -36,26 +36,725 @@ Agents discovered: ['R1C1_C']
 [INFO] RL device: mps
 [INFO] On-policy training: ppo → R1C1_C
 [INFO] Env reset az observation/action space inicializálásához...
-[INFO] Episode duration: 600s (10 min)
+[INFO] Episode duration: 900s (15 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.0289
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.6251
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 6.0289s
+Generating focused traffic: Period 6.6251s
 [INFO] Subscriptions active: 6 (traci, fast mode)
 [INFO] Aktuált warmup: 200 lépés (round-robin)...
 [INFO] Warmup kész, forgalom stabilizálva.
 Using mps device
 Wrapping the env with a `Monitor` wrapper
 Wrapping the env in a DummyVecEnv.
-Starting on-policy training: 100000 timesteps...
-[INFO] Episode duration: 2700s (45 min)
+Starting on-policy training: 150000 timesteps...
+[INFO] Episode duration: 900s (15 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5532
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4429
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 6.5532s
+Generating focused traffic: Period 5.4429s
 [INFO] Subscriptions active: 6 (traci, fast mode)
 [INFO] Aktuált warmup: 200 lépés (round-robin)...
 [INFO] Warmup kész, forgalom stabilizálva.
-Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat-2/R1C1_C/PPO_77
-Interrupt signal received, trying to exit gracefully.
-Another interrupt signal received, hard exit.
+Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat-2/R1C1_C/PPO_119
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 47, 0: 47, 2: 46}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9595
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9595s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=34% (47) a1=34% (47) a2=33% (46)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 109, 2: 115, 1: 96}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4924
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4924s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=34% (109) a1=30% (96) a2=36% (115)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 179, 1: 165, 0: 156}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9617
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9617s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (156) a1=33% (165) a2=36% (179)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 154, 2: 171, 1: 175}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4027
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4027s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (154) a1=35% (175) a2=34% (171)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 184, 1: 159, 0: 157}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.3188
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.3188s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (157) a1=32% (159) a2=37% (184)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 33, 0: 25, 2: 22}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.9321
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.9321s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (25) a1=41% (33) a2=28% (22)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 1}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.567
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5670s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 34, 0: 25, 1: 21}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.52
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5200s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (25) a1=26% (21) a2=42% (34)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 44, 2: 57, 1: 39}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7079
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7079s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=31% (44) a1=28% (39) a2=41% (57)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 27, 0: 35, 1: 18}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6442
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6442s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=44% (35) a1=22% (18) a2=34% (27)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 114, 1: 92, 2: 114}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.0021
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0021s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=36% (114) a1=29% (92) a2=36% (114)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 22, 2: 35, 1: 23}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.3288
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.3288s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=28% (22) a1=29% (23) a2=44% (35)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 9, 2: 6, 0: 5}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.4751
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.4751s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=25% (5) a1=45% (9) a2=30% (6)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 42, 0: 54, 2: 44}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1176
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1176s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=39% (54) a1=30% (42) a2=31% (44)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 177, 1: 140, 0: 183}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2107
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2107s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=37% (183) a1=28% (140) a2=35% (177)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 27, 1: 23, 0: 30}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.3737
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.3737s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=38% (30) a1=29% (23) a2=34% (27)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 1}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.8227
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.8227s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a1=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 51, 2: 55, 1: 34}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9933
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9933s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=36% (51) a1=24% (34) a2=39% (55)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 143, 2: 159, 0: 198}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8387
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8387s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=40% (198) a1=29% (143) a2=32% (159)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 2, 0: 10, 1: 8}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.1259
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.1259s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=50% (10) a1=40% (8) a2=10% (2)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 123, 0: 206, 1: 171}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.4041
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.4041s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=41% (206) a1=34% (171) a2=25% (123)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 41, 0: 64, 1: 35}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5608
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5608s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=46% (64) a1=25% (35) a2=29% (41)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 160, 0: 206, 1: 134}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.013
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.0130s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=41% (206) a1=27% (134) a2=32% (160)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 10, 1: 6, 2: 4}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0566
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0566s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=50% (10) a1=30% (6) a2=20% (4)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 218, 2: 133, 1: 149}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5977
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5977s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=44% (218) a1=30% (149) a2=27% (133)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 229, 2: 137, 1: 134}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5919
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5919s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=46% (229) a1=27% (134) a2=27% (137)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 153, 0: 214, 1: 133}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0088
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0088s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=43% (214) a1=27% (133) a2=31% (153)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 40, 1: 36, 0: 64}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3334
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.3334s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=46% (64) a1=26% (36) a2=29% (40)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 1}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.2428
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.2428s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a2=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 43, 2: 39, 0: 58}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.6163
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6163s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=41% (58) a1=31% (43) a2=28% (39)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 1}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0819
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0819s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 143, 1: 103, 2: 74}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9597
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9597s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=45% (143) a1=32% (103) a2=23% (74)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 1}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8554
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8554s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 32, 0: 29, 1: 19}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7348
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7348s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=36% (29) a1=24% (19) a2=40% (32)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 41, 0: 66, 1: 33}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.7185
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.7185s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=47% (66) a1=24% (33) a2=29% (41)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 99, 0: 149, 1: 72}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8388
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8388s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=47% (149) a1=22% (72) a2=31% (99)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 1}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5303
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.5303s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a1=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 114, 2: 83, 0: 123}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5596
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5596s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=38% (123) a1=36% (114) a2=26% (83)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 126, 1: 98, 2: 96}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8571
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8571s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=39% (126) a1=31% (98) a2=30% (96)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 18, 0: 41, 1: 21}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8923
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8923s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=51% (41) a1=26% (21) a2=22% (18)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 116, 0: 210, 1: 174}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6363
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.6363s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=42% (210) a1=35% (174) a2=23% (116)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 133, 1: 148, 0: 219}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.991
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9910s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=44% (219) a1=30% (148) a2=27% (133)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 1}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0138
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0138s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a2=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 22, 0: 29, 1: 29}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.9277
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.9277s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=36% (29) a1=36% (29) a2=28% (22)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 8, 1: 6, 0: 6}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4857
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4857s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=30% (6) a1=30% (6) a2=40% (8)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 170, 2: 173, 1: 157}
+[INFO] Episode duration: 600s (10 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4755
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4755s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=34% (170) a1=31% (157) a2=35% (173)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 48, 1: 19, 2: 13}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.5895
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.5895s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=60% (48) a1=24% (19) a2=16% (13)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 262, 2: 104, 1: 134}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.0405
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.0405s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=52% (262) a1=27% (134) a2=21% (104)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 44, 0: 73, 2: 23}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7652
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7652s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=52% (73) a1=31% (44) a2=16% (23)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 7, 0: 6, 2: 7}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4654
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.4654s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=30% (6) a1=35% (7) a2=35% (7)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 99, 0: 250, 1: 151}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.26
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.2600s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=50% (250) a1=30% (151) a2=20% (99)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 65, 1: 108, 0: 147}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.0842
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.0842s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=46% (147) a1=34% (108) a2=20% (65)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 122, 0: 248, 2: 130}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.7445
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7445s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=50% (248) a1=24% (122) a2=26% (130)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 169, 0: 226, 2: 105}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.8942
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.8942s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=45% (226) a1=34% (169) a2=21% (105)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 160, 0: 228, 2: 112}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.1653
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.1653s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=46% (228) a1=32% (160) a2=22% (112)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 13, 2: 4, 1: 3}
+[INFO] Episode duration: 1800s (30 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.668
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.6680s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=65% (13) a1=15% (3) a2=20% (4)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 109, 2: 97, 0: 114}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.231
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.2310s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=36% (114) a1=34% (109) a2=30% (97)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 1}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.5859
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.5859s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a2=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 236, 1: 137, 2: 127}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4053
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4053s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=47% (236) a1=27% (137) a2=25% (127)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 121, 0: 267, 2: 112}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7823
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7823s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=53% (267) a1=24% (121) a2=22% (112)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 41, 2: 41, 0: 58}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.4522
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.4522s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=41% (58) a1=29% (41) a2=29% (41)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 1}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.771
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.7710s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a2=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 9, 0: 6, 1: 5}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.1597
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.1597s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=30% (6) a1=25% (5) a2=45% (9)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 269, 1: 134, 2: 97}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.7355
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.7355s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=54% (269) a1=27% (134) a2=19% (97)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 1}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.9833
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.9833s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 7, 0: 12, 1: 1}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.8571
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 6.8571s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=60% (12) a1=5% (1) a2=35% (7)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 107, 2: 181, 0: 212}
+[INFO] Episode duration: 150s (2 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.8662
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 4.8662s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=42% (212) a1=21% (107) a2=36% (181)
+[ACTION LOG] R1C1_C Action distribution this episode: {2: 1}
+[INFO] Episode duration: 900s (15 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.2829
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 7.2829s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a2=100% (1)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 33, 0: 54, 2: 53}
+[INFO] Episode duration: 300s (5 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5219
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5219s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=39% (54) a1=24% (33) a2=38% (53)
+[ACTION LOG] R1C1_C Action distribution this episode: {0: 4, 2: 9, 1: 7}
+[INFO] Episode duration: 2700s (45 min)
+
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.5358
+Found 6 valid OD pairs for R1C1_C
+Generating focused traffic: Period 5.5358s
+[INFO] Subscriptions active: 6 (traci, fast mode)
+[INFO] Aktuált warmup: 200 lépés (round-robin)...
+[INFO] Warmup kész, forgalom stabilizálva.
+  [ACTION PPO] R1C1_C: a0=20% (4) a1=35% (7) a2=45% (9)
+[ACTION LOG] R1C1_C Action distribution this episode: {1: 130, 2: 95, 0: 275}

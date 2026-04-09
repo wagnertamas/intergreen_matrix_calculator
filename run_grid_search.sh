@@ -24,9 +24,9 @@ export USE_LIBSUMO=0
 # --- Alapértelmezések ---
 JUNCTION="R1C1_C"
 PROJECT="sumo-rl-stat-2"
-TIMESTEPS=100000
+TIMESTEPS=150000
 REPEATS=1
-PARALLEL_JOBS=9  # 12 magból 6 párhuzamos SUMO szimuláció
+PARALLEL_JOBS=8  # 12 magból 6 párhuzamos SUMO szimuláció
 
 # Algoritmusok
 ALGORITHMS=(qrdqn ppo)
@@ -38,7 +38,7 @@ REWARDS=(speed_throughput)
 
 # Neurális háló méretek
 LAYERS=(1 2 3)
-NEURONS=(32 64 128)
+NEURONS=(16 32 64 128)
 
 # --- CLI argumentumok ---
 while getopts "j:t:r:" opt; do

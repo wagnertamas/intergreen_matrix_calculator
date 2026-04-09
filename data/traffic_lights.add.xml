@@ -2,41 +2,25 @@
 <additional>
   <tlLogic id="R1C1_C" type="static" programID="0" offset="0">
     <phase duration="5.0" state="GGGrrr" />
-    <phase duration="5.0" state="GrGrGr" />
     <phase duration="5.0" state="GrrrGG" />
-    <phase duration="5.0" state="rrGGGr" />
-    <phase duration="3.0" state="GyGrrr" />
-    <phase duration="2.0" state="GrGrur" />
+    <phase duration="5.0" state="rrGGrr" />
     <phase duration="3.0" state="Gyyrrr" />
     <phase duration="1.0" state="Grrrrr" />
     <phase duration="2.0" state="Grrruu" />
     <phase duration="3.0" state="yyGrrr" />
-    <phase duration="2.0" state="rrGuur" />
-    <phase duration="2.0" state="GrGryr" />
-    <phase duration="1.0" state="GuGryr" />
-    <phase duration="1.0" state="GuGrrr" />
-    <phase duration="3.0" state="GryrGr" />
-    <phase duration="2.0" state="GrrrGu" />
-    <phase duration="1.0" state="yrGrGr" />
-    <phase duration="2.0" state="yrGuGr" />
+    <phase duration="2.0" state="rrGurr" />
     <phase duration="2.0" state="Grrryy" />
     <phase duration="1.0" state="Guuryy" />
     <phase duration="1.0" state="Guurrr" />
-    <phase duration="2.0" state="GrrrGy" />
-    <phase duration="1.0" state="GrurGy" />
-    <phase duration="1.0" state="GrurGr" />
-    <phase duration="2.0" state="yrrrGy" />
-    <phase duration="1.0" state="yruuGy" />
-    <phase duration="1.0" state="rruuGr" />
-    <phase duration="3.0" state="rrGyyr" />
+    <phase duration="2.0" state="yrrryy" />
+    <phase duration="1.0" state="yruuyy" />
+    <phase duration="1.0" state="rruurr" />
+    <phase duration="3.0" state="rrGyrr" />
     <phase duration="1.0" state="rrGrrr" />
     <phase duration="2.0" state="uuGrrr" />
-    <phase duration="3.0" state="rrGyGr" />
-    <phase duration="1.0" state="rrGrGr" />
-    <phase duration="2.0" state="urGrGr" />
-    <phase duration="3.0" state="rryyGr" />
-    <phase duration="1.0" state="rrrrGr" />
-    <phase duration="2.0" state="urrrGu" />
+    <phase duration="3.0" state="rryyrr" />
+    <phase duration="1.0" state="rrrrrr" />
+    <phase duration="2.0" state="urrruu" />
   </tlLogic>
   <tlLogic id="R1C2_C" type="static" programID="0" offset="0">
     <phase duration="5.0" state="GGGrrr" />
@@ -3966,14 +3950,12 @@
     <phase duration="5.0" state="GGGrGGrrrGGrrrrrrr" />
     <phase duration="5.0" state="GGGGGGrrrGrrrrrrrr" />
     <phase duration="5.0" state="rrrrGGGGGGGrrrrrrr" />
-    <phase duration="5.0" state="GrrrrrrrrGGGrrGrrG" />
     <phase duration="5.0" state="GrrrrrrrrGGGGrGrrr" />
     <phase duration="5.0" state="GrrrGrrrrrrrrrGGGG" />
     <phase duration="5.0" state="GrrrGrrrrGGrrrGrrG" />
     <phase duration="5.0" state="GrrrGGrrrrrrrrGGGr" />
     <phase duration="5.0" state="GrrrGGrrrGGrrrGrrr" />
     <phase duration="5.0" state="GrrGGGrrrGrrrrGrrr" />
-    <phase duration="5.0" state="GrrGGGrrrrrrrrGGrr" />
     <phase duration="5.0" state="rrrrGGrrrGGrrGGrrr" />
     <phase duration="5.0" state="rrrrrrrrrGGGGGGrrr" />
     <phase duration="5.0" state="rrrGGGrrrGrrrGGrrr" />
@@ -3990,9 +3972,6 @@
     <phase duration="2.0" state="GGGuuurrrGrrrrrrrr" />
     <phase duration="3.0" state="yyyrrrrrrGGyyrrrrr" />
     <phase duration="2.0" state="rrrruuuuuGGrrrrrrr" />
-    <phase duration="2.0" state="GyyrrrrrrGGGyrrrrr" />
-    <phase duration="1.0" state="GyyrrrrrrGGGyrurru" />
-    <phase duration="1.0" state="GrrrrrrrrGGGrrurru" />
     <phase duration="2.0" state="GyyrrrrrrGGGGrrrrr" />
     <phase duration="1.0" state="GyyrrrrrrGGGGrurrr" />
     <phase duration="1.0" state="GrrrrrrrrGGGGrurrr" />
@@ -4007,8 +3986,6 @@
     <phase duration="2.0" state="GrrruurrrGGrrrurrr" />
     <phase duration="3.0" state="GyyrrrrrrGyyyrrrrr" />
     <phase duration="2.0" state="GrruuurrrGrrrrurrr" />
-    <phase duration="3.0" state="Gyyrrrrrryyyyrrrrr" />
-    <phase duration="2.0" state="Grruuurrrrrrrruurr" />
     <phase duration="3.0" state="yyyrrrrrrGGyyrrrrr" />
     <phase duration="2.0" state="rrrruurrrGGrruurrr" />
     <phase duration="2.0" state="yyyrrrrrrGGGGrrrrr" />
@@ -4035,9 +4012,6 @@
     <phase duration="3.0" state="yrrrGrrGGGGrrrrrry" />
     <phase duration="1.0" state="rrrrGrrGGGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGuuGGGGrrrrrrr" />
-    <phase duration="3.0" state="GrrryrryyGGrrrrrrG" />
-    <phase duration="1.0" state="GrrrrrrrrGGrrrrrrG" />
-    <phase duration="2.0" state="GrrrrrrrrGGurrurrG" />
     <phase duration="3.0" state="GrrryrryyGGrrrrrry" />
     <phase duration="2.0" state="GrrrrrrrrGGrrrrrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGuururrr" />
@@ -4056,9 +4030,6 @@
     <phase duration="3.0" state="GrrrGrryyGyrrrrrry" />
     <phase duration="1.0" state="GrrrGrrrrGrrrrrrrr" />
     <phase duration="2.0" state="GrruGurrrGrrrrurrr" />
-    <phase duration="3.0" state="GrrrGrryyyyrrrrrry" />
-    <phase duration="1.0" state="GrrrGrrrrrrrrrrrrr" />
-    <phase duration="2.0" state="GrruGurrrrrrrruurr" />
     <phase duration="3.0" state="yrrrGrryyGGrrrrrry" />
     <phase duration="1.0" state="rrrrGrrrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGurrrGGrruurrr" />
@@ -4089,9 +4060,6 @@
     <phase duration="2.0" state="rrrrGGuGGGGrrrrrrr" />
     <phase duration="3.0" state="GrrryyryyGGrrrrrrr" />
     <phase duration="1.0" state="GrrrrrrrrGGrrrrrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGurrurru" />
-    <phase duration="3.0" state="GrrryyryyGGrrrrrrr" />
-    <phase duration="1.0" state="GrrrrrrrrGGrrrrrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGuururrr" />
     <phase duration="3.0" state="GrrrGyryyyyrrrrrrr" />
     <phase duration="1.0" state="GrrrGrrrrrrrrrrrrr" />
@@ -4108,9 +4076,6 @@
     <phase duration="3.0" state="GrrrGGryyGyrrrrrrr" />
     <phase duration="1.0" state="GrrrGGrrrGrrrrrrrr" />
     <phase duration="2.0" state="GrruGGrrrGrrrrurrr" />
-    <phase duration="3.0" state="GrrrGGryyyyrrrrrrr" />
-    <phase duration="1.0" state="GrrrGGrrrrrrrrrrrr" />
-    <phase duration="2.0" state="GrruGGrrrrrrrruurr" />
     <phase duration="3.0" state="yrrrGGryyGGrrrrrrr" />
     <phase duration="1.0" state="rrrrGGrrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGGrrrGGrruurrr" />
@@ -4139,8 +4104,6 @@
     <phase duration="3.0" state="yyyrGGrrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGGuuuGGrrrrrrr" />
     <phase duration="3.0" state="GyyryyrrrGGrrrrrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGurrurru" />
-    <phase duration="3.0" state="GyyryyrrrGGrrrrrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGuururrr" />
     <phase duration="3.0" state="GyyrGyrrryyrrrrrrr" />
     <phase duration="2.0" state="GrrrGrrrrrrrrruuuu" />
@@ -4155,8 +4118,6 @@
     <phase duration="2.0" state="GyyrGGrrrGyrrrrrrr" />
     <phase duration="1.0" state="GyyuGGrrrGyrrrurrr" />
     <phase duration="1.0" state="GrruGGrrrGrrrrurrr" />
-    <phase duration="3.0" state="GyyrGGrrryyrrrrrrr" />
-    <phase duration="2.0" state="GrruGGrrrrrrrruurr" />
     <phase duration="2.0" state="yyyrGGrrrGGrrrrrrr" />
     <phase duration="1.0" state="yyyrGGrrrGGrruurrr" />
     <phase duration="1.0" state="rrrrGGrrrGGrruurrr" />
@@ -4182,9 +4143,6 @@
     <phase duration="2.0" state="rrrrGGuuuGurrrrrrr" />
     <phase duration="3.0" state="GyyyyyrrrGrrrrrrrr" />
     <phase duration="1.0" state="GrrrrrrrrGrrrrrrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGuurrurru" />
-    <phase duration="3.0" state="GyyyyyrrrGrrrrrrrr" />
-    <phase duration="1.0" state="GrrrrrrrrGrrrrrrrr" />
     <phase duration="2.0" state="GrrrrrrrrGuuururrr" />
     <phase duration="3.0" state="GyyyGyrrryrrrrrrrr" />
     <phase duration="1.0" state="GrrrGrrrrrrrrrrrrr" />
@@ -4199,8 +4157,6 @@
     <phase duration="2.0" state="GyyGGGrrrGrrrrrrrr" />
     <phase duration="1.0" state="GyyGGGrrrGrrrrurrr" />
     <phase duration="1.0" state="GrrGGGrrrGrrrrurrr" />
-    <phase duration="3.0" state="GyyGGGrrryrrrrrrrr" />
-    <phase duration="2.0" state="GrrGGGrrrrrrrruurr" />
     <phase duration="3.0" state="yyyyGGrrrGrrrrrrrr" />
     <phase duration="2.0" state="rrrrGGrrrGurruurrr" />
     <phase duration="3.0" state="yyyyyyrrrGrrrrrrrr" />
@@ -4231,9 +4187,6 @@
     <phase duration="2.0" state="uuuuGGrrrGrrrrrrrr" />
     <phase duration="3.0" state="rrrryyyyyGGrrrrrrr" />
     <phase duration="1.0" state="rrrrrrrrrGGrrrrrrr" />
-    <phase duration="2.0" state="urrrrrrrrGGurrurru" />
-    <phase duration="3.0" state="rrrryyyyyGGrrrrrrr" />
-    <phase duration="1.0" state="rrrrrrrrrGGrrrrrrr" />
     <phase duration="2.0" state="urrrrrrrrGGuururrr" />
     <phase duration="3.0" state="rrrrGyyyyyyrrrrrrr" />
     <phase duration="1.0" state="rrrrGrrrrrrrrrrrrr" />
@@ -4250,9 +4203,6 @@
     <phase duration="3.0" state="rrrrGGyyyGyrrrrrrr" />
     <phase duration="1.0" state="rrrrGGrrrGrrrrrrrr" />
     <phase duration="2.0" state="urruGGrrrGrrrrurrr" />
-    <phase duration="3.0" state="rrrrGGyyyyyrrrrrrr" />
-    <phase duration="1.0" state="rrrrGGrrrrrrrrrrrr" />
-    <phase duration="2.0" state="urruGGrrrrrrrruurr" />
     <phase duration="3.0" state="rrrrGGyyyGGrrrrrrr" />
     <phase duration="1.0" state="rrrrGGrrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGGrrrGGrruurrr" />
@@ -4268,59 +4218,6 @@
     <phase duration="3.0" state="rrrrGGGyyGGrrrrrrr" />
     <phase duration="1.0" state="rrrrGGGrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGGGrrGGrrrurrr" />
-    <phase duration="3.0" state="GrrrrrrrrGGGrryrry" />
-    <phase duration="2.0" state="GrrrrrrrrGGGrrrrrr" />
-    <phase duration="2.0" state="GuurrrrrrGGGurrrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGyrryrrG" />
-    <phase duration="1.0" state="GrrrurruuGGyrryrrG" />
-    <phase duration="1.0" state="GrrrurruuGGrrrrrrG" />
-    <phase duration="3.0" state="GrrrrrrrrGGyrryrry" />
-    <phase duration="1.0" state="GrrrrrrrrGGrrrrrrr" />
-    <phase duration="2.0" state="GrrruuruuGGrrrrrrr" />
-    <phase duration="3.0" state="GrrrrrrrrGGyrryrry" />
-    <phase duration="1.0" state="GrrrrrrrrGGrrrrrrr" />
-    <phase duration="2.0" state="GuuruurrrGGrrrrrrr" />
-    <phase duration="3.0" state="GrrrrrrrrGyyrryrry" />
-    <phase duration="1.0" state="GrrrrrrrrGrrrrrrrr" />
-    <phase duration="2.0" state="GuuuuurrrGrrrrrrrr" />
-    <phase duration="3.0" state="yrrrrrrrrGGyrryrry" />
-    <phase duration="1.0" state="rrrrrrrrrGGrrrrrrr" />
-    <phase duration="2.0" state="rrrruuuuuGGrrrrrrr" />
-    <phase duration="3.0" state="GrrrrrrrrGGGrrGrry" />
-    <phase duration="2.0" state="GrrrrrrrrGGGrrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGGurGrrr" />
-    <phase duration="3.0" state="GrrrrrrrryyyrrGrrG" />
-    <phase duration="2.0" state="GrrrurrrrrrrrrGuuG" />
-    <phase duration="2.0" state="GrrrrrrrrGGyrrGrrG" />
-    <phase duration="1.0" state="GrrrurrrrGGyrrGrrG" />
-    <phase duration="1.0" state="GrrrurrrrGGrrrGrrG" />
-    <phase duration="3.0" state="GrrrrrrrryyyrrGrry" />
-    <phase duration="1.0" state="GrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="GrrruurrrrrrrrGuur" />
-    <phase duration="3.0" state="GrrrrrrrrGGyrrGrry" />
-    <phase duration="1.0" state="GrrrrrrrrGGrrrGrrr" />
-    <phase duration="2.0" state="GrrruurrrGGrrrGrrr" />
-    <phase duration="3.0" state="GrrrrrrrrGyyrrGrry" />
-    <phase duration="1.0" state="GrrrrrrrrGrrrrGrrr" />
-    <phase duration="2.0" state="GrruuurrrGrrrrGrrr" />
-    <phase duration="3.0" state="GrrrrrrrryyyrrGrry" />
-    <phase duration="1.0" state="GrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="GrruuurrrrrrrrGurr" />
-    <phase duration="3.0" state="yrrrrrrrrGGyrrGrry" />
-    <phase duration="1.0" state="rrrrrrrrrGGrrrGrrr" />
-    <phase duration="2.0" state="rrrruurrrGGrruGrrr" />
-    <phase duration="3.0" state="yrrrrrrrrGGGrrGrry" />
-    <phase duration="2.0" state="rrrrrrrrrGGGrrGrrr" />
-    <phase duration="2.0" state="rrrrrrrrrGGGuuGrrr" />
-    <phase duration="3.0" state="yrrrrrrrrGyyrrGrry" />
-    <phase duration="1.0" state="rrrrrrrrrGrrrrGrrr" />
-    <phase duration="2.0" state="rrruuurrrGrrruGrrr" />
-    <phase duration="3.0" state="yrrrrrrrryyyrrGrry" />
-    <phase duration="1.0" state="rrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="rrrruuurrrrrrrGuur" />
-    <phase duration="3.0" state="yrrrrrrrrGGyrrGrry" />
-    <phase duration="1.0" state="rrrrrrrrrGGrrrGrrr" />
-    <phase duration="2.0" state="rrrruuurrGGrrrGrrr" />
     <phase duration="3.0" state="GrrrrrrrrGGGGryrrr" />
     <phase duration="2.0" state="GuurrrrrrGGGGrrrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGyyryrrr" />
@@ -4334,8 +4231,6 @@
     <phase duration="2.0" state="GuuuuurrrGrrrrrrrr" />
     <phase duration="3.0" state="yrrrrrrrrGGyyryrrr" />
     <phase duration="2.0" state="rrrruuuuuGGrrrrrrr" />
-    <phase duration="1.0" state="GrrrrrrrrGGGyrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGGyrGrru" />
     <phase duration="3.0" state="GrrrrrrrryyyyrGrrr" />
     <phase duration="2.0" state="GrrrurrrrrrrrrGuuu" />
     <phase duration="2.0" state="GrrrrrrrrGGyyrGrrr" />
@@ -4347,8 +4242,6 @@
     <phase duration="2.0" state="GrrruurrrGGrrrGrrr" />
     <phase duration="3.0" state="GrrrrrrrrGyyyrGrrr" />
     <phase duration="2.0" state="GrruuurrrGrrrrGrrr" />
-    <phase duration="3.0" state="GrrrrrrrryyyyrGrrr" />
-    <phase duration="2.0" state="GrruuurrrrrrrrGurr" />
     <phase duration="3.0" state="yrrrrrrrrGGyyrGrrr" />
     <phase duration="2.0" state="rrrruurrrGGrruGrrr" />
     <phase duration="2.0" state="yrrrrrrrrGGGGrGrrr" />
@@ -4377,8 +4270,6 @@
     <phase duration="3.0" state="yrrrGrrrrrrrrryyyy" />
     <phase duration="1.0" state="rrrrGrrrrrrrrrrrrr" />
     <phase duration="2.0" state="rrrrGuuuuuurrrrrrr" />
-    <phase duration="3.0" state="GrrryrrrrrrrrrGyyG" />
-    <phase duration="2.0" state="GrrrrrrrruuurrGrrG" />
     <phase duration="3.0" state="GrrryrrrrrrrrrGyyy" />
     <phase duration="2.0" state="GrrrrrrrrrrrrrGrrr" />
     <phase duration="2.0" state="GrrrrrrrruuuurGrrr" />
@@ -4393,9 +4284,6 @@
     <phase duration="3.0" state="GrrrGrrrrrrrrrGyyy" />
     <phase duration="1.0" state="GrrrGrrrrrrrrrGrrr" />
     <phase duration="2.0" state="GrruGurrrurrrrGrrr" />
-    <phase duration="3.0" state="GrrrGrrrrrrrrrGGyy" />
-    <phase duration="1.0" state="GrrrGrrrrrrrrrGGrr" />
-    <phase duration="2.0" state="GrruGurrrrrrrrGGrr" />
     <phase duration="3.0" state="yrrrGrrrrrrrrrGyyy" />
     <phase duration="1.0" state="rrrrGrrrrrrrrrGrrr" />
     <phase duration="2.0" state="rrrrGurrruurruGrrr" />
@@ -4428,8 +4316,6 @@
     <phase duration="3.0" state="yrrrGrrrrGGrrryrry" />
     <phase duration="1.0" state="rrrrGrrrrGGrrrrrrr" />
     <phase duration="2.0" state="rrrrGuuuuGGrrrrrrr" />
-    <phase duration="3.0" state="GrrryrrrrGGrrrGrrG" />
-    <phase duration="2.0" state="GrrrrrrrrGGurrGrrG" />
     <phase duration="3.0" state="GrrryrrrrGGrrrGrry" />
     <phase duration="2.0" state="GrrrrrrrrGGrrrGrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGuurGrrr" />
@@ -4444,9 +4330,6 @@
     <phase duration="3.0" state="GrrrGrrrrGyrrrGrry" />
     <phase duration="1.0" state="GrrrGrrrrGrrrrGrrr" />
     <phase duration="2.0" state="GrruGurrrGrrrrGrrr" />
-    <phase duration="3.0" state="GrrrGrrrryyrrrGrry" />
-    <phase duration="1.0" state="GrrrGrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="GrruGurrrrrrrrGurr" />
     <phase duration="3.0" state="yrrrGrrrrGGrrrGrry" />
     <phase duration="1.0" state="rrrrGrrrrGGrrrGrrr" />
     <phase duration="2.0" state="rrrrGurrrGGrruGrrr" />
@@ -4475,8 +4358,6 @@
     <phase duration="3.0" state="yrrrGGrrrrrrrryyyr" />
     <phase duration="2.0" state="rrrrGGuuuuurrrrrrr" />
     <phase duration="3.0" state="GrrryyrrrrrrrrGyyr" />
-    <phase duration="2.0" state="GrrrrrrrruuurrGrru" />
-    <phase duration="3.0" state="GrrryyrrrrrrrrGyyr" />
     <phase duration="2.0" state="GrrrrrrrruuuurGrrr" />
     <phase duration="1.0" state="GrrrGyrrrrrrrrGGGr" />
     <phase duration="2.0" state="GrrrGyrrrrrrrrGGGu" />
@@ -4486,8 +4367,6 @@
     <phase duration="2.0" state="GrrrGGrrruurrrGrrr" />
     <phase duration="3.0" state="GrrrGGrrrrrrrrGyyr" />
     <phase duration="2.0" state="GrruGGrrrurrrrGrrr" />
-    <phase duration="1.0" state="GrrrGGrrrrrrrrGGyr" />
-    <phase duration="2.0" state="GrruGGrrrrrrrrGGyr" />
     <phase duration="3.0" state="yrrrGGrrrrrrrrGyyr" />
     <phase duration="2.0" state="rrrrGGrrruurruGrrr" />
     <phase duration="3.0" state="yrrryyrrrrrrrrGyyr" />
@@ -4511,8 +4390,6 @@
     <phase duration="3.0" state="yrrrGGrrrGGrrryrrr" />
     <phase duration="2.0" state="rrrrGGuuuGGrrrrrrr" />
     <phase duration="3.0" state="GrrryyrrrGGrrrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGGurrGrru" />
-    <phase duration="3.0" state="GrrryyrrrGGrrrGrrr" />
     <phase duration="2.0" state="GrrrrrrrrGGuurGrrr" />
     <phase duration="3.0" state="GrrrGyrrryyrrrGrrr" />
     <phase duration="2.0" state="GrrrGrrrrrrrrrGuuu" />
@@ -4523,9 +4400,6 @@
     <phase duration="2.0" state="GrrrGGrrrGyrrrGrrr" />
     <phase duration="1.0" state="GrruGGrrrGyrrrGrrr" />
     <phase duration="1.0" state="GrruGGrrrGrrrrGrrr" />
-    <phase duration="2.0" state="GrrrGGrrryyrrrGrrr" />
-    <phase duration="1.0" state="GrruGGrrryyrrrGurr" />
-    <phase duration="1.0" state="GrruGGrrrrrrrrGurr" />
     <phase duration="2.0" state="yrrrGGrrrGGrrrGrrr" />
     <phase duration="1.0" state="yrrrGGrrrGGrruGrrr" />
     <phase duration="1.0" state="rrrrGGrrrGGrruGrrr" />
@@ -4553,9 +4427,6 @@
     <phase duration="2.0" state="rrrrGGuuuGurrrrrrr" />
     <phase duration="3.0" state="GrryyyrrrGrrrrGrrr" />
     <phase duration="1.0" state="GrrrrrrrrGrrrrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrrGuurrGrru" />
-    <phase duration="3.0" state="GrryyyrrrGrrrrGrrr" />
-    <phase duration="1.0" state="GrrrrrrrrGrrrrGrrr" />
     <phase duration="2.0" state="GrrrrrrrrGuuurGrrr" />
     <phase duration="3.0" state="GrryGyrrryrrrrGrrr" />
     <phase duration="1.0" state="GrrrGrrrrrrrrrGrrr" />
@@ -4567,9 +4438,6 @@
     <phase duration="2.0" state="GrrrGGrrrrrrrrGuur" />
     <phase duration="3.0" state="GrryGGrrrGrrrrGrrr" />
     <phase duration="2.0" state="GrrrGGrrrGurrrGrrr" />
-    <phase duration="2.0" state="GrrGGGrrryrrrrGrrr" />
-    <phase duration="1.0" state="GrrGGGrrryrrrrGurr" />
-    <phase duration="1.0" state="GrrGGGrrrrrrrrGurr" />
     <phase duration="3.0" state="yrryGGrrrGrrrrGrrr" />
     <phase duration="2.0" state="rrrrGGrrrGurruGrrr" />
     <phase duration="3.0" state="yrryyyrrrGrrrrGrrr" />
@@ -4583,49 +4451,6 @@
     <phase duration="2.0" state="rrrrGGurrrrrrrGuur" />
     <phase duration="3.0" state="yrryGGrrrGrrrrGrrr" />
     <phase duration="2.0" state="rrrrGGurrGurrrGrrr" />
-    <phase duration="3.0" state="Grryyyrrrrrrrryyrr" />
-    <phase duration="1.0" state="Grrrrrrrrrrrrrrrrr" />
-    <phase duration="2.0" state="Guurrrrrruuuurrrrr" />
-    <phase duration="3.0" state="GrryGyrrrrrrrryyrr" />
-    <phase duration="2.0" state="GrrrGrruuuurrrrrru" />
-    <phase duration="3.0" state="GrryGGrrrrrrrryyrr" />
-    <phase duration="2.0" state="GrrrGGruuuurrrrrrr" />
-    <phase duration="3.0" state="GrryGGrrrrrrrryyrr" />
-    <phase duration="2.0" state="GuurGGrrruurrrrrrr" />
-    <phase duration="3.0" state="GrrGGGrrrrrrrryyrr" />
-    <phase duration="2.0" state="GuuGGGrrrurrrrrrrr" />
-    <phase duration="3.0" state="yrryGGrrrrrrrryyrr" />
-    <phase duration="2.0" state="rrrrGGuuuuurrrrrrr" />
-    <phase duration="3.0" state="GrryyyrrrrrrrrGyrr" />
-    <phase duration="1.0" state="GrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrruuurrGrru" />
-    <phase duration="3.0" state="GrryyyrrrrrrrrGyrr" />
-    <phase duration="1.0" state="GrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="GrrrrrrrruuuurGrrr" />
-    <phase duration="3.0" state="GrryGyrrrrrrrrGGrr" />
-    <phase duration="1.0" state="GrrrGrrrrrrrrrGGrr" />
-    <phase duration="2.0" state="GrrrGrrrrrrrrrGGuu" />
-    <phase duration="3.0" state="GrryGyrrrrrrrrGyrr" />
-    <phase duration="2.0" state="GrrrGrrrruurrrGrru" />
-    <phase duration="3.0" state="GrryGGrrrrrrrrGGrr" />
-    <phase duration="1.0" state="GrrrGGrrrrrrrrGGrr" />
-    <phase duration="2.0" state="GrrrGGrrrrrrrrGGur" />
-    <phase duration="3.0" state="GrryGGrrrrrrrrGyrr" />
-    <phase duration="2.0" state="GrrrGGrrruurrrGrrr" />
-    <phase duration="3.0" state="GrrGGGrrrrrrrrGyrr" />
-    <phase duration="2.0" state="GrrGGGrrrurrrrGrrr" />
-    <phase duration="3.0" state="yrryGGrrrrrrrrGyrr" />
-    <phase duration="2.0" state="rrrrGGrrruurruGrrr" />
-    <phase duration="3.0" state="yrryyyrrrrrrrrGyrr" />
-    <phase duration="1.0" state="rrrrrrrrrrrrrrGrrr" />
-    <phase duration="2.0" state="rrrrrrrrruuuuuGrrr" />
-    <phase duration="3.0" state="yrrGGGrrrrrrrrGyrr" />
-    <phase duration="2.0" state="rrrGGGrrrurrruGrrr" />
-    <phase duration="3.0" state="yrryGGrrrrrrrrGGrr" />
-    <phase duration="1.0" state="rrrrGGrrrrrrrrGGrr" />
-    <phase duration="2.0" state="rrrrGGurrrrrrrGGur" />
-    <phase duration="3.0" state="yrryGGrrrrrrrrGyrr" />
-    <phase duration="2.0" state="rrrrGGurruurrrGrrr" />
     <phase duration="3.0" state="rrrryyrrrGGrryyrrr" />
     <phase duration="1.0" state="rrrrrrrrrGGrrrrrrr" />
     <phase duration="2.0" state="uuurrrrrrGGuurrrrr" />
@@ -4642,8 +4467,6 @@
     <phase duration="3.0" state="rrrrGGrrrGGrryyrrr" />
     <phase duration="2.0" state="rrrrGGuuuGGrrrrrrr" />
     <phase duration="3.0" state="rrrryyrrrGGrryGrrr" />
-    <phase duration="2.0" state="urrrrrrrrGGurrGrru" />
-    <phase duration="3.0" state="rrrryyrrrGGrryGrrr" />
     <phase duration="2.0" state="urrrrrrrrGGuurGrrr" />
     <phase duration="3.0" state="rrrrGyrrryyrryGrrr" />
     <phase duration="2.0" state="urrrGrrrrrrrrrGuuu" />
@@ -4655,8 +4478,6 @@
     <phase duration="2.0" state="urrrGGrrrGGrrrGrrr" />
     <phase duration="3.0" state="rrrrGGrrrGyrryGrrr" />
     <phase duration="2.0" state="urruGGrrrGrrrrGrrr" />
-    <phase duration="3.0" state="rrrrGGrrryyrryGrrr" />
-    <phase duration="2.0" state="urruGGrrrrrrrrGurr" />
     <phase duration="3.0" state="rrrryyrrrGGrrGGrrr" />
     <phase duration="2.0" state="rrrrrrrrrGGuuGGrrr" />
     <phase duration="2.0" state="rrrrGGrrrGyrrGGrrr" />
@@ -4681,8 +4502,6 @@
     <phase duration="2.0" state="uuuuuurrrGrrrrrrrr" />
     <phase duration="3.0" state="rrrrrrrrrGGyyyyrrr" />
     <phase duration="2.0" state="rrrruuuuuGGrrrrrrr" />
-    <phase duration="3.0" state="rrrrrrrrrGGGyyGrrr" />
-    <phase duration="2.0" state="urrrrrrrrGGGrrGrru" />
     <phase duration="3.0" state="rrrrrrrrrGGGGyGrrr" />
     <phase duration="2.0" state="urrrrrrrrGGGGrGrrr" />
     <phase duration="3.0" state="rrrrrrrrryyyyyGrrr" />
@@ -4695,8 +4514,6 @@
     <phase duration="2.0" state="urrruurrrGGrrrGrrr" />
     <phase duration="3.0" state="rrrrrrrrrGyyyyGrrr" />
     <phase duration="2.0" state="urruuurrrGrrrrGrrr" />
-    <phase duration="3.0" state="rrrrrrrrryyyyyGrrr" />
-    <phase duration="2.0" state="urruuurrrrrrrrGurr" />
     <phase duration="3.0" state="rrrrrrrrrGGyyGGrrr" />
     <phase duration="2.0" state="rrrruurrrGGrrGGrrr" />
     <phase duration="3.0" state="rrrrrrrrrGyyyGGrrr" />
@@ -4722,9 +4539,6 @@
     <phase duration="2.0" state="rrrrGGuuuGurrrrrrr" />
     <phase duration="3.0" state="rrryyyrrrGrrryGrrr" />
     <phase duration="1.0" state="rrrrrrrrrGrrrrGrrr" />
-    <phase duration="2.0" state="urrrrrrrrGuurrGrru" />
-    <phase duration="3.0" state="rrryyyrrrGrrryGrrr" />
-    <phase duration="1.0" state="rrrrrrrrrGrrrrGrrr" />
     <phase duration="2.0" state="urrrrrrrrGuuurGrrr" />
     <phase duration="3.0" state="rrryGyrrryrrryGrrr" />
     <phase duration="1.0" state="rrrrGrrrrrrrrrGrrr" />
@@ -4738,8 +4552,6 @@
     <phase duration="2.0" state="urrrGGrrrGurrrGrrr" />
     <phase duration="3.0" state="rrrGGGrrrGrrryGrrr" />
     <phase duration="2.0" state="urrGGGrrrGrrrrGrrr" />
-    <phase duration="3.0" state="rrrGGGrrryrrryGrrr" />
-    <phase duration="2.0" state="urrGGGrrrrrrrrGurr" />
     <phase duration="3.0" state="rrryGGrrrGrrrGGrrr" />
     <phase duration="2.0" state="rrrrGGrrrGurrGGrrr" />
     <phase duration="3.0" state="rrryyyrrrGrrrGGrrr" />
@@ -4763,8 +4575,6 @@
     <phase duration="3.0" state="rrrrGGGrrrrrrryyyr" />
     <phase duration="2.0" state="rrrrGGGuuuurrrrrrr" />
     <phase duration="3.0" state="rrrryyyrrrrrrrGyyr" />
-    <phase duration="2.0" state="urrrrrrrruuurrGrru" />
-    <phase duration="3.0" state="rrrryyyrrrrrrrGyyr" />
     <phase duration="2.0" state="urrrrrrrruuuurGrrr" />
     <phase duration="2.0" state="rrrrGyyrrrrrrrGGGr" />
     <phase duration="1.0" state="urrrGyyrrrrrrrGGGu" />
@@ -4778,9 +4588,6 @@
     <phase duration="2.0" state="urrrGGrrruurrrGrrr" />
     <phase duration="3.0" state="rrrrGGyrrrrrrrGyyr" />
     <phase duration="2.0" state="urruGGrrrurrrrGrrr" />
-    <phase duration="2.0" state="rrrrGGyrrrrrrrGGyr" />
-    <phase duration="1.0" state="urruGGyrrrrrrrGGyr" />
-    <phase duration="1.0" state="urruGGrrrrrrrrGGrr" />
     <phase duration="3.0" state="rrrrGGyrrrrrrrGyyr" />
     <phase duration="2.0" state="rrrrGGrrruurruGrrr" />
     <phase duration="3.0" state="rrrryyyrrrrrrrGyyr" />
@@ -4804,8 +4611,6 @@
     <phase duration="1.0" state="rrrrGGGrrGGrrryrrr" />
     <phase duration="2.0" state="rrrrGGGuuGGrrryrrr" />
     <phase duration="3.0" state="rrrryyyrrGGrrrGrrr" />
-    <phase duration="2.0" state="urrrrrrrrGGurrGrru" />
-    <phase duration="3.0" state="rrrryyyrrGGrrrGrrr" />
     <phase duration="2.0" state="urrrrrrrrGGuurGrrr" />
     <phase duration="3.0" state="rrrrGyyrryyrrrGrrr" />
     <phase duration="2.0" state="urrrGrrrrrrrrrGuuu" />
@@ -4820,9 +4625,6 @@
     <phase duration="2.0" state="rrrrGGyrrGyrrrGrrr" />
     <phase duration="1.0" state="urruGGyrrGyrrrGrrr" />
     <phase duration="1.0" state="urruGGrrrGrrrrGrrr" />
-    <phase duration="2.0" state="rrrrGGyrryyrrrGrrr" />
-    <phase duration="1.0" state="urruGGyrryyrrrGurr" />
-    <phase duration="1.0" state="urruGGrrrrrrrrGurr" />
     <phase duration="1.0" state="rrrrGGyrrGGrrrGrrr" />
     <phase duration="2.0" state="rrrrGGyrrGGrruGrrr" />
     <phase duration="3.0" state="rrrryyyrrGGrrrGrrr" />

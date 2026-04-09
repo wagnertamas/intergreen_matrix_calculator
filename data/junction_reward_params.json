@@ -1,137 +1,137 @@
 {
   "reward_function": "AvgSpeed + Throughput, log-tanh normalization",
   "global": {
-    "MU_SPEED": 0.844641,
-    "STD_SPEED": 0.856633,
-    "MU_THROUGHPUT": 2.833214,
-    "STD_THROUGHPUT": 0.901768
+    "MU_SPEED": 1.173592,
+    "STD_SPEED": 0.461705,
+    "MU_THROUGHPUT": 2.302586,
+    "STD_THROUGHPUT": 1.115039
   },
   "per_junction": {
     "R1C1_C": {
-      "MU_SPEED": 1.052497,
-      "STD_SPEED": 0.704507,
-      "MU_THROUGHPUT": 1.945912,
-      "STD_THROUGHPUT": 0.892557
+      "MU_SPEED": 1.259658,
+      "STD_SPEED": 0.545541,
+      "MU_THROUGHPUT": 1.60944,
+      "STD_THROUGHPUT": 0.928727
     },
     "R1C2_C": {
-      "MU_SPEED": 1.076395,
-      "STD_SPEED": 0.534205,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.727132
+      "MU_SPEED": 1.324778,
+      "STD_SPEED": 0.417412,
+      "MU_THROUGHPUT": 1.945912,
+      "STD_THROUGHPUT": 0.963215
     },
     "R1C3_C": {
-      "MU_SPEED": 1.032852,
-      "STD_SPEED": 0.620334,
-      "MU_THROUGHPUT": 2.639058,
-      "STD_THROUGHPUT": 1.027721
+      "MU_SPEED": 1.243945,
+      "STD_SPEED": 0.416642,
+      "MU_THROUGHPUT": 1.945912,
+      "STD_THROUGHPUT": 1.141999
     },
     "R1C4_C": {
-      "MU_SPEED": 1.125902,
-      "STD_SPEED": 0.628241,
-      "MU_THROUGHPUT": 2.94444,
-      "STD_THROUGHPUT": 1.193147
+      "MU_SPEED": 1.326728,
+      "STD_SPEED": 0.328651,
+      "MU_THROUGHPUT": 2.197226,
+      "STD_THROUGHPUT": 1.072664
     },
     "R1C5_C": {
-      "MU_SPEED": 1.045582,
-      "STD_SPEED": 0.681567,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.862295
+      "MU_SPEED": 1.209918,
+      "STD_SPEED": 0.434003,
+      "MU_THROUGHPUT": 2.197226,
+      "STD_THROUGHPUT": 0.814449
     },
     "R2C1_C": {
-      "MU_SPEED": 0.623195,
-      "STD_SPEED": 0.898085,
-      "MU_THROUGHPUT": 2.56495,
-      "STD_THROUGHPUT": 0.727132
+      "MU_SPEED": 0.837561,
+      "STD_SPEED": 0.692327,
+      "MU_THROUGHPUT": 2.397896,
+      "STD_THROUGHPUT": 0.81445
     },
     "R2C2_C": {
-      "MU_SPEED": 0.259033,
-      "STD_SPEED": 1.411287,
-      "MU_THROUGHPUT": 3.496508,
-      "STD_THROUGHPUT": 0.443203
+      "MU_SPEED": 0.772984,
+      "STD_SPEED": 0.480385,
+      "MU_THROUGHPUT": 2.995733,
+      "STD_THROUGHPUT": 0.608629
     },
     "R2C3_C": {
-      "MU_SPEED": 1.122266,
-      "STD_SPEED": 0.581697,
-      "MU_THROUGHPUT": 2.772589,
-      "STD_THROUGHPUT": 1.08706
+      "MU_SPEED": 1.351663,
+      "STD_SPEED": 0.305328,
+      "MU_THROUGHPUT": 1.945912,
+      "STD_THROUGHPUT": 0.873788
     },
     "R2C4_C": {
-      "MU_SPEED": 0.253961,
-      "STD_SPEED": 0.988362,
-      "MU_THROUGHPUT": 3.806663,
-      "STD_THROUGHPUT": 0.272611
+      "MU_SPEED": 0.766379,
+      "STD_SPEED": 0.429193,
+      "MU_THROUGHPUT": 3.465736,
+      "STD_THROUGHPUT": 0.652649
     },
     "R2C5_C": {
-      "MU_SPEED": 0.673352,
-      "STD_SPEED": 1.082061,
-      "MU_THROUGHPUT": 3.465736,
-      "STD_THROUGHPUT": 0.533118
+      "MU_SPEED": 1.151503,
+      "STD_SPEED": 0.324668,
+      "MU_THROUGHPUT": 2.833214,
+      "STD_THROUGHPUT": 0.873789
     },
     "R3C1_C": {
-      "MU_SPEED": 1.004129,
-      "STD_SPEED": 0.687855,
-      "MU_THROUGHPUT": 2.56495,
-      "STD_THROUGHPUT": 1.027721
-    },
-    "R3C2_C": {
-      "MU_SPEED": 0.858064,
-      "STD_SPEED": 0.863931,
-      "MU_THROUGHPUT": 2.94444,
-      "STD_THROUGHPUT": 1.004185
-    },
-    "R3C3_C": {
-      "MU_SPEED": 0.488128,
-      "STD_SPEED": 0.968666,
-      "MU_THROUGHPUT": 3.258097,
-      "STD_THROUGHPUT": 0.60665
-    },
-    "R3C4_C": {
-      "MU_SPEED": 0.728056,
-      "STD_SPEED": 1.277301,
-      "MU_THROUGHPUT": 2.772589,
-      "STD_THROUGHPUT": 0.972782
-    },
-    "R3C5_C": {
-      "MU_SPEED": 0.93944,
-      "STD_SPEED": 0.846204,
-      "MU_THROUGHPUT": 3.091043,
-      "STD_THROUGHPUT": 0.892558
-    },
-    "R4C1_C": {
-      "MU_SPEED": 0.737825,
-      "STD_SPEED": 0.83839,
-      "MU_THROUGHPUT": 3.135495,
-      "STD_THROUGHPUT": 0.644256
-    },
-    "R4C2_CE": {
-      "MU_SPEED": 0.668311,
-      "STD_SPEED": 0.960518,
-      "MU_THROUGHPUT": 2.833214,
-      "STD_THROUGHPUT": 0.584518
-    },
-    "R4C2_CW": {
-      "MU_SPEED": 0.647109,
-      "STD_SPEED": 0.952845,
-      "MU_THROUGHPUT": 2.833214,
-      "STD_THROUGHPUT": 0.584518
-    },
-    "R4C3_C": {
-      "MU_SPEED": 1.107673,
-      "STD_SPEED": 0.703442,
-      "MU_THROUGHPUT": 2.890372,
-      "STD_THROUGHPUT": 1.142
-    },
-    "R4C4_C": {
-      "MU_SPEED": 1.132626,
-      "STD_SPEED": 0.603879,
-      "MU_THROUGHPUT": 2.079443,
+      "MU_SPEED": 1.222591,
+      "STD_SPEED": 0.444914,
+      "MU_THROUGHPUT": 1.945912,
       "STD_THROUGHPUT": 1.087059
     },
+    "R3C2_C": {
+      "MU_SPEED": 1.251438,
+      "STD_SPEED": 0.507203,
+      "MU_THROUGHPUT": 2.197226,
+      "STD_THROUGHPUT": 1.072664
+    },
+    "R3C3_C": {
+      "MU_SPEED": 0.9075,
+      "STD_SPEED": 0.508629,
+      "MU_THROUGHPUT": 2.772589,
+      "STD_THROUGHPUT": 0.844713
+    },
+    "R3C4_C": {
+      "MU_SPEED": 1.297104,
+      "STD_SPEED": 0.441939,
+      "MU_THROUGHPUT": 1.60944,
+      "STD_THROUGHPUT": 0.814449
+    },
+    "R3C5_C": {
+      "MU_SPEED": 1.219626,
+      "STD_SPEED": 0.303927,
+      "MU_THROUGHPUT": 2.397896,
+      "STD_THROUGHPUT": 0.989695
+    },
+    "R4C1_C": {
+      "MU_SPEED": 1.009075,
+      "STD_SPEED": 0.406942,
+      "MU_THROUGHPUT": 2.772589,
+      "STD_THROUGHPUT": 0.943706
+    },
+    "R4C2_CE": {
+      "MU_SPEED": 1.139121,
+      "STD_SPEED": 0.562349,
+      "MU_THROUGHPUT": 2.397896,
+      "STD_THROUGHPUT": 0.772076
+    },
+    "R4C2_CW": {
+      "MU_SPEED": 1.141868,
+      "STD_SPEED": 0.550507,
+      "MU_THROUGHPUT": 2.397896,
+      "STD_THROUGHPUT": 0.612853
+    },
+    "R4C3_C": {
+      "MU_SPEED": 1.352853,
+      "STD_SPEED": 0.299905,
+      "MU_THROUGHPUT": 2.079443,
+      "STD_THROUGHPUT": 0.928728
+    },
+    "R4C4_C": {
+      "MU_SPEED": 1.34269,
+      "STD_SPEED": 0.384942,
+      "MU_THROUGHPUT": 1.098616,
+      "STD_THROUGHPUT": 0.928727
+    },
     "R4C5_C": {
-      "MU_SPEED": 0.318389,
-      "STD_SPEED": 0.892407,
-      "MU_THROUGHPUT": 3.258097,
-      "STD_THROUGHPUT": 0.313483
+      "MU_SPEED": 0.759457,
+      "STD_SPEED": 0.544219,
+      "MU_THROUGHPUT": 2.94444,
+      "STD_THROUGHPUT": 0.786471
     }
   }
 }

@@ -24,6 +24,7 @@ import sys
 import json
 import random
 import argparse
+import platform
 import numpy as np
 import pandas as pd
 from collections import defaultdict
@@ -56,6 +57,11 @@ GLOBAL_PARAMS = {
 
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "metric_pca_per_junction")
 
+# --- libsumo vs traci ---
+# libsumo: gyorsabb (beágyazott), de egyes rendszereken instabil lehet.
+# Felülírható: USE_LIBSUMO=0 python ... ha traci kellene.
+USE_LIBSUMO = True
+
 # --- Junction comparison plot variáns ---
 # Lehetséges értékek: "plain" | "halt" | "triplet" | "" (üres = auto: legjobb IQR alapján)
 PLOT_REWARD_VARIANT = "plain"
@@ -65,6 +71,7 @@ PLOT_REWARD_VARIANT = "plain"
 # Ha üres → minden junction, globális paraméterekkel.
 REWARD_CURVE_JUNCTION = "R1C1_C"
 
+_TRACI_IS_RUNNING = False
 
 def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use_gui=False):
     """
@@ -80,7 +87,12 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
         True  — sumo-gui (vizuális, socket alapú traci)
     """
 
-    if use_gui:
+    global _TRACI_IS_RUNNING
+    # USE_LIBSUMO config alapján döntünk (macOS-en False, Linuxon True)
+    # env var felülírja: USE_LIBSUMO=0 / USE_LIBSUMO=1
+    _env_override = os.environ.get('USE_LIBSUMO')
+    use_libsumo = (int(_env_override) == 1) if _env_override is not None else USE_LIBSUMO
+    if use_gui or not use_libsumo:
         import traci
         import sumolib
     else:
@@ -147,11 +159,24 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
         "--no-step-log", "true", "--ignore-route-errors", "true",
         "--no-warnings", "true", "--xml-validation", "never", "--random", "true"]
 
-    if use_gui:
-        sumo_bin = "sumo-gui"
+    if use_gui or not use_libsumo:
+        sumo_bin = "sumo-gui" if use_gui else "sumo"
+        if _TRACI_IS_RUNNING:
+            try: traci.close()
+            except: pass
         traci.start([sumo_bin] + sumo_args)
+        _TRACI_IS_RUNNING = True
     else:
-        traci.load(sumo_args)
+        sumo_bin = "sumo"
+        if not _TRACI_IS_RUNNING:
+            traci.start([sumo_bin] + sumo_args)
+            _TRACI_IS_RUNNING = True
+        else:
+            try:
+                traci.load(sumo_args)
+            except Exception:
+                traci.start([sumo_bin] + sumo_args)
+            _TRACI_IS_RUNNING = True
 
     # --- Junction → bejövő lane-ek és detektorok ---
     junction_lanes = {}
@@ -179,7 +204,7 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
     metrics = {jid: [] for jid in junction_ids}
 
     # --- Warmup ---
-    for _ in range(WARMUP):
+    for step in range(WARMUP):
         traci.simulationStep()
 
     # --- Jelzőlámpa vezérlők inicializálása (random módhoz) ---
@@ -481,7 +506,11 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
         if (step_i + 1) % 50 == 0:
             print(f"    Step {step_i+1}/{total_steps} [{control_mode}]")
 
-    traci.close()
+    if use_gui or not use_libsumo:
+        try:
+            traci.close()
+        except:
+            pass
 
     if os.path.exists(route_file):
         os.remove(route_file)

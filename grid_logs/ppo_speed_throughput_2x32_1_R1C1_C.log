@@ -1,15 +1,15 @@
 wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /Users/wagnertamas/.netrc.
 wandb: Currently logged in as: wagnertamas (wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
-wandb: setting up run f359vbyc
+wandb: setting up run 4t8l6400
 wandb: Tracking run with wandb version 0.25.1
-wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260408_232746-f359vbyc
+wandb: Run data is saved locally in /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/wandb/run-20260409_114631-4t8l6400
 wandb: Run `wandb offline` to turn off syncing.
 wandb: Syncing run ppo_speed_throughput_2x32_1_R1C1_C
 wandb: ⭐️ View project at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2
-wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/f359vbyc
+wandb: 🚀 View run at https://wandb.ai/wagnertamas-budapesti-m-szaki-s-gazdas-gtudom-nyi-egyetem/sumo-rl-stat-2/runs/4t8l6400
 [INFO] Config: training_config.yaml
 [INFO] Net: /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/mega_catalogue_v2.net.xml
-[INFO] Timesteps: 100000 | Project: sumo-rl-stat-2
+[INFO] Timesteps: 150000 | Project: sumo-rl-stat-2
 [INFO] Junction: R1C1_C
 [INFO] Algorithm: ppo | Reward: speed_throughput
 [INFO] Load model: None (fresh)
@@ -24,9 +24,9 @@ WandB config applied (Sweep compatible).
 Starting SUMO...
 [INFO] Episode duration: 2700s (45 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.217
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 6.2728
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 4.2170s
+Generating focused traffic: Period 6.2728s
  Retrying in 1 seconds
 [INFO] Network mapped: 1 agents, 3 detectors, 3 lanes
 [INFO] Subscriptions active: 6 (traci, fast mode)
@@ -36,26 +36,24 @@ Agents discovered: ['R1C1_C']
 [INFO] RL device: mps
 [INFO] On-policy training: ppo → R1C1_C
 [INFO] Env reset az observation/action space inicializálásához...
-[INFO] Episode duration: 1800s (30 min)
+[INFO] Episode duration: 2700s (45 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 4.6604
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.3824
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 4.6604s
+Generating focused traffic: Period 5.3824s
 [INFO] Subscriptions active: 6 (traci, fast mode)
 [INFO] Aktuált warmup: 200 lépés (round-robin)...
 [INFO] Warmup kész, forgalom stabilizálva.
 Using mps device
 Wrapping the env with a `Monitor` wrapper
 Wrapping the env in a DummyVecEnv.
-Starting on-policy training: 100000 timesteps...
-[INFO] Episode duration: 600s (10 min)
+Starting on-policy training: 150000 timesteps...
+[INFO] Episode duration: 300s (5 min)
 
-[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 5.4501
+[DEBUG] 🎯 Célzott Forgalom Generálása (R1C1_C) | Period: 7.5865
 Found 6 valid OD pairs for R1C1_C
-Generating focused traffic: Period 5.4501s
+Generating focused traffic: Period 7.5865s
 [INFO] Subscriptions active: 6 (traci, fast mode)
 [INFO] Aktuált warmup: 200 lépés (round-robin)...
 [INFO] Warmup kész, forgalom stabilizálva.
-Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat-2/R1C1_C/PPO_78
-Interrupt signal received, trying to exit gracefully.
-Another interrupt signal received, hard exit.
+Logging to /Users/wagnertamas/Documents/Munka/cikkek/AI_agens_konyvtar/support/intergreen_matrix_calculator/data/runs/sumo-rl-stat-2/R1C1_C/PPO_112
