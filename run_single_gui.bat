@@ -12,7 +12,8 @@ set USE_LIBSUMO=0
 REM --- Alapertelemezesek (itt atirhatod, ha mast akarsz tesztelni) ---
 set JUNCTION=R1C1_C
 set ALGO=qrdqn
-set REWARD=speed_throughput
+set REWARD=wait_haltratio
+rem  Lehet: speed_throughput, halt_ratio, co2_speedstd, wait_triplet_tpstdhalt, wait_haltratio
 set TIMESTEPS=50000
 
 echo ============================================================

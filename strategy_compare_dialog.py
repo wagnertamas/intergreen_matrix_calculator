@@ -43,6 +43,7 @@ class StrategyCompareDialog:
         self._running = False
         self._model   = None
         self._model_name = ""
+        self._last_strategy_order = []
 
         self._build_ui()
 
@@ -87,11 +88,25 @@ class StrategyCompareDialog:
         self.gui_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(param_row, text="SUMO-GUI", variable=self.gui_var).pack(side=tk.LEFT, padx=4)
 
+        # Vezérlési módok
+        mode_row = ttk.Frame(ctrl)
+        mode_row.pack(fill=tk.X, pady=2)
+        ttk.Label(mode_row, text="Vezérlési módok:").pack(side=tk.LEFT)
+        self.var_mode_fixed = tk.BooleanVar(value=True)
+        self.var_mode_actuated = tk.BooleanVar(value=True)
+        self.var_mode_nn = tk.BooleanVar(value=True)
+        ttk.Checkbutton(mode_row, text="Fixed", variable=self.var_mode_fixed,
+                command=self._update_run_button_state).pack(side=tk.LEFT, padx=6)
+        ttk.Checkbutton(mode_row, text="Actuated", variable=self.var_mode_actuated,
+                command=self._update_run_button_state).pack(side=tk.LEFT, padx=2)
+        ttk.Checkbutton(mode_row, text="NN model", variable=self.var_mode_nn,
+                command=self._update_run_button_state).pack(side=tk.LEFT, padx=2)
+
         # Gombsor
         btn_row = ttk.Frame(ctrl)
         btn_row.pack(fill=tk.X, pady=2)
         self.run_btn = ttk.Button(btn_row, text="▶  Összehasonlítás indítása",
-                                  command=self._start, state=tk.DISABLED)
+                      command=self._start, state=tk.NORMAL)
         self.run_btn.pack(side=tk.LEFT)
         self.stop_btn = ttk.Button(btn_row, text="⏹  Leállítás",
                                    command=self._stop, state=tk.DISABLED)
@@ -121,7 +136,37 @@ class StrategyCompareDialog:
         self.canvas = FigureCanvasTkAgg(self.fig, master=res_frame)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
+        # Fundamentális diagram tab
+        fd_frame = ttk.Frame(nb)
+        nb.add(fd_frame, text="Fundamentális")
+        self.fd_fig = Figure(figsize=(8.5, 4.5), dpi=100)
+        self.fd_canvas = FigureCanvasTkAgg(self.fd_fig, master=fd_frame)
+        self.fd_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
         self.nb = nb   # megőrizzük a tab-váltáshoz
+        self._update_run_button_state()
+
+    def _get_selected_modes(self):
+        modes = []
+        if self.var_mode_fixed.get():
+            modes.append("fixed")
+        if self.var_mode_actuated.get():
+            modes.append("actuated")
+        if self.var_mode_nn.get():
+            modes.append("nn")
+        return modes
+
+    def _update_run_button_state(self):
+        if self._running:
+            self.run_btn.config(state=tk.DISABLED)
+            return
+        modes = self._get_selected_modes()
+        runnable = False
+        if "fixed" in modes or "actuated" in modes:
+            runnable = True
+        if "nn" in modes and self._model is not None:
+            runnable = True
+        self.run_btn.config(state=(tk.NORMAL if runnable else tk.DISABLED))
 
     # ─────────────────────────────────────────────────────────────────────────
     # ZIP TALLÓZÁS & BETÖLTÉS
@@ -156,13 +201,14 @@ class StrategyCompareDialog:
 
     def _on_model_loaded(self, name):
         self.model_lbl.config(text=f"✓ {name[:28]}", foreground="#1a7a1a")
-        self.run_btn.config(state=tk.NORMAL)
         self.load_btn.config(state=tk.NORMAL)
+        self._update_run_button_state()
         self._log(f"✓ Modell betöltve: {name}")
 
     def _on_model_error(self, msg):
         self.model_lbl.config(text="✗ Hiba", foreground="#cc0000")
         self.load_btn.config(state=tk.NORMAL)
+        self._update_run_button_state()
         self._log(f"✗ Betöltési hiba: {msg}")
         messagebox.showerror("Betöltési hiba", msg, parent=self.top)
 
@@ -180,13 +226,24 @@ class StrategyCompareDialog:
             messagebox.showerror("Hiba", str(e), parent=self.top)
             return
 
+        selected_modes = self._get_selected_modes()
+        if not selected_modes:
+            messagebox.showerror("Hiba", "Válassz legalább egy vezérlési módot.", parent=self.top)
+            return
+        if "nn" in selected_modes and self._model is None:
+            messagebox.showerror("Hiba", "Az NN módhoz tölts be modellt, vagy vedd ki az NN pipát.", parent=self.top)
+            return
+
+        label_map = {"fixed": "fixed", "actuated": "actuated", "nn": self._model_name}
+        self._last_strategy_order = [label_map[m] for m in selected_modes if label_map.get(m)]
+
         self._running = True
         self.run_btn.config(state=tk.DISABLED)
         self.stop_btn.config(state=tk.NORMAL)
         self.save_btn.config(state=tk.DISABLED)
         self._log("─" * 60)
         self._log(f"Futtatás: flow={flows}, ep/szint={self.ep_var.get()}, "
-                  f"idő={self.dur_var.get()}s" +
+                  f"idő={self.dur_var.get()}s, módok={selected_modes}" +
                   ("  [SUMO-GUI]" if self.gui_var.get() else ""))
 
         params = {
@@ -195,6 +252,7 @@ class StrategyCompareDialog:
             "duration": self.dur_var.get(),
             "model":    self._model,
             "name":     self._model_name,
+            "modes":    selected_modes,
             "use_gui":  self.gui_var.get(),
         }
         threading.Thread(target=self._run_thread, args=(params,), daemon=True).start()
@@ -211,6 +269,7 @@ class StrategyCompareDialog:
                 duration   = params["duration"],
                 model      = params["model"],
                 model_name = params["name"],
+                selected_modes = params.get("modes"),
                 use_gui    = params.get("use_gui", False),
                 log_fn     = lambda msg: self.top.after(0, self._log, msg),
                 stop_fn    = lambda: not self._running,
@@ -225,8 +284,8 @@ class StrategyCompareDialog:
 
     def _on_done(self):
         self._running = False
-        self.run_btn.config(state=tk.NORMAL)
         self.stop_btn.config(state=tk.DISABLED)
+        self._update_run_button_state()
 
     # ─────────────────────────────────────────────────────────────────────────
     # EREDMÉNYEK MEGJELENÍTÉSE
@@ -241,9 +300,12 @@ class StrategyCompareDialog:
 
         self.fig.clear()
 
-        strategies = ["fixed", "actuated"]
-        if self._model_name:
-            strategies.append(self._model_name)
+        if self._last_strategy_order:
+            strategies = [s for s in self._last_strategy_order if s in set(df["strategy"].unique())]
+        else:
+            strategies = ["fixed", "actuated"]
+            if self._model_name and self._model_name in set(df["strategy"].unique()):
+                strategies.append(self._model_name)
 
         colors = {"fixed": "#4A90D9", "actuated": "#27AE60",
                   self._model_name: "#E67E22"}
@@ -255,10 +317,11 @@ class StrategyCompareDialog:
             ("total_co2_g", "Össz. CO2 [g]",             False),
         ]
 
-        axes = self.fig.subplots(1, 4)
-        self.fig.suptitle("Stratégia-összehasonlítás — R1C1_C", fontsize=11)
+        axes = self.fig.subplots(2, 4)
+        self.fig.suptitle("Stratégia-összehasonlítás — R1C1_C (aggregált + flow-szint)", fontsize=11)
 
-        for ax, (col, ylabel, higher_better) in zip(axes, metrics):
+        for idx, (col, ylabel, higher_better) in enumerate(metrics):
+            ax = axes[0][idx]
             x = np.arange(len(strategies))
             vals  = [df[df["strategy"] == s][col].mean()           for s in strategies]
             errs  = [float(np.nan_to_num(df[df["strategy"] == s][col].std(ddof=0))) if len(df[df["strategy"]==s]) > 1 else 0
@@ -277,12 +340,35 @@ class StrategyCompareDialog:
             ax.set_xticklabels(short_labels, rotation=25, ha="right", fontsize=8)
             ax.set_ylabel(ylabel, fontsize=8)
             arrow = "↑ jobb" if higher_better else "↓ jobb"
-            ax.set_title(f"{col}  ({arrow})", fontsize=9)
+            ax.set_title(f"Aggregált: {col}  ({arrow})", fontsize=9)
             ax.grid(axis="y", lw=0.5, alpha=0.45)
+
+            ax_f = axes[1][idx]
+            flow_stats = df.groupby(["flow", "strategy"])[col].mean().reset_index()
+            for s in strategies:
+                sub = flow_stats[flow_stats["strategy"] == s].sort_values("flow")
+                if sub.empty:
+                    continue
+                ax_f.plot(sub["flow"].values,
+                          sub[col].values,
+                          marker="o",
+                          linewidth=1.8,
+                          markersize=4,
+                          color=colors.get(s, "#999"),
+                          label=s)
+            ax_f.set_xlabel("Flow [veh/h]", fontsize=8)
+            ax_f.set_ylabel(ylabel, fontsize=8)
+            ax_f.set_title(f"Flow-szint: {col}", fontsize=9)
+            ax_f.grid(axis="both", lw=0.5, alpha=0.35)
+            if idx == 0:
+                ax_f.legend(fontsize=7, frameon=True)
 
         self.fig.tight_layout(rect=[0, 0, 1, 0.95])
         self.canvas.draw()
         self.save_btn.config(state=tk.NORMAL)
+
+        # 3. fül: fundamentális (proxy) diagramok
+        self._show_fundamental_diagrams(df, strategies, colors)
 
         # Napló: összesítő táblázat
         self._log("\n── Összesítő (átlag) ──")
@@ -295,8 +381,97 @@ class StrategyCompareDialog:
                       f"tp={sub['throughput'].mean():.0f}  "
                       f"halt={sub['halt_ratio'].mean():.3f}")
 
+        self._log("\n── Flow-szintű átlagok ──")
+        for fl in sorted(df["flow"].unique()):
+            self._log(f"  Flow={int(fl)}")
+            for s in strategies:
+                sub = df[(df["strategy"] == s) & (df["flow"] == fl)]
+                if sub.empty:
+                    continue
+                self._log(f"    {s:<31s} spd={sub['avg_speed'].mean():.2f}  "
+                          f"tp={sub['throughput'].mean():.0f}  halt={sub['halt_ratio'].mean():.3f}")
+
         # Ugrik az Eredmények tabra
         self.nb.select(1)
+
+    def _show_fundamental_diagrams(self, df, strategies, colors):
+        """Fundamentális (proxy) diagramok kirajzolása.
+
+        Klasszikus alakok occupancy-proxy sűrűséggel:
+          - D*-V
+          - Q-D*
+          - Q-V
+
+        D* = átlagos detektor occupancy (vagy fallback: halt_ratio),
+        Q = throughput [veh/h] (epizódidőre normalizálva).
+        """
+        self.fd_fig.clear()
+        axes = self.fd_fig.subplots(1, 3)
+        self.fd_fig.suptitle("Fundamentális diagramok (proxy) — R1C1_C", fontsize=11)
+
+        df = df.copy()
+        if "avg_occupancy" in df.columns and not np.all(np.isnan(df["avg_occupancy"].values)):
+            df["density_proxy"] = df["avg_occupancy"].clip(0, 1)
+            density_label = "D* [occupancy]"
+        else:
+            df["density_proxy"] = df["halt_ratio"].clip(0, 1)
+            density_label = "D* [halt_ratio proxy]"
+
+        dur = float(df["duration_s"].iloc[0]) if "duration_s" in df.columns and len(df) > 0 else 1.0
+        dur = max(dur, 1.0)
+        df["q_vehph"] = df["throughput"] * (3600.0 / dur)
+
+        # 1) D*-V
+        ax = axes[0]
+        for s in strategies:
+            sub = df[df["strategy"] == s]
+            if sub.empty:
+                continue
+            ax.scatter(sub["density_proxy"], sub["avg_speed"], s=24,
+                       alpha=0.72, color=colors.get(s, "#888"), label=s)
+            g = sub.groupby("flow", as_index=False)[["density_proxy", "avg_speed"]].mean().sort_values("flow")
+            ax.plot(g["density_proxy"], g["avg_speed"], marker="o", linewidth=1.5,
+                    markersize=4, color=colors.get(s, "#888"))
+        ax.set_xlabel(density_label, fontsize=8)
+        ax.set_ylabel("V [m/s]", fontsize=8)
+        ax.set_title("D*-V", fontsize=9)
+        ax.grid(alpha=0.35, lw=0.5)
+        ax.legend(fontsize=7, frameon=True)
+
+        # 2) Q-D*
+        ax = axes[1]
+        for s in strategies:
+            sub = df[df["strategy"] == s]
+            if sub.empty:
+                continue
+            ax.scatter(sub["density_proxy"], sub["q_vehph"], s=24,
+                       alpha=0.72, color=colors.get(s, "#888"))
+            g = sub.groupby("flow", as_index=False)[["density_proxy", "q_vehph"]].mean().sort_values("flow")
+            ax.plot(g["density_proxy"], g["q_vehph"], marker="o", linewidth=1.5,
+                    markersize=4, color=colors.get(s, "#888"))
+        ax.set_xlabel(density_label, fontsize=8)
+        ax.set_ylabel("Q [veh/h]", fontsize=8)
+        ax.set_title("Q-D*", fontsize=9)
+        ax.grid(alpha=0.35, lw=0.5)
+
+        # 3) Q-V
+        ax = axes[2]
+        for s in strategies:
+            sub = df[df["strategy"] == s]
+            if sub.empty:
+                continue
+            ax.scatter(sub["avg_speed"], sub["q_vehph"], s=24,
+                       alpha=0.72, color=colors.get(s, "#888"))
+            g = sub.groupby("flow", as_index=False)[["avg_speed", "q_vehph"]].mean().sort_values("flow")
+            ax.plot(g["avg_speed"], g["q_vehph"], marker="o", linewidth=1.5,
+                    markersize=4, color=colors.get(s, "#888"))
+        ax.set_xlabel("V [m/s]", fontsize=8)
+        ax.set_ylabel("Q [veh/h]", fontsize=8)
+        ax.set_title("Q-V", fontsize=9)
+        ax.grid(alpha=0.35, lw=0.5)
+
+        self.fd_fig.tight_layout(rect=[0, 0, 1, 0.95])
+        self.fd_canvas.draw()
 
     def _save_figure(self):
         path = filedialog.asksaveasfilename(
@@ -355,6 +530,7 @@ def _load_sb3_zip(path: str):
 # ÖSSZEHASONLÍTÁS FUTTATÁSA (a compare_strategies.py logikájával)
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_comparison(flows, episodes, duration, model, model_name,
+                    selected_modes=None,
                     use_gui=False, log_fn=print, stop_fn=lambda: False):
     """
     Lefuttatja a három stratégiát és visszaadja a rekordok listáját.
@@ -365,6 +541,7 @@ def _run_comparison(flows, episodes, duration, model, model_name,
         _import_sumo, _start_sumo, _stop_sumo,
         generate_route_file, cleanup_route_files,
         _setup_actuated, _LightAgent, TARGET_JID, LOGIC_FILE,
+        _build_obs_batch_for_model,
         WARMUP, DELTA_TIME,
     )
     import random, time
@@ -385,9 +562,18 @@ def _run_comparison(flows, episodes, duration, model, model_name,
             cs.sumolib = _sumolib
 
         records = []
-        strategies = [("fixed", None), ("actuated", None)]
-        if model is not None:
+        selected_modes = selected_modes or ["fixed", "actuated", "nn"]
+        strategies = []
+        if "fixed" in selected_modes:
+            strategies.append(("fixed", None))
+        if "actuated" in selected_modes:
+            strategies.append(("actuated", None))
+        if "nn" in selected_modes and model is not None:
             strategies.append(("nn", model))
+
+        if not strategies:
+            log_fn("[INFO] Nincs futtatható stratégia kiválasztva.")
+            return records
 
         total = len(flows) * episodes * len(strategies)
         done  = 0
@@ -415,10 +601,15 @@ def _run_comparison(flows, episodes, duration, model, model_name,
                             "strategy":    label,
                             "flow":        flow,
                             "episode":     ep,
+                            "duration_s":  duration,
                             "avg_speed":   result["avg_speed"],
                             "throughput":  result["throughput"],
                             "halt_ratio":  result["halt_ratio"],
+                            "avg_occupancy": result.get("avg_occupancy", np.nan),
                             "total_co2_g": result.get("total_co2_g", 0.0),
+                            "agent_id":    result.get("agent_id", TARGET_JID),
+                            "total_decisions": result.get("total_decisions", 0),
+                            "action_counts": result.get("action_counts", {}),
                         }
                         records.append(rec)
                         done += 1
@@ -428,6 +619,13 @@ def _run_comparison(flows, episodes, duration, model, model_name,
                                f"halt={result['halt_ratio']:.3f}  "
                                f"co2={result.get('total_co2_g', 0):.0f}g  "
                                f"({elapsed:.0f}s)")
+                        if result.get("action_counts"):
+                            total_decisions = max(int(result.get("total_decisions", 0)), 1)
+                            dist = ", ".join(
+                                f"a{int(a)}={int(c)} ({100.0 * int(c) / total_decisions:.0f}%)"
+                                for a, c in sorted(result["action_counts"].items(), key=lambda kv: int(kv[0]))
+                            )
+                            log_fn(f"         ↳ Akció-eloszlás [{result.get('agent_id', TARGET_JID)}]: {dist}")
                     except Exception as e:
                         done += 1
                         import traceback
@@ -443,7 +641,8 @@ def _run_comparison(flows, episodes, duration, model, model_name,
 def _run_episode(strategy, route_file, model, duration, log_fn, use_gui=False):
     """Egy epizód futtatása. use_gui=True esetén sumo-gui-val indul (--start --quit-on-end)."""
     from compare_strategies import (
-        _import_sumo, _stop_sumo, _setup_actuated, _LightAgent,
+        _import_sumo, _stop_sumo, _LightAgent, _CurveActuatedController,
+        _build_obs_batch_for_model,
         TARGET_JID, LOGIC_FILE, NET_FILE, DETECTOR_FILE, WARMUP, DELTA_TIME,
     )
     import compare_strategies as cs
@@ -486,21 +685,23 @@ def _run_episode(strategy, route_file, model, duration, log_fn, use_gui=False):
 
     agent = _LightAgent(jid, ldata[jid], dets)
 
+    actuated_ctrl = None
     if strategy == "actuated":
-        _setup_actuated(jid)
+        actuated_ctrl = _CurveActuatedController(jid, ldata[jid], dets)
 
     # Warmup
     for _ in range(WARMUP):
         traci.simulationStep()
 
     total_steps = (duration - WARMUP) // DELTA_TIME
-    _model_keys = (set(model.policy.observation_space.spaces.keys())
-                   if strategy == "nn" and model is not None else set())
-
     agent._reset_episode()   # Epizód metrikák egyszer, itt
+    action_counts = {}
 
     for _ in range(total_steps):
         agent._reset_obs()   # Obs akkumulátorok minden delta_time ablak elején
+
+        if strategy == "actuated" and actuated_ctrl is not None:
+            actuated_ctrl.step()
 
         for _ in range(DELTA_TIME):
             if strategy == "nn":
@@ -511,9 +712,16 @@ def _run_episode(strategy, route_file, model, duration, log_fn, use_gui=False):
         # Ablak lefutott → obs akkumulált átlagokból (= edzéskori megfigyelés)
         if strategy == "nn" and agent.is_ready() and model is not None:
             obs = agent.get_obs()
-            obs_f = {k: v for k, v in obs.items() if k in _model_keys}
-            obs_b = {k: v.reshape(1, *v.shape) for k, v in obs_f.items()}
+            obs_b = _build_obs_batch_for_model(model, obs)
             action, _ = model.predict(obs_b, deterministic=True)
-            agent.set_target(int(action[0]))
+            action_int = int(action[0])
+            action_counts[action_int] = action_counts.get(action_int, 0) + 1
+            agent.set_target(action_int)
 
-    return agent.metrics()
+    result = agent.metrics()
+    if strategy == "nn":
+        total_decisions = int(sum(action_counts.values()))
+        result["agent_id"] = jid
+        result["total_decisions"] = total_decisions
+        result["action_counts"] = dict(sorted(action_counts.items()))
+    return result

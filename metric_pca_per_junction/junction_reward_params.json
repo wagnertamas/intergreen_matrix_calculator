@@ -1,137 +1,269 @@
 {
-  "reward_function": "AvgSpeed + Throughput, log-tanh normalization",
+  "reward_function": "multi-mode log-tanh normalization",
   "global": {
-    "MU_SPEED": 1.173592,
-    "STD_SPEED": 0.461705,
-    "MU_THROUGHPUT": 2.302586,
-    "STD_THROUGHPUT": 1.115039
+    "MU_SPEED": 0.488808,
+    "STD_SPEED": 0.897665,
+    "MU_THROUGHPUT": 3.135495,
+    "STD_THROUGHPUT": 0.561706,
+    "MU_WAIT": 8.245673,
+    "STD_WAIT": 1.185764,
+    "MU_SPEEDSTD": 0.805686,
+    "STD_SPEEDSTD": 0.733736,
+    "MU_HALT": -0.119948,
+    "STD_HALT": 0.158622
   },
   "per_junction": {
     "R1C1_C": {
-      "MU_SPEED": 1.259658,
-      "STD_SPEED": 0.545541,
-      "MU_THROUGHPUT": 1.60944,
-      "STD_THROUGHPUT": 0.928727
+      "MU_SPEED": 0.55801,
+      "STD_SPEED": 0.504689,
+      "MU_THROUGHPUT": 2.302586,
+      "STD_THROUGHPUT": 0.1,
+      "MU_WAIT": 7.107589,
+      "STD_WAIT": 1.418823,
+      "MU_SPEEDSTD": 0.824398,
+      "STD_SPEEDSTD": 0.568606,
+      "MU_HALT": -0.119252,
+      "STD_HALT": 0.194051
     },
     "R1C2_C": {
-      "MU_SPEED": 1.324778,
-      "STD_SPEED": 0.417412,
-      "MU_THROUGHPUT": 1.945912,
-      "STD_THROUGHPUT": 0.963215
+      "MU_SPEED": 0.822019,
+      "STD_SPEED": 0.44063,
+      "MU_THROUGHPUT": 2.708051,
+      "STD_THROUGHPUT": 0.143936,
+      "MU_WAIT": 7.706613,
+      "STD_WAIT": 1.034724,
+      "MU_SPEEDSTD": 1.020711,
+      "STD_SPEEDSTD": 0.533767,
+      "MU_HALT": -0.130759,
+      "STD_HALT": 0.160727
     },
     "R1C3_C": {
-      "MU_SPEED": 1.243945,
-      "STD_SPEED": 0.416642,
-      "MU_THROUGHPUT": 1.945912,
-      "STD_THROUGHPUT": 1.141999
+      "MU_SPEED": 1.42996,
+      "STD_SPEED": 0.396952,
+      "MU_THROUGHPUT": 2.197226,
+      "STD_THROUGHPUT": 0.458921,
+      "MU_WAIT": 6.571443,
+      "STD_WAIT": 1.353769,
+      "MU_SPEEDSTD": 1.347946,
+      "STD_SPEEDSTD": 0.479187,
+      "MU_HALT": -0.467792,
+      "STD_HALT": 0.235409
     },
     "R1C4_C": {
-      "MU_SPEED": 1.326728,
-      "STD_SPEED": 0.328651,
-      "MU_THROUGHPUT": 2.197226,
-      "STD_THROUGHPUT": 1.072664
+      "MU_SPEED": 1.251387,
+      "STD_SPEED": 0.36473,
+      "MU_THROUGHPUT": 2.94444,
+      "STD_THROUGHPUT": 0.224094,
+      "MU_WAIT": 7.564238,
+      "STD_WAIT": 1.479437,
+      "MU_SPEEDSTD": 1.344833,
+      "STD_SPEEDSTD": 0.465252,
+      "MU_HALT": -0.235107,
+      "STD_HALT": 0.214259
     },
     "R1C5_C": {
-      "MU_SPEED": 1.209918,
-      "STD_SPEED": 0.434003,
-      "MU_THROUGHPUT": 2.197226,
-      "STD_THROUGHPUT": 0.814449
+      "MU_SPEED": 1.027752,
+      "STD_SPEED": 0.569563,
+      "MU_THROUGHPUT": 2.56495,
+      "STD_THROUGHPUT": 0.322721,
+      "MU_WAIT": 7.59589,
+      "STD_WAIT": 0.957191,
+      "MU_SPEEDSTD": 1.06436,
+      "STD_SPEEDSTD": 0.614827,
+      "MU_HALT": -0.194144,
+      "STD_HALT": 0.146936
     },
     "R2C1_C": {
-      "MU_SPEED": 0.837561,
-      "STD_SPEED": 0.692327,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.81445
+      "MU_SPEED": 0.197468,
+      "STD_SPEED": 0.675924,
+      "MU_THROUGHPUT": 2.708051,
+      "STD_THROUGHPUT": 0.1,
+      "MU_WAIT": 7.978928,
+      "STD_WAIT": 0.918614,
+      "MU_SPEEDSTD": 0.676176,
+      "STD_SPEEDSTD": 0.79968,
+      "MU_HALT": -0.074097,
+      "STD_HALT": 0.150427
     },
     "R2C2_C": {
-      "MU_SPEED": 0.772984,
-      "STD_SPEED": 0.480385,
-      "MU_THROUGHPUT": 2.995733,
-      "STD_THROUGHPUT": 0.608629
+      "MU_SPEED": 0.124337,
+      "STD_SPEED": 0.682103,
+      "MU_THROUGHPUT": 3.465736,
+      "STD_THROUGHPUT": 0.135163,
+      "MU_WAIT": 8.807322,
+      "STD_WAIT": 0.580128,
+      "MU_SPEEDSTD": 0.712359,
+      "STD_SPEEDSTD": 0.677322,
+      "MU_HALT": -0.067458,
+      "STD_HALT": 0.1
     },
     "R2C3_C": {
-      "MU_SPEED": 1.351663,
-      "STD_SPEED": 0.305328,
-      "MU_THROUGHPUT": 1.945912,
-      "STD_THROUGHPUT": 0.873788
+      "MU_SPEED": 0.883824,
+      "STD_SPEED": 0.614065,
+      "MU_THROUGHPUT": 3.135495,
+      "STD_THROUGHPUT": 0.264419,
+      "MU_WAIT": 8.187244,
+      "STD_WAIT": 1.045693,
+      "MU_SPEEDSTD": 1.040922,
+      "STD_SPEEDSTD": 0.637742,
+      "MU_HALT": -0.137974,
+      "STD_HALT": 0.135567
     },
     "R2C4_C": {
-      "MU_SPEED": 0.766379,
-      "STD_SPEED": 0.429193,
-      "MU_THROUGHPUT": 3.465736,
-      "STD_THROUGHPUT": 0.652649
+      "MU_SPEED": -0.19687,
+      "STD_SPEED": 0.571399,
+      "MU_THROUGHPUT": 3.931826,
+      "STD_THROUGHPUT": 0.1,
+      "MU_WAIT": 9.287672,
+      "STD_WAIT": 0.57378,
+      "MU_SPEEDSTD": 0.570431,
+      "STD_SPEEDSTD": 0.58898,
+      "MU_HALT": -0.063615,
+      "STD_HALT": 0.1
     },
     "R2C5_C": {
-      "MU_SPEED": 1.151503,
-      "STD_SPEED": 0.324668,
-      "MU_THROUGHPUT": 2.833214,
-      "STD_THROUGHPUT": 0.873789
+      "MU_SPEED": 0.707886,
+      "STD_SPEED": 0.589106,
+      "MU_THROUGHPUT": 3.367296,
+      "STD_THROUGHPUT": 0.281333,
+      "MU_WAIT": 9.101463,
+      "STD_WAIT": 0.838131,
+      "MU_SPEEDSTD": 1.081201,
+      "STD_SPEEDSTD": 0.549268,
+      "MU_HALT": -0.092883,
+      "STD_HALT": 0.106828
     },
     "R3C1_C": {
-      "MU_SPEED": 1.222591,
-      "STD_SPEED": 0.444914,
-      "MU_THROUGHPUT": 1.945912,
-      "STD_THROUGHPUT": 1.087059
+      "MU_SPEED": -1.360489,
+      "STD_SPEED": 1.850055,
+      "MU_THROUGHPUT": 3.401198,
+      "STD_THROUGHPUT": 0.1,
+      "MU_WAIT": 8.729397,
+      "STD_WAIT": 0.793172,
+      "MU_SPEEDSTD": -0.982368,
+      "STD_SPEEDSTD": 1.586943,
+      "MU_HALT": -0.035081,
+      "STD_HALT": 0.1
     },
     "R3C2_C": {
-      "MU_SPEED": 1.251438,
-      "STD_SPEED": 0.507203,
-      "MU_THROUGHPUT": 2.197226,
-      "STD_THROUGHPUT": 1.072664
+      "MU_SPEED": -0.613085,
+      "STD_SPEED": 1.659477,
+      "MU_THROUGHPUT": 3.663562,
+      "STD_THROUGHPUT": 0.120483,
+      "MU_WAIT": 8.687273,
+      "STD_WAIT": 1.132417,
+      "MU_SPEEDSTD": -0.213788,
+      "STD_SPEEDSTD": 1.489016,
+      "MU_HALT": -0.066352,
+      "STD_HALT": 0.153045
     },
     "R3C3_C": {
-      "MU_SPEED": 0.9075,
-      "STD_SPEED": 0.508629,
-      "MU_THROUGHPUT": 2.772589,
-      "STD_THROUGHPUT": 0.844713
+      "MU_SPEED": -0.683861,
+      "STD_SPEED": 1.54866,
+      "MU_THROUGHPUT": 3.663562,
+      "STD_THROUGHPUT": 0.120483,
+      "MU_WAIT": 8.836447,
+      "STD_WAIT": 0.783491,
+      "MU_SPEEDSTD": -0.209368,
+      "STD_SPEEDSTD": 1.439121,
+      "MU_HALT": -0.067322,
+      "STD_HALT": 0.122561
     },
     "R3C4_C": {
-      "MU_SPEED": 1.297104,
-      "STD_SPEED": 0.441939,
-      "MU_THROUGHPUT": 1.60944,
-      "STD_THROUGHPUT": 0.814449
+      "MU_SPEED": -0.170238,
+      "STD_SPEED": 0.531254,
+      "MU_THROUGHPUT": 3.218876,
+      "STD_THROUGHPUT": 0.151823,
+      "MU_WAIT": 8.220511,
+      "STD_WAIT": 1.19198,
+      "MU_SPEEDSTD": 0.4574,
+      "STD_SPEEDSTD": 0.340525,
+      "MU_HALT": -0.089069,
+      "STD_HALT": 0.16229
     },
     "R3C5_C": {
-      "MU_SPEED": 1.219626,
-      "STD_SPEED": 0.303927,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.989695
+      "MU_SPEED": 0.117635,
+      "STD_SPEED": 0.450346,
+      "MU_THROUGHPUT": 3.433988,
+      "STD_THROUGHPUT": 0.1,
+      "MU_WAIT": 8.682131,
+      "STD_WAIT": 1.086978,
+      "MU_SPEEDSTD": 0.71768,
+      "STD_SPEEDSTD": 0.42237,
+      "MU_HALT": -0.090586,
+      "STD_HALT": 0.155422
     },
     "R4C1_C": {
-      "MU_SPEED": 1.009075,
-      "STD_SPEED": 0.406942,
-      "MU_THROUGHPUT": 2.772589,
-      "STD_THROUGHPUT": 0.943706
+      "MU_SPEED": -0.20811,
+      "STD_SPEED": 1.330631,
+      "MU_THROUGHPUT": 3.663562,
+      "STD_THROUGHPUT": 0.165426,
+      "MU_WAIT": 8.641374,
+      "STD_WAIT": 1.092288,
+      "MU_SPEEDSTD": 0.069547,
+      "STD_SPEEDSTD": 1.314871,
+      "MU_HALT": -0.094767,
+      "STD_HALT": 0.165424
     },
     "R4C2_CE": {
-      "MU_SPEED": 1.139121,
-      "STD_SPEED": 0.562349,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.772076
+      "MU_SPEED": 0.653485,
+      "STD_SPEED": 0.57155,
+      "MU_THROUGHPUT": 2.833214,
+      "STD_THROUGHPUT": 0.213271,
+      "MU_WAIT": 7.929702,
+      "STD_WAIT": 0.979128,
+      "MU_SPEEDSTD": 0.907956,
+      "STD_SPEEDSTD": 0.559563,
+      "MU_HALT": -0.118255,
+      "STD_HALT": 0.158035
     },
     "R4C2_CW": {
-      "MU_SPEED": 1.141868,
-      "STD_SPEED": 0.550507,
-      "MU_THROUGHPUT": 2.397896,
-      "STD_THROUGHPUT": 0.612853
+      "MU_SPEED": 0.603629,
+      "STD_SPEED": 0.557292,
+      "MU_THROUGHPUT": 2.833214,
+      "STD_THROUGHPUT": 0.213271,
+      "MU_WAIT": 8.082402,
+      "STD_WAIT": 0.877847,
+      "MU_SPEEDSTD": 0.875097,
+      "STD_SPEEDSTD": 0.493335,
+      "MU_HALT": -0.107276,
+      "STD_HALT": 0.131002
     },
     "R4C3_C": {
-      "MU_SPEED": 1.352853,
-      "STD_SPEED": 0.299905,
-      "MU_THROUGHPUT": 2.079443,
-      "STD_THROUGHPUT": 0.928728
+      "MU_SPEED": 0.884133,
+      "STD_SPEED": 0.618515,
+      "MU_THROUGHPUT": 3.135495,
+      "STD_THROUGHPUT": 0.264419,
+      "MU_WAIT": 8.263152,
+      "STD_WAIT": 0.992064,
+      "MU_SPEEDSTD": 1.020196,
+      "STD_SPEEDSTD": 0.628898,
+      "MU_HALT": -0.137994,
+      "STD_HALT": 0.121583
     },
     "R4C4_C": {
-      "MU_SPEED": 1.34269,
-      "STD_SPEED": 0.384942,
-      "MU_THROUGHPUT": 1.098616,
-      "STD_THROUGHPUT": 0.928727
+      "MU_SPEED": 0.886366,
+      "STD_SPEED": 0.638303,
+      "MU_THROUGHPUT": 2.397896,
+      "STD_THROUGHPUT": 0.249442,
+      "MU_WAIT": 7.30027,
+      "STD_WAIT": 1.429706,
+      "MU_SPEEDSTD": 0.934499,
+      "STD_SPEEDSTD": 0.788372,
+      "MU_HALT": -0.14057,
+      "STD_HALT": 0.175243
     },
     "R4C5_C": {
-      "MU_SPEED": 0.759457,
-      "STD_SPEED": 0.544219,
-      "MU_THROUGHPUT": 2.94444,
-      "STD_THROUGHPUT": 0.786471
+      "MU_SPEED": 0.175723,
+      "STD_SPEED": 0.900648,
+      "MU_THROUGHPUT": 3.295837,
+      "STD_THROUGHPUT": 0.205821,
+      "MU_WAIT": 8.663974,
+      "STD_WAIT": 0.600491,
+      "MU_SPEEDSTD": 0.667788,
+      "STD_SPEEDSTD": 0.88441,
+      "MU_HALT": -0.075497,
+      "STD_HALT": 0.1
     }
   }
 }

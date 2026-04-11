@@ -14,7 +14,7 @@ export USE_LIBSUMO=0
 # --- Alapértelmezések (itt átírhatod, ha mást akarsz tesztelni) ---
 JUNCTION="R1C1_C"
 ALGO="qrdqn"                 # Lehet: ppo, qrdqn, dqn, a2c
-REWARD="speed_throughput"    # Lehet: speed_throughput, halt_ratio, co2_speedstd
+REWARD="wait_haltratio"    # Lehet: speed_throughput, halt_ratio, co2_speedstd, wait_triplet_tpstdhalt, wait_haltratio
 TIMESTEPS=50000              # Rövidebb idő a teszthez
 
 echo "============================================================"

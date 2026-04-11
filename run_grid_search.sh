@@ -29,12 +29,12 @@ REPEATS=1
 PARALLEL_JOBS=8  # 12 magból 6 párhuzamos SUMO szimuláció
 
 # Algoritmusok
-ALGORITHMS=(qrdqn ppo)
+ALGORITHMS=(qrdqn ppo dqn)
 #ALGORITHMS=(qrdqn dqn ppo a2c)
 
 # Reward módok
-REWARDS=(speed_throughput speed_throughput_freq)
-#REWARDS=(speed_throughput speed_throughput_freq halt_ratio co2_speedstd)
+REWARDS=(wait_haltratio)
+#REWARDS=(speed_throughput speed_throughput_freq halt_ratio co2_speedstd wait_triplet_tpstdhalt wait_haltratio)
 
 # Neurális háló méretek
 LAYERS=(1 2 3)
@@ -98,7 +98,7 @@ echo ""
 
 # --- WandB árva runok ellenőrzése ---
 echo "WandB szinkron ellenőrzés..."
-python wandb_cleanup.py --project "${PROJECT}" --done-dir "${DONE_DIR}" || true
+.venv/bin/python3 wandb_cleanup.py --project "${PROJECT}" --done-dir "${DONE_DIR}" || true
 echo ""
 
 if [[ $REMAINING -eq 0 ]]; then
@@ -133,7 +133,7 @@ run_job() {
     echo "[START] ${RUN_NAME}"
 
     if WANDB_RUN_NAME="${RUN_NAME}" \
-       python main_headless.py \
+       .venv/bin/python3 main_headless.py \
            --junction "${JUNCTION}" \
            --algorithm "${ALGO}" \
            --reward-mode "${REWARD}" \

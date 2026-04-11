@@ -23,6 +23,22 @@ TC_VAR_CURRENT_TRAVELTIME    = 0x5a
 # mert egyes libsumo verziók segfault-olnak subscribe() hívásnál
 _USE_SUBSCRIPTIONS = False  # _setup_subscriptions() állítja True-ra ha sikerül
 
+def _det_halting(det_id: str, veh_n: int) -> int:
+    """Álló járművek száma egy indukcióhurok detektoron.
+
+    Az inductionloop.getLastStepHaltingNumber() nem létezik minden SUMO
+    verzióban (AttributeError). Közelítés: ha az átlagsebesség < 0.1 m/s
+    (és volt jármű), az ott lévő jármű(vek) állónak minősülnek.
+    getLastStepMeanSpeed() = -1 ha nem volt jármű → nem álló.
+    """
+    if veh_n <= 0:
+        return 0
+    try:
+        spd = traci.inductionloop.getLastStepMeanSpeed(det_id)
+        return veh_n if (0.0 <= spd < 0.1) else 0
+    except Exception:
+        return 0
+
 class SumoRLEnvironment(gym.Env):
     """
     Egyszerűsített, Single-Instance Multi-Agent RL Környezet.
@@ -235,6 +251,18 @@ class SumoRLEnvironment(gym.Env):
                 'MU_CO2': 10.870600, 'STD_CO2': 0.962900,
                 'MU_SPEEDSTD': 1.50, 'STD_SPEEDSTD': 0.80,
             }
+        elif self.reward_mode == "wait_triplet_tpstdhalt":
+            return {
+                'MU_WAIT':       6.189495, 'STD_WAIT':       2.666679,
+                'MU_THROUGHPUT': 2.833214, 'STD_THROUGHPUT': 0.841349,
+                'MU_SPEEDSTD':   0.767463, 'STD_SPEEDSTD':   0.671022,
+                'MU_HALT':      -0.445295, 'STD_HALT':       0.510940,
+            }
+        elif self.reward_mode == "wait_haltratio":
+            return {
+                'MU_WAIT':  4.091, 'STD_WAIT':  1.185,  # log(AvgWaitingTime) R1C1_C adata alapján
+                'MU_HALT': -0.201, 'STD_HALT':  0.320,  # log(HaltRatio) R1C1_C adata alapján
+            }
         return {}
 
     def update_reward_params(self, jid, new_params):
@@ -282,15 +310,21 @@ class SumoRLEnvironment(gym.Env):
             std_s = params.get('STD_SPEED', 0.951)
             mu_t = params.get('MU_THROUGHPUT', 2.996)
             std_t = params.get('STD_THROUGHPUT', 0.814)
+            mu_h = params.get('MU_HALT', -1.20)
+            std_h = params.get('STD_HALT', 1.10)
 
             z_s = (np.log(avg_speed + 1e-5) - mu_s) / (std_s + 1e-9)
             r_speed = (1.0 + np.tanh(z_s)) / 2.0
 
             z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
             r_throughput = (1.0 + np.tanh(z_t)) / 2.0
-            
+
+            halt_ratio = agent.get_halt_ratio_metric()
+            z_h = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
+            r_halt = (1.0 + np.tanh(z_h)) / 2.0
+
             base_reward = (r_speed + r_throughput) / 2.0
-            return base_reward
+            return base_reward * (1.0 - r_halt * 0.8)
 
         elif self.reward_mode == "speed_throughput_freq":
             avg_speed = agent.get_avg_speed_metric()
@@ -360,8 +394,65 @@ class SumoRLEnvironment(gym.Env):
             # Alacsonyabb CO2 = jobb, magasabb SpeedStd = egyenletesebb
             return ((1.0 - r_co2) + r_ss) / 2.0
 
-        # Fallback: eredeti log-sigmoid (backward compatibility)
-        return 0.0
+        elif self.reward_mode == "wait_triplet_tpstdhalt":
+            # Kombó: (1) TotalWaitingTime (alacsonyabb = jobb)
+            #        (2) triplet_TP+Std+Halt = (r_tp + r_std + (1-r_halt)) / 3
+            # Végeredmény: (r_wait_inv + r_triplet) / 2
+            total_waiting = agent.get_avg_waiting_time_metric()
+            throughput    = agent.get_throughput_metric()
+            speed_std     = agent.get_speed_std_metric()
+            halt_ratio    = agent.get_halt_ratio_metric()
+
+            if total_waiting == 0.0 and throughput == 0.0:
+                return 0.0
+
+            mu_w  = params.get('MU_WAIT',       6.189495)
+            std_w = params.get('STD_WAIT',       2.666679)
+            mu_t  = params.get('MU_THROUGHPUT',  2.833214)
+            std_t = params.get('STD_THROUGHPUT', 0.841349)
+            mu_ss = params.get('MU_SPEEDSTD',    0.767463)
+            std_ss= params.get('STD_SPEEDSTD',   0.671022)
+            mu_h  = params.get('MU_HALT',       -0.445295)
+            std_h = params.get('STD_HALT',       0.510940)
+
+            # (1) Várakozási idő: alacsonyabb = jobb → invertált log-tanh
+            z_w   = (np.log(total_waiting + 1e-5) - mu_w) / (std_w + 1e-9)
+            r_wait_inv = (1.0 - np.tanh(z_w)) / 2.0
+
+            # (2) Triplet TP+Std+Halt
+            z_t   = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
+            r_tp  = (1.0 + np.tanh(z_t)) / 2.0          # magasabb = jobb
+
+            z_ss  = (np.log(speed_std + 1e-5) - mu_ss) / (std_ss + 1e-9)
+            r_std = (1.0 + np.tanh(z_ss)) / 2.0          # magasabb = jobb
+
+            z_h   = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
+            r_halt_raw = (1.0 + np.tanh(z_h)) / 2.0
+            r_triplet  = (r_tp + r_std + (1.0 - r_halt_raw)) / 3.0
+
+            return (r_wait_inv + r_triplet) / 2.0
+
+        elif self.reward_mode == "wait_haltratio":
+            # Legjobb kombináció (η²=0.019): TotalWaitingTime + HaltRatio
+            # Mindkettő: alacsonyabb = jobb → invertált log-tanh
+            total_waiting = agent.get_avg_waiting_time_metric()
+            halt_ratio    = agent.get_halt_ratio_metric()
+
+            if total_waiting == 0.0 and halt_ratio == 0.0:
+                return 0.5  # semleges, ha nincs forgalom
+
+            mu_w  = params.get('MU_WAIT',  6.189495)
+            std_w = params.get('STD_WAIT', 2.666679)
+            mu_h  = params.get('MU_HALT', -0.445295)
+            std_h = params.get('STD_HALT', 0.510940)
+
+            z_w        = (np.log(total_waiting + 1e-5) - mu_w) / (std_w + 1e-9)
+            r_wait_inv = (1.0 - np.tanh(z_w)) / 2.0   # alacsonyabb várakozás = jobb
+
+            z_h        = (np.log(halt_ratio + 1e-5) - mu_h) / (std_h + 1e-9)
+            r_halt_inv = (1.0 - np.tanh(z_h)) / 2.0   # kevés álló jármű = jobb
+
+            return (r_wait_inv + r_halt_inv) / 2.0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -896,13 +987,16 @@ class TrafficAgent:
             "phase": spaces.Box(low=0, high=self.num_phases-1, shape=(1,), dtype=np.int32),
             "phase_timer": spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
             "occupancy": spaces.Box(low=0, high=1, shape=(num_detectors,), dtype=np.float32),
-            "flow": spaces.Box(low=0, high=np.inf, shape=(num_detectors,), dtype=np.float32)
+            "flow": spaces.Box(low=0, high=np.inf, shape=(num_detectors,), dtype=np.float32),
+            "speed": spaces.Box(low=0.0, high=1.0, shape=(num_detectors,), dtype=np.float32),  # normalizált [0,1], ref: 14 m/s ≈ 50 km/h
         })
 
     def reset_step_metrics(self):
         self.steps_measured = 0
         self.det_accumulated_flow = {d: 0 for d in self.detectors}
         self.det_accumulated_occ = {d: 0.0 for d in self.detectors}
+        self.det_accumulated_halting = {d: 0 for d in self.detectors}  # álló járművek detektoronként
+        self.det_accumulated_speed = {d: 0.0 for d in self.detectors}  # Σ inductionloop MeanSpeed [m/s]
         self.accumulated_travel_time = 0.0
         self.accumulated_waiting_time = 0.0
         self.accumulated_co2 = 0.0
@@ -989,18 +1083,35 @@ class TrafficAgent:
                 try:
                     res = traci.inductionloop.getSubscriptionResults(det_id)
                     if res:
-                        self.det_accumulated_flow[det_id] += res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                        veh_n = res.get(TC_LAST_STEP_VEHICLE_NUMBER, 0)
+                        self.det_accumulated_flow[det_id] += veh_n
                         self.det_accumulated_occ[det_id] += res.get(TC_LAST_STEP_OCCUPANCY, 0.0)
+                        # inductionloop.getLastStepHaltingNumber() nem létezik minden
+                        # SUMO verzióban → sebességalapú közelítés: spd < 0.1 m/s → álló
+                        halt_n = _det_halting(det_id, veh_n)
+                        self.det_accumulated_halting[det_id] += halt_n
+                        spd = traci.inductionloop.getLastStepMeanSpeed(det_id)
+                        self.det_accumulated_speed[det_id] += max(0.0, spd)  # -1.0 ha nincs jármű
                         continue
                 except Exception:
                     pass
-                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
+                veh_n = traci.inductionloop.getLastStepVehicleNumber(det_id)
+                halt_n = _det_halting(det_id, veh_n)
+                self.det_accumulated_flow[det_id] += veh_n
                 self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
+                self.det_accumulated_halting[det_id] += halt_n
+                spd = traci.inductionloop.getLastStepMeanSpeed(det_id)
+                self.det_accumulated_speed[det_id] += max(0.0, spd)
         else:
             # --- SLOW PATH: egyedi hívások (kompatibilis minden SUMO verzióval) ---
             for det_id in self.detectors:
-                self.det_accumulated_flow[det_id] += traci.inductionloop.getLastStepVehicleNumber(det_id)
+                veh_n = traci.inductionloop.getLastStepVehicleNumber(det_id)
+                halt_n = _det_halting(det_id, veh_n)
+                self.det_accumulated_flow[det_id] += veh_n
                 self.det_accumulated_occ[det_id] += traci.inductionloop.getLastStepOccupancy(det_id)
+                self.det_accumulated_halting[det_id] += halt_n
+                spd = traci.inductionloop.getLastStepMeanSpeed(det_id)
+                self.det_accumulated_speed[det_id] += max(0.0, spd)
 
         step_tt = 0.0
         step_waiting = 0.0
@@ -1085,15 +1196,19 @@ class TrafficAgent:
                 "phase": np.array([self.current_logic_idx], dtype=np.int32),
                 "phase_timer": np.array([0.0], dtype=np.float32),
                 "occupancy": np.zeros(1, dtype=np.float32),
-                "flow": np.zeros(1, dtype=np.float32)
+                "flow": np.zeros(1, dtype=np.float32),
+                "speed": np.zeros(1, dtype=np.float32),
              }
              
         occ = np.zeros(num_dets, dtype=np.float32)
         flow = np.zeros(num_dets, dtype=np.float32)
+        speed = np.zeros(num_dets, dtype=np.float32)
         if self.steps_measured > 0:
             for i, det in enumerate(self.detectors):
                 occ[i] = (self.det_accumulated_occ[det] / self.steps_measured) / 100.0
                 flow[i] = (self.det_accumulated_flow[det] / self.steps_measured)
+                # 14.0 m/s ≈ 50 km/h tipikus városi sebesség → normalizálási referencia
+                speed[i] = min((self.det_accumulated_speed[det] / self.steps_measured) / 14.0, 1.0)
         
         # phase_timer normalizálva [0, 1] tartományba
         # 120 lépés (600 mp delta_time=5 esetén) a max referencia
@@ -1103,7 +1218,8 @@ class TrafficAgent:
             "phase": np.array([self.current_logic_idx], dtype=np.int32),
             "phase_timer": np.array([normalized_timer], dtype=np.float32),
             "occupancy": occ,
-            "flow": flow
+            "flow": flow,
+            "speed": speed,
         }
 
     def get_avg_travel_time_metric(self):
@@ -1129,12 +1245,25 @@ class TrafficAgent:
         return 0.0
 
     def get_throughput_metric(self):
-        """Throughput: összes detektor vehicle count az időszakban.
-        Σ det_accumulated_flow (nem osztjuk steps_measured-vel,
-        mert a kalibrációs script sem osztja — konzisztens skála)."""
-        if self.detectors:
-            return float(sum(self.det_accumulated_flow.values()))
-        return 0.0
+        """Throughput: ténylegesen ÁTHALADÓ járművek száma az időszakban.
+
+        FIX: inductionloop.getLastStepVehicleNumber() megadja az összes
+        járművet ami a detektor felett volt — beleértve a SORBAN ÁLLÓ,
+        stop-line-on várakozó járműveket is (minden lépésben +1).
+        Ez perverz reward-ot okoz: a modell megtanulja, hogy ha 2 irányt
+        torlaszt, a detektoraik minden lépésben magas flow-t mutatnak
+        → látszólag magas throughput → magas reward.
+
+        Javítás: Σ (VehicleNumber - HaltingNumber) per detektor — csak
+        a ténylegesen mozgó (áthaladó) járműveket számítjuk."""
+        if not self.detectors:
+            return 0.0
+        total = 0
+        for det in self.detectors:
+            moving = max(0, self.det_accumulated_flow[det]
+                         - self.det_accumulated_halting.get(det, 0))
+            total += moving
+        return float(total)
 
     def get_halt_ratio_metric(self):
         """HaltRatio: halting vehicles / total vehicles.

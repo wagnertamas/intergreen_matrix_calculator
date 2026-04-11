@@ -9,6 +9,9 @@ Használat:
   # PPO algoritmussal, halt_ratio reward-dal
   python main_headless.py --junction R2C2_C --algorithm ppo --reward-mode halt_ratio
 
+  # Legjobb kombó (TotalWaitingTime + triplet TP+Std+Halt)
+  python main_headless.py --junction R1C1_C --reward-mode wait_haltratio
+
   # Összes junction szekvenciálisan
   for jid in R1C1_C R1C2_C R1C3_C; do
     python main_headless.py --junction $jid --timesteps 50000
@@ -53,8 +56,10 @@ def main():
                         choices=list(SUPPORTED_ALGORITHMS.keys()),
                         help=f"RL algoritmus ({', '.join(SUPPORTED_ALGORITHMS.keys())}). Default: qrdqn")
     parser.add_argument("--reward-mode", type=str, default=None,
-                        choices=["speed_throughput", "speed_throughput_freq", "halt_ratio", "co2_speedstd"],
-                        help="Reward számítási mód. Default: speed_throughput")
+                        choices=["speed_throughput", "speed_throughput_freq", "halt_ratio",
+                                 "co2_speedstd", "wait_triplet_tpstdhalt", "wait_haltratio"],
+                        help="Reward számítási mód. Default: speed_throughput\n"
+                             "  wait_triplet_tpstdhalt = TotalWaitingTime + (Throughput+SpeedStd+HaltRatio)/3  [AJÁNLOTT]")
     parser.add_argument("--junction-params", type=str, default=None,
                         help="junction_reward_params.json útvonal (default: auto-keresés)")
     # Hiperparaméterek

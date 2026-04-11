@@ -70,7 +70,7 @@ if not HAS_RL_LIBS:
 # DQN / QRDQN: Replay buffer beoltása aktuált lépésekkel
 # Ennyi arányban cserélődik le az ágens akciója aktuált vezérlésre.
 # Az aktuált tapasztalatok a bufferbe kerülnek, javítva az early-phase stabilitást.
-ACTUATED_SEED_RATIO = 0.65          # 65% lépés legyen aktuált
+ACTUATED_SEED_RATIO = 0.30          # 30% lépés legyen aktuált
 
 # PPO: Epizód eleji aktuált warmup (az env.reset()-ben fut, PPO nem látja ezeket)
 # ~200 SUMO-lépés ≈ 1000 sim-sec ≈ ~16 perc "valós" forgalmi stabilizálás
@@ -190,6 +190,10 @@ if HAS_RL_LIBS:
             self.episode_rewards = []
             self.action_counts = {}
             self._start_time = None
+            # Obs/akció diagnosztika bufferek (on-policy)
+            self._diag_occ_acc  = []
+            self._diag_flow_acc = []
+            self._diag_speed_acc = []
 
         def _on_training_start(self):
             self._start_time = time.time()
@@ -210,6 +214,29 @@ if HAS_RL_LIBS:
             if len(actions) > 0:
                 a = int(actions[0])
                 self.action_counts[a] = self.action_counts.get(a, 0) + 1
+
+            # Obs gyűjtés (on-policy: obs_tensor a rollout után érhető el)
+            try:
+                obs_t = self.locals.get("obs_tensor") or self.locals.get("new_obs")
+                if obs_t is not None and isinstance(obs_t, dict):
+                    if "occupancy" in obs_t:
+                        occ = obs_t["occupancy"]
+                        if hasattr(occ, "cpu"):
+                            occ = occ.cpu().numpy()
+                        self._diag_occ_acc.append(np.array(occ).flatten())
+                    if "flow" in obs_t:
+                        fl = obs_t["flow"]
+                        if hasattr(fl, "cpu"):
+                            fl = fl.cpu().numpy()
+                        self._diag_flow_acc.append(np.array(fl).flatten())
+
+                infos_local = self.locals.get("infos")
+                if infos_local:
+                    for info in infos_local:
+                        if isinstance(info, dict) and "metric_avg_speed" in info:
+                            self._diag_speed_acc.append(float(info["metric_avg_speed"]))
+            except Exception:
+                pass
 
             # Periodikus logolás (100 step-enként, mint az off-policy)
             if self.num_timesteps % self.log_freq == 0:
@@ -245,10 +272,31 @@ if HAS_RL_LIBS:
                 if self.locals.get("infos"):
                     for info in self.locals["infos"]:
                         if isinstance(info, dict):
-                            if "metric_avg_speed" in info:
-                                log_dict["metric/avg_speed"] = info["metric_avg_speed"]
                             if "metric_throughput" in info:
                                 log_dict["metric/throughput"] = info["metric_throughput"]
+
+                if self._diag_speed_acc:
+                    avg_speed = float(np.mean(self._diag_speed_acc))
+                    log_dict["metric/avg_speed"] = avg_speed
+                    log_dict[f"{self.agent_id}/obs/avg_speed"] = avg_speed
+                    self._diag_speed_acc = []
+
+                # Obs diagnosztika (on-policy)
+                if self._diag_occ_acc:
+                    avg_occ  = np.mean(self._diag_occ_acc,  axis=0)
+                    avg_flow = np.mean(self._diag_flow_acc, axis=0) if self._diag_flow_acc else avg_occ * 0
+                    occ_str  = " ".join(f"{v:.3f}" for v in avg_occ)
+                    flow_str = " ".join(f"{v:.3f}" for v in avg_flow)
+                    act_dist = {k: f"{v/max(sum(self.action_counts.values()),1)*100:.0f}%"
+                                for k, v in sorted(self.action_counts.items())}
+                    print(f"  [OBS-PPO] {self.agent_id} | step={self.num_timesteps} "
+                          f"| avg_occ=[{occ_str}] avg_flow=[{flow_str}] | actions={act_dist}")
+                    for i in range(len(avg_occ)):
+                        log_dict[f"{self.agent_id}/obs/avg_occ_det{i}"]  = float(avg_occ[i])
+                    for i in range(len(avg_flow)):
+                        log_dict[f"{self.agent_id}/obs/avg_flow_det{i}"] = float(avg_flow[i])
+                    self._diag_occ_acc  = []
+                    self._diag_flow_acc = []
 
                 wandb.log(log_dict, commit=True)
 
@@ -437,8 +485,17 @@ class IndependentDQNTrainer:
             return int(np.argmax(phase_pressure))
 
     def _run_warmup_calibration(self, initial_obs):
-        """3 órás szimuláció a nyers metrikák leméréséhez (súlyok frissítése nélkül)."""
-        if not self.load_model_path or not self.single_agent_id:
+        """Nyers metrikák leméréséhez kalibráció (súlyok frissítése nélkül).
+        Fresh training esetén is fut, ha a reward módhoz kalibrálható paraméterek tartoznak."""
+        if not self.single_agent_id:
+            return initial_obs
+
+        # Mikor futtassuk? Transfer learning esetén mindig, fresh training esetén
+        # csak ha a reward módhoz fontos a pontos kalibráció (wait/halt alapú módok).
+        needs_calib = bool(self.load_model_path) or any(
+            kw in self.reward_mode for kw in ('wait', 'halt', 'co2', 'speedstd')
+        )
+        if not needs_calib:
             return initial_obs
 
         jid = self.single_agent_id
@@ -451,7 +508,7 @@ class IndependentDQNTrainer:
         options = self._build_reset_options() or {}
         options['traffic_duration'] = 1800
         
-        raw_metrics = {'speed': [], 'throughput': [], 'halt': [], 'co2': [], 'speedstd': []}
+        raw_metrics = {'speed': [], 'throughput': [], 'halt': [], 'co2': [], 'speedstd': [], 'wait': []}
         
         local_obs = initial_obs
         
@@ -482,6 +539,7 @@ class IndependentDQNTrainer:
                     raw_metrics['halt'].append(np.log(ag.get_halt_ratio_metric() + 1e-5))
                     raw_metrics['co2'].append(np.log((ag.accumulated_co2 / ag.steps_measured) + 1e-5))
                     raw_metrics['speedstd'].append(np.log(ag.get_speed_std_metric() + 1e-5))
+                    raw_metrics['wait'].append(np.log(ag.get_avg_waiting_time_metric() + 1e-5))
                 
                 local_obs = next_obs
                 step_idx += 1
@@ -515,16 +573,38 @@ class IndependentDQNTrainer:
                 new_params['STD_HALT'] = float(np.std(raw_metrics['halt'])) + 1e-9
                 self.log(f"  [KALIBRÁLVA] HALT : mu={new_params['MU_HALT']:.3f}, std={new_params['STD_HALT']:.3f}")
                 
-            if "co2" in self.reward_mode or "speedstd" in self.reward_mode:
+            if "co2" in self.reward_mode or "speedstd" in self.reward_mode or "wait_triplet" in self.reward_mode:
                 new_params['MU_CO2'] = float(np.mean(raw_metrics['co2']))
                 new_params['STD_CO2'] = float(np.std(raw_metrics['co2'])) + 1e-9
                 new_params['MU_SPEEDSTD'] = float(np.mean(raw_metrics['speedstd']))
                 new_params['STD_SPEEDSTD'] = float(np.std(raw_metrics['speedstd'])) + 1e-9
                 self.log(f"  [KALIBRÁLVA] CO2  : mu={new_params['MU_CO2']:.3f}, std={new_params['STD_CO2']:.3f}")
                 self.log(f"  [KALIBRÁLVA] S_STD: mu={new_params['MU_SPEEDSTD']:.3f}, std={new_params['STD_SPEEDSTD']:.3f}")
+
+            if "wait_triplet" in self.reward_mode or "wait_halt" in self.reward_mode:
+                new_params['MU_WAIT'] = float(np.mean(raw_metrics['wait']))
+                new_params['STD_WAIT'] = float(np.std(raw_metrics['wait'])) + 1e-9
+                self.log(f"  [KALIBRÁLVA] WAIT : mu={new_params['MU_WAIT']:.3f}, std={new_params['STD_WAIT']:.3f}")
                 
             self.env.update_reward_params(jid, new_params)
             self.log(f"==================================================")
+
+            # Visszaírás a junction_reward_params.json-ba, hogy az ábrák is a tényleges
+            # training paramétereket tükrözzék (nem az előre kalibrált globális értéket)
+            if self.junction_params_path and os.path.exists(self.junction_params_path):
+                try:
+                    with open(self.junction_params_path, 'r', encoding='utf-8') as f:
+                        jp = json.load(f)
+                    if 'per_junction' not in jp:
+                        jp['per_junction'] = {}
+                    if jid not in jp['per_junction']:
+                        jp['per_junction'][jid] = {}
+                    jp['per_junction'][jid].update(new_params)
+                    with open(self.junction_params_path, 'w', encoding='utf-8') as f:
+                        json.dump(jp, f, indent=2, ensure_ascii=False)
+                    self.log(f"  [JSON] Kalibrált paraméterek mentve → {os.path.basename(self.junction_params_path)}")
+                except Exception as e:
+                    self.log(f"  [WARN] JSON mentés sikertelen: {e}")
             
             # Reset environment after warmup to start fresh
             final_obs, _ = self.env.reset(options=self._build_reset_options())
@@ -576,11 +656,19 @@ class IndependentDQNTrainer:
         # 2. Környezet létrehozása
         # Algoritmus-specifikus aktuált warmup lépések meghatározása
         # (env_kwargs-ban felülírható, ha kell)
+        # Warmup lépések algoritmusonként.
+        # PPO/A2C: env-szintű round-robin warmup (env.reset()-ben fut le)
+        # DQN/QRDQN: korábban 0 volt (buffer-beoltásra hagyatkoztunk), de ez
+        # elosztásbeli eltérést okoz a kiértékeléshez képest: tanításban üres
+        # utakkal indul minden epizód, kiértékeléskor 120s warmup után veszi át
+        # az RL az irányítást. Az 50 lépés (~250 SUMO-másodperc) kompromisszum:
+        # elegendő forgalom épül fel, de nem annyira sok hogy az early replay
+        # buffer-beoltás elveszítse hatását.
         _default_warmup = {
             'ppo':   PPO_ACTUATED_WARMUP_STEPS,
             'a2c':   A2C_ACTUATED_WARMUP_STEPS,
-            'dqn':   0,   # DQN: lépésszintű buffer-beoltás, nem env-szintű warmup
-            'qrdqn': 0,
+            'dqn':   50,
+            'qrdqn': 50,
         }
         _warmup_steps = self.env_kwargs.pop('actuated_warmup_steps',
                                             _default_warmup.get(self.algorithm_name, 0))
@@ -625,7 +713,14 @@ class IndependentDQNTrainer:
             return
 
         # 4. Modellek létrehozása
-        runs_dir = os.path.join(os.path.dirname(self.net_file), "runs")
+        # Egyedi könyvtár per futás: W&B run ID vagy timestamp.
+        # Ha nincs egyedi könyvtár, több párhuzamos futás felülírja egymás
+        # lokális zip-jét, és a wandb.save() file-watcher a rossz verziót
+        # tölti fel (akár más run kontextusába).
+        from datetime import datetime as _dt
+        _run_uid = (wandb.run.id if (HAS_RL_LIBS and wandb.run) else None) \
+                   or _dt.now().strftime("%Y%m%d_%H%M%S")
+        runs_dir = os.path.join(os.path.dirname(self.net_file), "runs", _run_uid)
 
         # Device detektálás: CUDA > MPS (Apple Silicon) > CPU
         import torch
@@ -880,6 +975,15 @@ class IndependentDQNTrainer:
         _prof_buffer = 0.0
         _prof_count = 0
 
+        # --- OBS/AKCIÓ DIAGNOSZTIKA (100 lépésenként átlag + greedy összefoglaló) ---
+        # Célja: megmutatni mit lát a modell training közben, és hogy a greedy
+        # policy valóban változik-e, vagy már korán action=0-ra kollapszál.
+        _diag_occ_acc   = {jid: [] for jid in agent_ids}
+        _diag_flow_acc  = {jid: [] for jid in agent_ids}
+        _diag_speed_acc = {jid: [] for jid in agent_ids}
+        _diag_greedy_a  = {jid: [] for jid in agent_ids}  # csak greedy lépések akciói
+        _diag_is_greedy = {jid: False for jid in agent_ids}  # az aktuális lépés greedy volt-e
+
         try:
             while global_step < self.total_timesteps and not self.stop_requested:
 
@@ -908,15 +1012,25 @@ class IndependentDQNTrainer:
                         else:
                             # Sima random fázis kiválasztás
                             actions[jid] = int(self.env.action_space[jid].sample())
+                        _diag_is_greedy[jid] = False
                     else:
                         # Okos döntés (Exploitation) - predikció determinisztikusan
                         agent_obs = {k: v.reshape(1, *v.shape) for k, v in obs[jid].items()}
                         action, _ = model.predict(agent_obs, deterministic=True)
                         actions[jid] = int(action[0])
+                        _diag_is_greedy[jid] = True
                     if jid not in self.action_counts:
                         self.action_counts[jid] = {}
                     a = actions[jid]
                     self.action_counts[jid][a] = self.action_counts[jid].get(a, 0) + 1
+
+                    # --- Diagnosztikai puffer (greedy lépések megfigyelési tere) ---
+                    cur_occ  = obs[jid].get("occupancy",   np.array([])).copy()
+                    cur_flow = obs[jid].get("flow",        np.array([])).copy()
+                    _diag_occ_acc[jid].append(cur_occ)
+                    _diag_flow_acc[jid].append(cur_flow)
+                    if _diag_is_greedy[jid]:
+                        _diag_greedy_a[jid].append(a)
                 _prof_predict += time.perf_counter() - _t0
 
                 # --- LÉPÉS ---
@@ -924,6 +1038,11 @@ class IndependentDQNTrainer:
                 next_obs, rewards, global_done, _, infos = self.env.step(actions)
                 _prof_env_step += time.perf_counter() - _t0
                 global_step += 1
+
+                for jid in agent_ids:
+                    info_j = infos.get(jid, {})
+                    if isinstance(info_j, dict) and "metric_avg_speed" in info_j:
+                        _diag_speed_acc[jid].append(float(info_j["metric_avg_speed"]))
 
                 # --- BUFFER & TRAIN ---
                 _t_buf = 0.0
@@ -997,6 +1116,50 @@ class IndependentDQNTrainer:
                             log_dict["avg_reward"] = avg_reward
 
                         wandb.log(log_dict, commit=True)
+
+                    # --- OBS DIAGNOSZTIKA (konzol + W&B) ---
+                    for jid, model in self.agents.items():
+                        buf_occ  = _diag_occ_acc[jid]
+                        buf_flow = _diag_flow_acc[jid]
+                        g_acts   = _diag_greedy_a[jid]
+                        if not buf_occ:
+                            continue
+                        avg_occ  = np.mean(buf_occ,  axis=0) if buf_occ  else np.array([])
+                        avg_flow = np.mean(buf_flow, axis=0) if buf_flow else np.array([])
+                        avg_speed = float(np.mean(_diag_speed_acc[jid])) if _diag_speed_acc[jid] else 0.0
+                        eps      = model.exploration_rate
+                        greedy_n = len(g_acts)
+                        g_dist   = {}
+                        for ga in g_acts:
+                            g_dist[ga] = g_dist.get(ga, 0) + 1
+                        occ_str  = " ".join(f"{v:.3f}" for v in avg_occ)
+                        flow_str = " ".join(f"{v:.3f}" for v in avg_flow)
+                        g_str    = str({k: v for k, v in sorted(g_dist.items())}) if g_dist else "N/A (mind random)"
+                        self.log(
+                            f"  [OBS] {jid} | step={global_step} ε={eps:.3f} "
+                            f"greedy={greedy_n}/100 lépés → {g_str}"
+                        )
+                        self.log(
+                            f"  [OBS] {jid} | avg_occ=[{occ_str}] avg_flow=[{flow_str}] avg_speed={avg_speed:.3f}"
+                        )
+                        if wandb.run:
+                            obs_wb = {f"{jid}/train/epsilon": eps}
+                            for i in range(len(avg_occ)):
+                                obs_wb[f"{jid}/obs/avg_occ_det{i}"]  = float(avg_occ[i])
+                            for i in range(len(avg_flow)):
+                                obs_wb[f"{jid}/obs/avg_flow_det{i}"] = float(avg_flow[i])
+                            obs_wb[f"{jid}/obs/avg_speed"] = avg_speed
+                            obs_wb[f"{jid}/obs/greedy_pct"] = greedy_n
+                            if g_dist:
+                                total_g = sum(g_dist.values())
+                                for ga, cnt in g_dist.items():
+                                    obs_wb[f"{jid}/obs/greedy_action_pct/phase_{ga}"] = cnt / total_g * 100
+                            wandb.log(obs_wb, commit=False)
+                        # Puffer törlése
+                        _diag_occ_acc[jid]  = []
+                        _diag_flow_acc[jid] = []
+                        _diag_speed_acc[jid] = []
+                        _diag_greedy_a[jid] = []
 
                 # --- CHECKPOINTS ---
                 if global_step in [10000, 25000, 50000, 75000, 100000]:
@@ -1080,7 +1243,24 @@ class IndependentDQNTrainer:
                 self.log(f"Saved PyTorch {jid} to {zip_path}")
                 
                 if wandb.run:
-                    wandb.save(zip_path, base_path=runs_dir)
+                    # log_artifact: verziózott mentés, nem file-watching alapú.
+                    # wandb.save() könnyen felülírandó ha párhuzamos futások
+                    # ugyanabba a könyvtárba mentenek — az artifact biztonságos.
+                    try:
+                        artifact = wandb.Artifact(
+                            name=f"model-{jid}",
+                            type="model",
+                            metadata={
+                                "junction": jid,
+                                "step": step_suffix or "final",
+                                "algorithm": self.algorithm_name,
+                            }
+                        )
+                        artifact.add_file(zip_path)
+                        wandb.log_artifact(artifact)
+                        self.log(f"Logged W&B artifact: model-{jid} ({step_suffix or 'final'})")
+                    except Exception as ae:
+                        self.log(f"W&B artifact upload failed ({jid}): {ae}")
             except Exception as e:
                 self.log(f"Failed to save PyTorch zip for {jid}: {e}")
 
@@ -1171,10 +1351,20 @@ class IndependentDQNTrainer:
                 
                 self.log(f"Exported {jid} to {onnx_path}")
                 
-                # Upload to WandB
+                # Upload to WandB (artifact — verziózott, biztonságos)
                 if wandb.run:
-                    wandb.save(onnx_path, base_path=runs_dir)
-                    self.log(f"Uploaded {jid} ONNX to WandB")
+                    try:
+                        artifact = wandb.Artifact(
+                            name=f"onnx-{jid}",
+                            type="model",
+                            metadata={"junction": jid, "format": "onnx",
+                                      "step": step_suffix or "final"}
+                        )
+                        artifact.add_file(onnx_path)
+                        wandb.log_artifact(artifact)
+                        self.log(f"Logged W&B artifact: onnx-{jid}")
+                    except Exception as ae:
+                        self.log(f"W&B ONNX artifact upload failed ({jid}): {ae}")
 
 
 
@@ -1245,8 +1435,18 @@ class IndependentDQNTrainer:
                         self.log(f"Exported FUSED {jid} to {fused_onnx_path}")
                         
                         if wandb.run:
-                            wandb.save(fused_onnx_path, base_path=runs_dir)
-                            self.log(f"Uploaded {jid} FUSED ONNX to WandB")
+                            try:
+                                artifact = wandb.Artifact(
+                                    name=f"onnx-fused-{jid}",
+                                    type="model",
+                                    metadata={"junction": jid, "format": "onnx-fused",
+                                              "step": step_suffix or "final"}
+                                )
+                                artifact.add_file(fused_onnx_path)
+                                wandb.log_artifact(artifact)
+                                self.log(f"Logged W&B artifact: onnx-fused-{jid}")
+                            except Exception as ae:
+                                self.log(f"W&B FUSED ONNX artifact upload failed ({jid}): {ae}")
 
                     except Exception as e:
                         self.log(f"Failed to export FUSED model for {jid}: {e}")
@@ -1470,8 +1670,8 @@ class TrainingDialog:
 
         tk.Label(frame_algo, text="Reward Mode:").grid(row=0, column=2, sticky="w", padx=(15, 0))
         self.combo_reward_mode = ttk.Combobox(frame_algo,
-            values=["speed_throughput", "halt_ratio", "co2_speedstd"],
-            state="readonly", width=18)
+            values=["speed_throughput", "halt_ratio", "co2_speedstd", "wait_triplet_tpstdhalt", "wait_haltratio"],
+            state="readonly", width=22)
         self.combo_reward_mode.set("speed_throughput")
         self.combo_reward_mode.grid(row=0, column=3, padx=5, sticky="w")
 
@@ -1596,6 +1796,8 @@ class TrainingDialog:
             'speed_throughput': 'AvgSpeed + Throughput, log-tanh (η²=0.120, legjobb)',
             'halt_ratio':       'HaltRatio, log-tanh (η²=0.156, legrobusztusabb)',
             'co2_speedstd':     'TotalCO2 + SpeedStd, log-tanh (η²=0.224)',
+            'wait_triplet_tpstdhalt': 'TotalWaitingTime + (Throughput+SpeedStd+HaltRatio)/3',
+            'wait_haltratio':          'TotalWaitingTime + HaltRatio  [Értékelt legjobb, η²=0.019]',
         }
         self.lbl_reward_info.config(text=f"{mode} — {info_map.get(mode, '')}")
 

@@ -41,7 +41,7 @@ from collections import defaultdict
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR     = os.path.join(SCRIPT_DIR, "data")
 NET_FILE     = os.path.join(DATA_DIR, "mega_catalogue_v2.net.xml")
-LOGIC_FILE   = os.path.join(SCRIPT_DIR, "traffic_lights.json")
+LOGIC_FILE   = os.path.join(DATA_DIR, "traffic_lights.json")
 DETECTOR_FILE= os.path.join(DATA_DIR, "detectors.add.xml")
 OUTPUT_DIR   = os.path.join(SCRIPT_DIR, "eval_comparison")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models", "test")
@@ -50,12 +50,25 @@ TARGET_JID   = "R1C1_C"           # Tesztelt kereszteződés
 FLOW_LEVELS  = [150,300,450,600,750,900]    # Forgalmi szintek [jármű/óra/sáv] — csak TARGET_JID
 EPISODES_PER_LEVEL = 2            # Epizódok / forgalmi szint (statisztika)
 DURATION     = 1200               # Szimulációs idő [sec]
-WARMUP       = 120                # Bemelegítő lépések [sec]
+WARMUP       = 0                # Bemelegítő lépések [sec]
 DELTA_TIME   = 5                  # Lépésméret [sec]
 MIN_GREEN    = 5                  # Minimum zöld idő [sec]
 
 # libsumo / traci: macOS-en traci a biztonságos
 USE_LIBSUMO  = False              # True = libsumo (gyorsabb, Linux szerveren)
+
+def _det_halting(det_id: str, veh_n: int) -> int:
+    """Álló járművek közelítése indukcióhurok detektoron.
+    getLastStepHaltingNumber() nincs minden SUMO verzióban az inductionloop
+    domain-en → sebességalapú helyettesítő: spd < 0.1 m/s → álló.
+    """
+    if veh_n <= 0:
+        return 0
+    try:
+        spd = traci.inductionloop.getLastStepMeanSpeed(det_id)
+        return veh_n if (0.0 <= spd < 0.1) else 0
+    except Exception:
+        return 0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TRACI INICIALIZÁLÁS
@@ -205,6 +218,129 @@ def _setup_actuated(jid: str):
     traci.trafficlight.setProgramLogic(jid, act_logic)
     traci.trafficlight.setProgram(jid, "actuated_cmp")
 
+
+class _CurveActuatedController:
+    """Actuated kontroller a metric_collection_per_junction logikájával.
+
+    Ugyanazt a JSON alapú fázis + átmenet modellt használja, és occupancy
+    alapján dönt a váltásról.
+    """
+    def __init__(self, jid: str, logic_data: dict, detectors: list):
+        self.jid = jid
+        self.logic_phases = {int(k): v for k, v in logic_data['logic_phases'].items()}
+        self.transitions = logic_data.get('transitions', {})
+        self.phase_data = {p['index']: p for p in logic_data['phases']}
+        self.num_phases = len(self.logic_phases)
+        self.detectors = list(detectors)
+
+        self.current_logic_idx = 0
+        self.target_logic_idx = 0
+        self.is_transitioning = False
+        self.transition_queue = []
+        self.transition_cursor = 0
+        self.transition_step_timer = 0
+        self.next_logic_idx_cache = 0
+        self.min_green_timer = max(1, MIN_GREEN // DELTA_TIME)
+        self.green_timer = 0
+
+        self.max_green_steps = max(1, 60 // DELTA_TIME)
+        self.occ_threshold = 0.15
+        self._apply_current_phase()
+
+    def is_ready(self):
+        return (not self.is_transitioning) and (self.min_green_timer <= 0)
+
+    def set_target(self, idx: int):
+        if self.is_ready() and idx in self.logic_phases:
+            self.target_logic_idx = idx
+
+    def _apply_current_phase(self):
+        sumo_idx = self.logic_phases.get(self.current_logic_idx)
+        if sumo_idx is None:
+            return
+        pd = self.phase_data.get(sumo_idx)
+        if not pd:
+            return
+        try:
+            traci.trafficlight.setRedYellowGreenState(self.jid, pd['state'])
+        except Exception:
+            pass
+
+    def _start_transition(self, next_idx: int):
+        key = f"{self.current_logic_idx}->{next_idx}"
+        self.transition_queue = self.transitions.get(key, [])
+        self.is_transitioning = True
+        self.transition_cursor = 0
+        self.transition_step_timer = 0
+        self.next_logic_idx_cache = next_idx
+
+    def _phase_occupancy(self, logic_idx: int) -> float:
+        if not self.detectors:
+            return 0.0
+        total = 0.0
+        for det in self.detectors:
+            try:
+                total += traci.inductionloop.getLastStepOccupancy(det)
+            except Exception:
+                pass
+        return total / len(self.detectors)
+
+    def decide_next_phase(self) -> int:
+        if self.green_timer < self.max_green_steps:
+            cur_occ = self._phase_occupancy(self.current_logic_idx)
+            if cur_occ >= self.occ_threshold:
+                return self.current_logic_idx
+
+        best_idx = self.current_logic_idx
+        best_occ = -1.0
+        for idx in range(self.num_phases):
+            occ = self._phase_occupancy(idx)
+            if occ > best_occ:
+                best_occ = occ
+                best_idx = idx
+        return best_idx
+
+    def update(self):
+        if self.is_transitioning:
+            if self.transition_step_timer > 0:
+                self.transition_step_timer -= 1
+            else:
+                if self.transition_cursor < len(self.transition_queue):
+                    sumo_idx = self.transition_queue[self.transition_cursor]
+                    pd = self.phase_data.get(sumo_idx)
+                    if pd:
+                        try:
+                            traci.trafficlight.setRedYellowGreenState(self.jid, pd['state'])
+                        except Exception:
+                            pass
+                        dur_steps = max(0, int(pd.get('duration', DELTA_TIME) / DELTA_TIME) - 1)
+                        self.transition_step_timer = dur_steps
+                    self.transition_cursor += 1
+                else:
+                    self.is_transitioning = False
+                    self.current_logic_idx = self.next_logic_idx_cache
+                    self._apply_current_phase()
+                    self.min_green_timer = max(1, MIN_GREEN // DELTA_TIME)
+        else:
+            if self.min_green_timer > 0:
+                self.min_green_timer -= 1
+                self._apply_current_phase()
+            else:
+                if self.target_logic_idx != self.current_logic_idx:
+                    self._start_transition(self.target_logic_idx)
+                else:
+                    self._apply_current_phase()
+
+    def step(self):
+        if self.is_ready():
+            next_ph = self.decide_next_phase()
+            if next_ph != self.current_logic_idx:
+                self.set_target(next_ph)
+                self.green_timer = 0
+            else:
+                self.green_timer += 1
+        self.update()
+
 # ─────────────────────────────────────────────────────────────────────────────
 # NN MEGFIGYELÉS SEGÉDOSZTÁLY
 # ─────────────────────────────────────────────────────────────────────────────
@@ -250,6 +386,8 @@ class _LightAgent:
         self.ep_veh         = 0
         self.ep_tp          = 0
         self.ep_co2         = 0.0
+        self.ep_occ_sum     = 0.0
+        self.ep_occ_steps   = 0
 
     # Backward compat: régi hívók is működjenek
     def _reset_metrics(self):
@@ -316,9 +454,18 @@ class _LightAgent:
             return
         # ── Obs akkumulátorok (per delta_time ablak) ─────────────────────────
         self.steps_measured += 1
+        occ_step_total = 0.0
+        occ_step_count = 0
         for det in self.detectors:
-            self.det_occ[det]  += traci.inductionloop.getLastStepOccupancy(det)
+            occ_val = traci.inductionloop.getLastStepOccupancy(det)
+            self.det_occ[det]  += occ_val
             self.det_flow[det] += traci.inductionloop.getLastStepVehicleNumber(det)
+            occ_step_total += occ_val
+            occ_step_count += 1
+
+        if occ_step_count > 0:
+            self.ep_occ_sum += (occ_step_total / occ_step_count)
+            self.ep_occ_steps += 1
         # ── Epizód metrikák ──────────────────────────────────────────────────
         for lane_id in incoming_lanes:
             try:
@@ -332,8 +479,14 @@ class _LightAgent:
                 self.ep_co2 += traci.lane.getCO2Emission(lane_id)
             except Exception:
                 pass
-        # Throughput: detektor flow kumulált összege az epizódban
-        self.ep_tp = sum(self.det_flow[d] for d in self.detectors)
+        # Throughput: csak a MOZGÓ járművek.
+        # inductionloop.getLastStepHaltingNumber() nem létezik minden SUMO verzióban.
+        # Közelítés: ha az átlagsebesség < 0.1 m/s (és volt jármű), álló jármű.
+        # getLastStepMeanSpeed() = -1 ha nem volt jármű az adott lépésben.
+        for d in self.detectors:
+            raw  = traci.inductionloop.getLastStepVehicleNumber(d)
+            halt = _det_halting(d, raw)
+            self.ep_tp += max(0, raw - halt)
 
     def get_obs(self) -> dict:
         """Megfigyelés — pontosan ugyanúgy mint az edzésnél (SumoRLEnvironment).
@@ -363,8 +516,10 @@ class _LightAgent:
         halt_r      = self.ep_halt  / max(self.ep_veh, 1)
         tp          = float(self.ep_tp)
         total_co2_g = self.ep_co2 / 1000.0   # mg → g
+        avg_occ     = (self.ep_occ_sum / max(self.ep_occ_steps, 1)) / 100.0
         return {"avg_speed": avg_spd, "throughput": tp,
-                "halt_ratio": halt_r, "total_co2_g": total_co2_g}
+            "halt_ratio": halt_r, "total_co2_g": total_co2_g,
+            "avg_occupancy": avg_occ}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -415,6 +570,38 @@ def load_sb3_model(zip_path: str):
     raise RuntimeError(f"Nem sikerült betölteni: {zip_path}\nUtolsó hiba: {last_err}")
 
 
+def _build_obs_batch_for_model(model, obs: dict) -> dict:
+    """Model-kompatibilis dict obs batch építés.
+
+    Ha a modell observation space-e olyan kulcsot vár (pl. ``speed``),
+    amit az aktuális compare obs nem tartalmaz, akkor nullákkal tölti ki,
+    így a predict() nem dob KeyError-t.
+    """
+    try:
+        spaces = model.policy.observation_space.spaces
+    except Exception:
+        return {k: v.reshape(1, *v.shape) for k, v in obs.items()}
+
+    batch = {}
+    for key, space in spaces.items():
+        dtype = getattr(space, "dtype", np.float32)
+        shp = getattr(space, "shape", ())
+
+        if key in obs:
+            arr = np.asarray(obs[key], dtype=dtype)
+            if arr.shape != shp:
+                try:
+                    arr = arr.reshape(shp)
+                except Exception:
+                    arr = np.zeros(shp, dtype=dtype)
+        else:
+            arr = np.zeros(shp, dtype=dtype)
+
+        batch[key] = arr.reshape(1, *arr.shape)
+
+    return batch
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # EPIZÓD FUTTATÁSA
 # ─────────────────────────────────────────────────────────────────────────────
@@ -451,12 +638,22 @@ def run_episode(strategy: str, route_file: str,
 
     agent = _LightAgent(jid, ldata[jid], dets)
 
-    # Actuated mód beállítása (traci-n keresztül)
+    # Actuated mód: ugyanaz a JSON-alapú kontroller, mint a curve generátornál
+    actuated_ctrl = None
     if strategy == "actuated":
-        _setup_actuated(jid)
+        actuated_ctrl = _CurveActuatedController(jid, ldata[jid], dets)
 
-    # Warmup
-    for _ in range(WARMUP // DELTA_TIME * DELTA_TIME):
+    # Warmup: a lámpa a SUMO fix programját futtatja, de az agent belső
+    # állapotát (phase_timer, current_logic_idx) is szinkronban tartjuk,
+    # hogy az NN átvételkor ne ugrasszon vissza phase 0-ra váratlanul.
+    # NN stratégiánál round-robin fázisváltást alkalmazunk (= training warmup).
+    for step in range(WARMUP):
+        if strategy == "nn":
+            # Round-robin: agent irányítja a lámpát a warmup alatt is
+            if agent.is_ready():
+                next_phase = (agent.current_logic_idx + 1) % len(agent.logic_phases)
+                agent.set_target(next_phase)
+            agent.update()
         traci.simulationStep()
 
     # Fő szimuláció
@@ -468,9 +665,80 @@ def run_episode(strategy: str, route_file: str,
                    if strategy == "nn" and model is not None else set())
 
     agent._reset_episode()   # Epizód metrikák: egyszer, itt
+    _dbg_step    = 0
+    _dbg_actions = {}   # action → count, debug-hoz
+
+    # ── Q-érték / valószínűség lekérő helper ─────────────────────────────────
+    def _get_q_values(model, obs_batch):
+        """Q-értékek (DQN/QRDQN) vagy akció-valószínűségek (PPO/A2C).
+
+        obs_batch: már batch-elt dict {key: np.array(1, *shape)}.
+        SB3 2.8 API:
+          QRDQN: policy.quantile_net(obs_th) → [batch, n_quantiles*n_actions]
+                 reshape → [batch, n_quantiles, n_actions] → mean(dim=1) → Q-values
+          DQN:   policy.q_net(obs_th) → Q-values [batch, n_actions]
+          PPO/A2C: mlp_extractor → action_net → logits → softmax probs
+        """
+        try:
+            import torch
+            policy = model.policy
+            with torch.no_grad():
+                obs_th, _ = policy.obs_to_tensor(obs_batch)
+
+                # ── QRDQN (SB3 2.x): quantile_net on policy ──────────────────
+                if hasattr(policy, 'quantile_net'):
+                    # quantile_net(obs_th) → [batch, n_quantiles, n_actions]
+                    raw = policy.quantile_net(obs_th)
+                    q_vals = raw.mean(dim=1)               # [batch, n_actions]
+                    return ('Q', q_vals[0].cpu().numpy().tolist())
+
+                # ── DQN (SB3 2.x): q_net on policy ──────────────────────────
+                if hasattr(policy, 'q_net'):
+                    q_vals = policy.q_net(obs_th)
+                    if q_vals.dim() == 3:
+                        q_vals = q_vals.mean(dim=1)
+                    return ('Q', q_vals[0].cpu().numpy().tolist())
+
+                # ── PPO / A2C ─────────────────────────────────────────────────
+                if hasattr(policy, 'mlp_extractor') and hasattr(policy, 'action_net'):
+                    features = policy.extract_features(obs_th)
+                    latent_pi, _ = policy.mlp_extractor(features)
+                    logits = policy.action_net(latent_pi)
+                    probs  = torch.softmax(logits, dim=-1)
+                    return ('P', probs[0].cpu().numpy().tolist())
+        except Exception:
+            pass
+        return None
+
+    # ── Algo neve és obs space ────────────────────────────────────────────────
+    if strategy == "nn" and model is not None:
+        _algo_name = type(model).__name__
+        _n_actions = model.action_space.n if hasattr(model, 'action_space') else '?'
+        _obs_shapes = {k: v.shape for k, v in model.policy.observation_space.spaces.items()}
+    else:
+        _algo_name = '—'
+        _n_actions = '?'
+        _obs_shapes = {}
+
+    # ── Fejléc kiírása (csak nn módban) ──────────────────────────────────────
+    if strategy == "nn":
+        n_det = len(dets)
+        print(f"\n{'─'*100}")
+        print(f"  NN Monitor │ algo={_algo_name}  actions={_n_actions}  "
+              f"detectors={n_det}  incoming_lanes={len(incoming_lanes)}")
+        print(f"  Obs shapes: {_obs_shapes}")
+        print(f"{'─'*100}")
+        print(f"  {'t':>4}  {'ph':>3}  {'tmr':>5}  "
+              f"{'occ (avg/det)':^30}  {'flow (avg/det)':^30}  "
+              f"{'act':>4}  Q/P értékek")
+        print(f"{'─'*100}")
 
     for _ in range(total_steps):
         agent._reset_obs()   # Obs akkumulátorok: minden delta_time ablak elején
+
+        if strategy == "actuated" and actuated_ctrl is not None:
+            # A döntés DELTA_TIME ablakonként történik (mint a curve generatorban)
+            actuated_ctrl.step()
 
         # Szimuláció lépések + mérés ebben az ablakban
         for _ in range(DELTA_TIME):
@@ -480,15 +748,75 @@ def run_episode(strategy: str, route_file: str,
             agent.collect(list(incoming_lanes))
 
         # Ablak lefutott → obs a most gyűjtött átlagokból (= edzéskori megfigyelés)
-        if strategy == "nn" and agent.is_ready() and model is not None:
-            obs = agent.get_obs()
-            obs_filtered = {k: v for k, v in obs.items() if k in _model_keys}
-            obs_batch    = {k: v.reshape(1, *v.shape) for k, v in obs_filtered.items()}
-            action, _    = model.predict(obs_batch, deterministic=True)
-            agent.set_target(int(action[0]))
+        if strategy == "nn" and model is not None:
+            _dbg_step += 1
+            if agent.is_ready():
+                obs = agent.get_obs()
+                obs_filtered = {k: v for k, v in obs.items() if k in _model_keys}
+                obs_batch    = _build_obs_batch_for_model(model, obs_filtered)
+                action, _    = model.predict(obs_batch, deterministic=True)
+                action_int   = int(action[0])
+                _dbg_actions[action_int] = _dbg_actions.get(action_int, 0) + 1
+                agent.set_target(action_int)
+
+                # Q/P értékek
+                qp_result = _get_q_values(model, obs_batch)
+                if qp_result is not None:
+                    qp_type, qp_vals = qp_result
+                    qp_str = f"  {qp_type}=[" + " ".join(f"{v:+.3f}" for v in qp_vals) + "]"
+                    # Degeneráció gyanú: ha minden érték azonos vagy közel azonos → warn
+                    if max(qp_vals) - min(qp_vals) < 0.05:
+                        qp_str += "  ⚠ DEGENERATE (értékek azonosak!)"
+                else:
+                    qp_str = "  (Q/P kinyerés sikertelen)"
+
+                # Obs stringek
+                n_show = min(len(obs["occupancy"]), 6)
+                occ_str  = "  ".join(f"{obs['occupancy'][i]:.3f}" for i in range(n_show))
+                flow_str = "  ".join(f"{obs['flow'][i]:5.2f}"     for i in range(n_show))
+
+                # Akció marker: ► ha vált, · ha marad
+                marker = "►" if action_int != agent.current_logic_idx else "·"
+
+                # Korai degeneráció figyelmeztetés
+                if _dbg_step == 20 and len(_dbg_actions) == 1:
+                    print(f"  {'':>4}  ⚠⚠ EARLY WARNING: az első 20 lépésben csak 1 akció! "
+                          f"Valószínűleg degenerate policy. ⚠⚠")
+
+                print(f"  {_dbg_step:>4}  {obs['phase'][0]:>3}  "
+                      f"{obs['phase_timer'][0]:>5.2f}  "
+                      f"[{occ_str}]  [{flow_str}]  "
+                      f"{marker}{action_int:>3}{qp_str}")
+            else:
+                print(f"  {_dbg_step:>4}  {'—':>3}  {'—':>5}  "
+                      f"{'NOT READY':^62}  "
+                      f"(trans={agent.is_transitioning}  "
+                      f"mg={agent.min_green_timer})")
+
+    total_decisions = 0
+    if strategy == "nn":
+        print(f"{'─'*100}")
+        total_decisions = sum(_dbg_actions.values())
+        dist_str = "  ".join(
+            f"act{a}={cnt}  ({100*cnt/max(total_decisions,1):.0f}%)"
+            for a, cnt in sorted(_dbg_actions.items())
+        )
+        print(f"  Akció-eloszlás ({total_decisions} döntés): {dist_str}")
+        # Végső degeneráció diagnózis
+        if total_decisions > 0:
+            dominant = max(_dbg_actions.values()) / total_decisions
+            if dominant > 0.95:
+                print(f"  ⚠⚠ DEGENERATE POLICY: {dominant*100:.0f}% egyetlen akció. "
+                      f"A Q-értékek legyenek közel azonosak (lásd fent). "
+                      f"Ez training-minőség probléma, nem compare bug. ⚠⚠")
+        print(f"{'─'*100}\n")
 
     result = agent.metrics()   # Epizód összesítő
     result['strategy'] = strategy
+    if strategy == "nn":
+        result['agent_id'] = jid
+        result['total_decisions'] = int(total_decisions)
+        result['action_counts'] = {int(a): int(cnt) for a, cnt in sorted(_dbg_actions.items())}
     return result
 
 
@@ -605,6 +933,10 @@ def run_all_comparisons(extra_zips: list = None,
                         "avg_speed":   result['avg_speed'],
                         "throughput":  result['throughput'],
                         "halt_ratio":  result['halt_ratio'],
+                        "avg_occupancy": result.get('avg_occupancy', np.nan),
+                        "agent_id": result.get('agent_id', TARGET_JID),
+                        "total_decisions": result.get('total_decisions', 0),
+                        "action_counts": result.get('action_counts', {}),
                         "elapsed_s":   round(elapsed, 1),
                     }
                     records.append(rec)
@@ -614,6 +946,13 @@ def run_all_comparisons(extra_zips: list = None,
                           f"tp={result['throughput']:.0f}  "
                           f"halt={result['halt_ratio']:.3f}  "
                           f"({elapsed:.0f}s)")
+                    if result.get('action_counts'):
+                        n_dec = max(int(result.get('total_decisions', 0)), 1)
+                        dist = ", ".join(
+                            f"a{int(a)}={int(c)} ({100.0*int(c)/n_dec:.0f}%)"
+                            for a, c in sorted(result['action_counts'].items(), key=lambda kv: int(kv[0]))
+                        )
+                        print(f"           ↳ Akció-eloszlás [{result.get('agent_id', TARGET_JID)}]: {dist}")
                 except Exception as e:
                     import traceback
                     print(f"  HIBA [{label}]: {e}")
@@ -648,7 +987,7 @@ def _strategy_order(df: pd.DataFrame) -> list:
 
 def _palette(strategies: list) -> dict:
     fixed_colors = {"fixed": "#4A90D9", "actuated": "#27AE60"}
-    cmap = cm.get_cmap('tab20', max(1, len(strategies) - 2))
+    cmap = matplotlib.colormaps.get_cmap('tab20').resampled(max(1, len(strategies) - 2))
     nn_strats = [s for s in strategies if s not in fixed_colors]
     colors = dict(fixed_colors)
     for i, s in enumerate(nn_strats):
@@ -768,13 +1107,21 @@ def main():
                         help='Szűrés stratégia nevekre (üres = mind)')
     parser.add_argument('--output-dir', default='',
                         help='Kimeneti könyvtár (alap: eval_comparison)')
+    parser.add_argument('--flows', nargs='+', type=int, default=[],
+                        help='Forgalmi szintek (pl. --flows 150 300)')
+    parser.add_argument('--episodes', type=int, default=0,
+                        help='Epizódok száma szintenként')
     args = parser.parse_args()
 
-    global MODELS_DIR, OUTPUT_DIR
+    global MODELS_DIR, OUTPUT_DIR, FLOW_LEVELS, EPISODES_PER_LEVEL
     if args.models_dir:
         MODELS_DIR = args.models_dir
     if args.output_dir:
         OUTPUT_DIR = args.output_dir
+    if args.flows:
+        FLOW_LEVELS = args.flows
+    if args.episodes > 0:
+        EPISODES_PER_LEVEL = args.episodes
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
