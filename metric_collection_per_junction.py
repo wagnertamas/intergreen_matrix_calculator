@@ -318,10 +318,49 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
             super().__init__(jid, logic_data)
             # Detek: mely detektorok tartoznak ehhez a junction-hoz
             self.dets = all_dets
-            # Fzis  detektor trkp: logic_idx  (kzeltleg) az adott fzishoz
-            # tartoz detektorok. Egyszerstett: az sszes dtektort figyelembe vesszk
-            # mivel a junction_dets m r el van ksztve nm kthet fzisonknt.
+            # Fázis -> detektor térkép a zöld jelzést kapó bejövő sávok alapján.
+            self.phase_detectors = self._build_phase_detector_map()
             self.green_timer = 0  # hny lpse tart m mr az aktulis zld fzis
+
+        def _build_phase_detector_map(self):
+            lane_to_dets = defaultdict(list)
+            for det in self.dets:
+                try:
+                    lane_id = traci.inductionloop.getLaneID(det)
+                    lane_to_dets[lane_id].append(det)
+                except Exception:
+                    pass
+
+            try:
+                controlled_links = traci.trafficlight.getControlledLinks(self.jid)
+            except Exception:
+                controlled_links = []
+
+            phase_map = {}
+            for logic_idx, sumo_idx in self.logic_phases.items():
+                pd = self.phase_data.get(sumo_idx, {})
+                state = pd.get('state', '')
+                dets = []
+                for sig_idx, links in enumerate(controlled_links):
+                    if sig_idx >= len(state):
+                        break
+                    if state[sig_idx] not in ('G', 'g'):
+                        continue
+                    for link in links:
+                        if not link:
+                            continue
+                        in_lane = link[0]
+                        dets.extend(lane_to_dets.get(in_lane, []))
+
+                # Deduplikálás stabil sorrendben.
+                seen = set()
+                uniq = []
+                for d in dets:
+                    if d not in seen:
+                        seen.add(d)
+                        uniq.append(d)
+                phase_map[int(logic_idx)] = uniq
+            return phase_map
 
         def decide_next_phase(self):
             """Legmagasabb tlagos occupancy-j fzis kivlasztsa.
@@ -342,16 +381,18 @@ def run_simulation(flow_max, episode_idx, output_dir, control_mode="random", use
             return best_idx
 
         def _phase_occupancy(self, logic_idx):
-            """tlagos pillanati occupancy az sszes dtektoron (kzelts)."""
-            if not self.dets:
+            """Átlagos occupancy az adott fázis zöld ágain lévő detektorokon."""
+            phase_dets = self.phase_detectors.get(int(logic_idx), []) if self.phase_detectors else []
+            dets = phase_dets if phase_dets else self.dets
+            if not dets:
                 return 0.0
             total = 0.0
-            for det in self.dets:
+            for det in dets:
                 try:
                     total += traci.inductionloop.getLastStepOccupancy(det)
                 except Exception:
                     pass
-            return total / len(self.dets)
+            return total / len(dets)
 
         def step(self):
             """Egy szimulcis lpst hajt vgre  beleertve a dntslogikt."""

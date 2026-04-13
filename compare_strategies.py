@@ -245,7 +245,50 @@ class _CurveActuatedController:
 
         self.max_green_steps = max(1, 60 // DELTA_TIME)
         self.occ_threshold = 0.15
+        self.phase_detectors = self._build_phase_detector_map()
         self._apply_current_phase()
+
+    def _build_phase_detector_map(self) -> dict:
+        """Logic phase -> detectors on currently green-controlled incoming lanes."""
+        lane_to_dets = {}
+        for det in self.detectors:
+            try:
+                lane_id = traci.inductionloop.getLaneID(det)
+                lane_to_dets.setdefault(lane_id, []).append(det)
+            except Exception:
+                pass
+
+        phase_map = {}
+        try:
+            controlled_links = traci.trafficlight.getControlledLinks(self.jid)
+        except Exception:
+            controlled_links = []
+
+        for logic_idx, sumo_idx in self.logic_phases.items():
+            pd = self.phase_data.get(sumo_idx, {})
+            state = pd.get('state', '')
+            dets = []
+            for sig_idx, links in enumerate(controlled_links):
+                if sig_idx >= len(state):
+                    break
+                if state[sig_idx] not in ('G', 'g'):
+                    continue
+                for link in links:
+                    if not link:
+                        continue
+                    in_lane = link[0]
+                    dets.extend(lane_to_dets.get(in_lane, []))
+
+            # Deduplicate while keeping stable order.
+            seen = set()
+            uniq = []
+            for d in dets:
+                if d not in seen:
+                    seen.add(d)
+                    uniq.append(d)
+            phase_map[int(logic_idx)] = uniq
+
+        return phase_map
 
     def is_ready(self):
         return (not self.is_transitioning) and (self.min_green_timer <= 0)
@@ -275,15 +318,17 @@ class _CurveActuatedController:
         self.next_logic_idx_cache = next_idx
 
     def _phase_occupancy(self, logic_idx: int) -> float:
-        if not self.detectors:
+        phase_dets = self.phase_detectors.get(int(logic_idx), []) if self.phase_detectors else []
+        dets = phase_dets if phase_dets else self.detectors
+        if not dets:
             return 0.0
         total = 0.0
-        for det in self.detectors:
+        for det in dets:
             try:
                 total += traci.inductionloop.getLastStepOccupancy(det)
             except Exception:
                 pass
-        return total / len(self.detectors)
+        return total / len(dets)
 
     def decide_next_phase(self) -> int:
         if self.green_timer < self.max_green_steps:
