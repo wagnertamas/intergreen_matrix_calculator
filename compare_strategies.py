@@ -47,7 +47,7 @@ OUTPUT_DIR   = os.path.join(SCRIPT_DIR, "eval_comparison")
 MODELS_DIR   = os.path.join(SCRIPT_DIR, "models", "test")
 
 TARGET_JID   = "R1C1_C"           # Tesztelt kereszteződés
-FLOW_LEVELS  = [150,300,450,600,750,900]    # Forgalmi szintek [jármű/óra/sáv] — csak TARGET_JID
+FLOW_LEVELS  = [150,300,450,600]    # Forgalmi szintek [jármű/óra/sáv] — csak TARGET_JID
 EPISODES_PER_LEVEL = 2            # Epizódok / forgalmi szint (statisztika)
 DURATION     = 1200               # Szimulációs idő [sec]
 WARMUP       = 0                # Bemelegítő lépések [sec]
@@ -421,6 +421,7 @@ class _LightAgent:
         self.steps_measured = 0
         self.det_occ  = {d: 0.0 for d in self.detectors}
         self.det_flow = {d: 0   for d in self.detectors}
+        self.det_speed = {d: 0.0 for d in self.detectors}
 
     # ── Epizód-szintű metrika akkumulátorok: csak epizód elején resetelni ───
     def _reset_episode(self):
@@ -505,6 +506,7 @@ class _LightAgent:
             occ_val = traci.inductionloop.getLastStepOccupancy(det)
             self.det_occ[det]  += occ_val
             self.det_flow[det] += traci.inductionloop.getLastStepVehicleNumber(det)
+            self.det_speed[det] += max(0.0, traci.inductionloop.getLastStepMeanSpeed(det))
             occ_step_total += occ_val
             occ_step_count += 1
 
@@ -545,15 +547,18 @@ class _LightAgent:
         n = len(self.detectors)
         occ  = np.zeros(n, dtype=np.float32)
         flow = np.zeros(n, dtype=np.float32)
+        speed = np.zeros(n, dtype=np.float32)
         if self.steps_measured > 0:
             for i, d in enumerate(self.detectors):
                 occ[i]  = (self.det_occ[d]  / self.steps_measured) / 100.0
                 flow[i] = (self.det_flow[d] / self.steps_measured)
+                speed[i] = min((self.det_speed[d] / self.steps_measured) / 14.0, 1.0)
         return {
             "phase":       np.array([self.current_logic_idx], dtype=np.int32),
             "phase_timer": np.array([min(self.phase_timer / 120.0, 1.0)], dtype=np.float32),
             "occupancy":   occ,
             "flow":        flow,
+            "speed":       speed,
         }
 
     def metrics(self) -> dict:
@@ -1164,7 +1169,7 @@ def main():
     if args.output_dir:
         OUTPUT_DIR = args.output_dir
     if args.flows:
-        FLOW_LEVELS = args.flows
+        FLOW_LEVELS = [min(600, max(100, flow)) for flow in args.flows]
     if args.episodes > 0:
         EPISODES_PER_LEVEL = args.episodes
 

@@ -1266,10 +1266,15 @@ def generate_reward_step_curve(output_dir, junction_filter=None, reward_mode=Non
     else:  # speed_throughput (default)
         spd = full['AvgSpeed'].values
         thr = full['Throughput'].values if 'Throughput' in full.columns else np.ones(len(full))
+        halt = full['HaltRatio'].values if 'HaltRatio' in full.columns else np.zeros(len(full))
         r_s = _logtanh_pos(spd, mu_s, std_s)
         r_t = _logtanh_pos(thr, mu_t, std_t)
-        full['reward_plain_step'] = (r_s + r_t) / 2
-        reward_label = f'Speed + Throughput  |  μ_s={mu_s:.3f}  σ_s={std_s:.3f}  |  μ_tp={mu_t:.3f}  σ_tp={std_t:.3f}'
+        r_h = _logtanh_pos(np.abs(halt) + epsilon, mu_halt, std_halt)
+        full['reward_plain_step'] = ((r_s + r_t) / 2) * (1.0 - r_h * 0.8)
+        reward_label = (
+            f'Speed + Throughput, Halt-penalty  |  μ_s={mu_s:.3f}  σ_s={std_s:.3f}  |  '
+            f'μ_tp={mu_t:.3f}  σ_tp={std_t:.3f}  |  μ_h={mu_halt:.3f}  σ_h={std_halt:.3f}'
+        )
 
     run_ids     = sorted(full['run_id'].unique())
     n_runs      = len(run_ids)

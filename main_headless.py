@@ -6,8 +6,11 @@ Használat:
   # Egy junction tanítás QRDQN-nel (default)
   python main_headless.py --junction R1C1_C --timesteps 50000
 
-  # PPO algoritmussal, halt_ratio reward-dal
-  python main_headless.py --junction R2C2_C --algorithm ppo --reward-mode halt_ratio
+    # PPO algoritmussal, sima haltratio reward-dal
+    python main_headless.py --junction R2C2_C --algorithm ppo --reward-mode haltratio
+
+    # AvgOcc + reward_plain kombináció
+    python main_headless.py --junction R1C1_C --algorithm qrdqn --reward-mode avgocc_reward_plain
 
   # Legjobb kombó (TotalWaitingTime + triplet TP+Std+Halt)
   python main_headless.py --junction R1C1_C --reward-mode wait_haltratio
@@ -57,9 +60,14 @@ def main():
                         help=f"RL algoritmus ({', '.join(SUPPORTED_ALGORITHMS.keys())}). Default: qrdqn")
     parser.add_argument("--reward-mode", type=str, default=None,
                         choices=["speed_throughput", "speed_throughput_freq", "halt_ratio",
-                                 "co2_speedstd", "wait_triplet_tpstdhalt", "wait_haltratio"],
+                                 "co2_speedstd", "wait_triplet_tpstdhalt", "wait_haltratio",
+                                 "haltratio", "halt_ratio_plain", "haltratio_plain",
+                                 "avgocc_reward_plain", "avgocc+reward_plain", "avgOcc+reward_plain",
+                                 "avgocc_reward_plaint", "avgOcc+reward_plaint"],
                         help="Reward számítási mód. Default: speed_throughput\n"
-                             "  wait_triplet_tpstdhalt = TotalWaitingTime + (Throughput+SpeedStd+HaltRatio)/3  [AJÁNLOTT]")
+                             "  wait_triplet_tpstdhalt = TotalWaitingTime + (Throughput+SpeedStd+HaltRatio)/3\n"
+                             "  haltratio = sima HaltRatio (lineáris)\n"
+                             "  avgocc_reward_plain = AvgOcc + reward_plain")
     parser.add_argument("--junction-params", type=str, default=None,
                         help="junction_reward_params.json útvonal (default: auto-keresés)")
     # Hiperparaméterek
@@ -100,7 +108,7 @@ def main():
     config = load_config(config_path)
 
     hp = config.get("hyperparams", {})
-    env_kw = config.get("env_kwargs", {})
+    env_kw = dict(config.get("env_kwargs", {}) or {})
 
     # CLI hiperparaméterek felülírják a configot
     cli_hp_map = {
@@ -164,7 +172,10 @@ def main():
     # Fix forgalom
     fixed_flow = None
     if args.flow_target is not None:
-        fixed_flow = {'target': args.flow_target, 'spread': args.flow_spread}
+        fixed_flow = {
+            'target': min(600, max(100, args.flow_target)),
+            'spread': max(0, args.flow_spread),
+        }
 
     print(f"[INFO] Net: {net_file}")
     print(f"[INFO] Timesteps: {total_timesteps} | Project: {project}")
@@ -175,6 +186,9 @@ def main():
         print(f"[INFO] Fixed traffic: target={fixed_flow['target']}, spread=±{fixed_flow['spread']}")
     else:
         print(f"[INFO] Traffic: random target+spread (epizódonként)")
+
+    trainer_env_kwargs = dict(env_kw)
+    trainer_env_kwargs.pop('reward_weights', None)
 
     trainer = IndependentDQNTrainer(
         net_file=net_file,
@@ -192,6 +206,7 @@ def main():
         algorithm=algorithm,
         reward_mode=reward_mode,
         junction_params_path=junction_params,
+        **trainer_env_kwargs,
     )
 
     try:

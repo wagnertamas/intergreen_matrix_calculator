@@ -33,12 +33,12 @@ ALGORITHMS=(qrdqn ppo dqn)
 #ALGORITHMS=(qrdqn dqn ppo a2c)
 
 # Reward módok
-REWARDS=(wait_haltratio)
-#REWARDS=(speed_throughput speed_throughput_freq halt_ratio co2_speedstd wait_triplet_tpstdhalt wait_haltratio)
+REWARDS=(wait_haltratio haltratio avgocc_reward_plain)
+#REWARDS=(speed_throughput speed_throughput_freq halt_ratio haltratio co2_speedstd wait_triplet_tpstdhalt wait_haltratio avgocc_reward_plain)
 
 # Neurális háló méretek
-LAYERS=(1 2 3)
-NEURONS=(16 32 64 128)
+LAYERS=(1 2 3 4)
+NEURONS=(8 16 32 64 128)
 
 # --- CLI argumentumok ---
 while getopts "j:t:r:" opt; do

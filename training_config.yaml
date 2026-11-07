@@ -25,14 +25,18 @@ total_timesteps: 100000
 algorithm: qrdqn
 
 # --- Reward mód ---
-# speed_throughput: AvgSpeed + Throughput (log-tanh) ← legjobb η²
-# halt_ratio:       HaltRatio (log-tanh) ← legrobusztusabb
+# speed_throughput: AvgSpeed + Throughput, Halt-penaltyvel (log-tanh)
+# halt_ratio:       HaltRatio (log-tanh) ← legegyszerűbb, elemzéssel jól egyező mód
+# haltratio:        Sima HaltRatio (lineáris), reward = 1 - halt_ratio
 # co2_speedstd:     TotalCO2 + SpeedStd (log-tanh)
-reward_mode: speed_throughput
+# wait_haltratio:   TotalWaitingTime + HaltRatio (log-tanh) ← jó kombinált, elemzéssel egyező mód
+# avgocc_reward_plain: AvgOcc + reward_plain(Speed+TP), 50-50 átlag
+reward_mode: halt_ratio
 
 # --- Környezeti beállítások ---
 env_kwargs:
   delta_time: 5
+  use_warmup_reward_calibration: false
   reward_weights:
     waiting: 1.0
     co2: 1.0

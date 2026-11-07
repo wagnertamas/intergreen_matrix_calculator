@@ -7,6 +7,7 @@ import time
 import os
 import sys
 import json
+import copy
 
 # --- JAVÍTÁS: Feltételes GUI import ---
 try:
@@ -409,6 +410,9 @@ class IndependentDQNTrainer:
         self.algorithm_name = algorithm.lower()
         self.reward_mode = reward_mode
         self.junction_params_path = junction_params_path
+        self.use_warmup_reward_calibration = bool(
+            env_kwargs.pop('use_warmup_reward_calibration', True)
+        )
         self.env_kwargs = env_kwargs
 
         self.stop_requested = False
@@ -430,12 +434,9 @@ class IndependentDQNTrainer:
         if self.fixed_flow:
             target = self.fixed_flow.get('target', 300)
             spread = self.fixed_flow.get('spread', 50)
-            flow_range = (max(100, target - spread), min(650, target + spread))
+            max_flow = 600
+            flow_range = (max(100, target - spread), min(max_flow, target + spread))
             options['flow_range'] = flow_range
-            # Single agent focused traffic: period-re konvertálás
-            # target veh/h/lane → period = 3600 / target sec/veh
-            if self.single_agent_id and spread == 0:
-                options['traffic_period'] = round(3600.0 / max(target, 1), 4)
         return options if options else None
 
     def log(self, msg):
@@ -444,45 +445,22 @@ class IndependentDQNTrainer:
 
     def _get_actuated_action(self, jid: str, obs: dict) -> int:
         """
-        Max-pressure közelítő aktuált akció-becslés (DQN/QRDQN buffer-beoltáshoz).
-
-        A detektorokat egyenlően osztja el a fázisok között, majd a legmagasabb
-        átlagos occupancy-jú fázist preferálja. Ha a jelenlegi fázis terhelése
-        legalább 50%-a a maximumnak ÉS érdemi (>0.05), kiterjeszti azt.
-        Különben a legzsúfoltabb fázisra vált.
+        Occupancy-alapú aktuált akció-becslés (DQN/QRDQN buffer-beoltáshoz),
+        ugyanazzal a fázis-specifikus logikával, mint a compare/collector.
 
         Visszaad: phase_idx (int)
         """
         agent = self.env.agents.get(jid)
         if agent is None:
             return 0
+        if hasattr(agent, 'decide_actuated_action'):
+            return int(agent.decide_actuated_action(obs))
+
+        # Fallback régebbi agent implementációhoz.
         if not agent.is_ready_for_action():
             return agent.current_logic_idx
-
-        occ = obs.get('occupancy', np.array([]))
-        n_phases = agent.num_phases
-
-        if len(occ) == 0 or n_phases <= 1:
-            # Nincs detektor-adat → round-robin
-            return (agent.current_logic_idx + 1) % n_phases
-
-        # Detektorokat egyenlően osztjuk fel a fázisok közé (közelítés)
-        n_dets  = len(occ)
-        chunk   = max(1, n_dets // n_phases)
-        phase_pressure = []
-        for p in range(n_phases):
-            start = (p * chunk) % n_dets
-            end   = min(start + chunk, n_dets)
-            phase_pressure.append(float(np.mean(occ[start:end])))
-
-        best_p    = max(phase_pressure)
-        current_p = phase_pressure[agent.current_logic_idx]
-
-        # Kiterjesztés, ha a jelenlegi fázis elég terhelt
-        if current_p >= 0.5 * best_p and current_p > 0.05:
-            return agent.current_logic_idx
-        else:
-            return int(np.argmax(phase_pressure))
+        n_phases = max(1, int(getattr(agent, 'num_phases', 1)))
+        return (agent.current_logic_idx + 1) % n_phases
 
     def _run_warmup_calibration(self, initial_obs):
         """Nyers metrikák leméréséhez kalibráció (súlyok frissítése nélkül).
@@ -490,10 +468,14 @@ class IndependentDQNTrainer:
         if not self.single_agent_id:
             return initial_obs
 
+        if not self.use_warmup_reward_calibration:
+            self.log("[WARMUP] Reward-paraméter újrakalibráció kikapcsolva; marad az elemzett JSON.")
+            return initial_obs
+
         # Mikor futtassuk? Transfer learning esetén mindig, fresh training esetén
         # csak ha a reward módhoz fontos a pontos kalibráció (wait/halt alapú módok).
         needs_calib = bool(self.load_model_path) or any(
-            kw in self.reward_mode for kw in ('wait', 'halt', 'co2', 'speedstd')
+            kw in self.reward_mode for kw in ('wait', 'halt', 'co2', 'speedstd', 'avgocc', 'reward_plain')
         )
         if not needs_calib:
             return initial_obs
@@ -508,7 +490,7 @@ class IndependentDQNTrainer:
         options = self._build_reset_options() or {}
         options['traffic_duration'] = 1800
         
-        raw_metrics = {'speed': [], 'throughput': [], 'halt': [], 'co2': [], 'speedstd': [], 'wait': []}
+        raw_metrics = {'speed': [], 'throughput': [], 'halt': [], 'co2': [], 'speedstd': [], 'wait': [], 'avgocc': []}
         
         local_obs = initial_obs
         
@@ -540,6 +522,7 @@ class IndependentDQNTrainer:
                     raw_metrics['co2'].append(np.log((ag.accumulated_co2 / ag.steps_measured) + 1e-5))
                     raw_metrics['speedstd'].append(np.log(ag.get_speed_std_metric() + 1e-5))
                     raw_metrics['wait'].append(np.log(ag.get_avg_waiting_time_metric() + 1e-5))
+                    raw_metrics['avgocc'].append(np.log(ag.get_avg_occupancy_metric() + 1e-5))
                 
                 local_obs = next_obs
                 step_idx += 1
@@ -560,13 +543,23 @@ class IndependentDQNTrainer:
         # --- Parameter Updates ---
         if not self.stop_requested and len(raw_metrics['speed']) > 0:
             new_params = {}
-            if "speed" in self.reward_mode or "throughput" in self.reward_mode:
+            uses_speed_tp_plain = self.reward_mode in (
+                'avgocc_reward_plain', 'avgocc+reward_plain', 'avgOcc+reward_plain',
+                'avgocc_reward_plaint', 'avgOcc+reward_plaint'
+            )
+
+            if "speed" in self.reward_mode or "throughput" in self.reward_mode or uses_speed_tp_plain:
                 new_params['MU_SPEED'] = float(np.mean(raw_metrics['speed']))
                 new_params['STD_SPEED'] = float(np.std(raw_metrics['speed'])) + 1e-9
                 new_params['MU_THROUGHPUT'] = float(np.mean(raw_metrics['throughput']))
                 new_params['STD_THROUGHPUT'] = float(np.std(raw_metrics['throughput'])) + 1e-9
                 self.log(f"  [KALIBRÁLVA] SPEED: mu={new_params['MU_SPEED']:.3f}, std={new_params['STD_SPEED']:.3f}")
                 self.log(f"  [KALIBRÁLVA] THROU: mu={new_params['MU_THROUGHPUT']:.3f}, std={new_params['STD_THROUGHPUT']:.3f}")
+
+            if "avgocc" in self.reward_mode:
+                new_params['MU_OCC'] = float(np.mean(raw_metrics['avgocc']))
+                new_params['STD_OCC'] = float(np.std(raw_metrics['avgocc'])) + 1e-9
+                self.log(f"  [KALIBRÁLVA] OCC  : mu={new_params['MU_OCC']:.3f}, std={new_params['STD_OCC']:.3f}")
                 
             if "halt" in self.reward_mode:
                 new_params['MU_HALT'] = float(np.mean(raw_metrics['halt']))
@@ -675,21 +668,26 @@ class IndependentDQNTrainer:
         self.log(f"[INFO] Aktuált warmup lépések (env.reset-ben): {_warmup_steps} "
                  f"({self.algorithm_name})")
 
+        env_kwargs = dict(self.env_kwargs)
+        env_min_green_time = env_kwargs.pop('min_green_time', 5)
+        env_delta_time = env_kwargs.pop('delta_time', 5)
+        env_random_traffic = env_kwargs.pop('random_traffic', True)
+
         self.env = SumoRLEnvironment(
             net_file=self.net_file,
             logic_json_file=self.logic_file,
             detector_file=self.detector_file,
             reward_weights=self.reward_weights,
             sumo_gui=self.sumo_gui,
-            min_green_time=5,
-            delta_time=5,
-            random_traffic=True,
+            min_green_time=env_min_green_time,
+            delta_time=env_delta_time,
+            random_traffic=env_random_traffic,
             single_agent_id=self.single_agent_id,
             run_id=f"{self.single_agent_id or 'ALL'}_{int(time.time())}_{os.getpid()}",
             reward_mode=self.reward_mode,
             junction_params_path=self.junction_params_path,
             actuated_warmup_steps=_warmup_steps,
-            **self.env_kwargs
+            **env_kwargs
         )
 
         # 3. KÖRNYEZET INDÍTÁSA
@@ -1273,6 +1271,22 @@ class IndependentDQNTrainer:
         os.makedirs(export_dir, exist_ok=True)
         self.log(f"Exporting ONNX models to {export_dir}...")
 
+        export_device = torch.device("cpu")
+
+        def _export_with_legacy_onnx(module, args, path, **kwargs):
+            with torch.no_grad():
+                torch.onnx.export(
+                    module,
+                    args,
+                    path,
+                    export_params=True,
+                    keep_initializers_as_inputs=False,
+                    opset_version=18,
+                    training=torch.onnx.TrainingMode.EVAL,
+                    dynamo=False,
+                    **kwargs,
+                )
+
         suffix_str = f"_{step_suffix}" if step_suffix else ""
 
         for jid, model in self.agents.items():
@@ -1283,11 +1297,12 @@ class IndependentDQNTrainer:
                 for key, space in obs_space.spaces.items():
                     # Create dummy tensor with batch size 1
                     shape = (1,) + space.shape
-                    dummy_obs[key] = torch.zeros(shape).to(model.device)
+                    dummy_obs[key] = torch.zeros(shape, dtype=torch.float32, device=export_device)
 
                 # 2. Get the policy
-                policy = model.policy
+                policy = copy.deepcopy(model.policy).to(export_device)
                 policy.set_training_mode(False) # Ensure eval mode for export
+                policy.eval()
 
                 # 3. Export
                 onnx_path = os.path.join(export_dir, f"{jid}{suffix_str}.onnx")
@@ -1318,33 +1333,28 @@ class IndependentDQNTrainer:
 
                 if isinstance(model.policy.observation_space, gym.spaces.Dict):
                     # We need to decompose the dict
-                    wrapper = OnnxWrapper(policy, obs_keys)
+                    wrapper = OnnxWrapper(policy, obs_keys).to(export_device)
+                    wrapper.eval()
                     inputs = tuple(dummy_obs[k] for k in obs_keys)
                     
                     dynamic_axes_dict = {k: {0: "batch_size"} for k in obs_keys}
                     dynamic_axes_dict["action_logits"] = {0: "batch_size"}
 
-                    torch.onnx.export(
+                    _export_with_legacy_onnx(
                         wrapper,
                         inputs,
                         onnx_path,
-                        export_params=True,
-                        keep_initializers_as_inputs=False,
-                        opset_version=18,
                         input_names=obs_keys,
                         output_names=["action_logits"],
                         dynamic_axes=dynamic_axes_dict
                     )
                 else:
                     # Flat observation
-                    dummy_input = torch.zeros((1,) + obs_space.shape).to(model.device)
-                    torch.onnx.export(
+                    dummy_input = torch.zeros((1,) + obs_space.shape, dtype=torch.float32, device=export_device)
+                    _export_with_legacy_onnx(
                         policy,
                         dummy_input,
                         onnx_path,
-                        export_params=True,
-                        keep_initializers_as_inputs=False,
-                        opset_version=18,
                         input_names=["input"],
                         output_names=["output"]
                     )
@@ -1413,20 +1423,18 @@ class IndependentDQNTrainer:
                                 latent = self.body(features)
                                 return self.fused_head(latent)
 
-                        fused_model = FusedQRDQNPolicy(model.policy, obs_keys)
+                        fused_model = FusedQRDQNPolicy(policy, obs_keys).to(export_device)
+                        fused_model.eval()
 
                         fused_inputs = tuple(dummy_obs[k] for k in obs_keys)
 
                         fused_dynamic = {k: {0: "batch_size"} for k in obs_keys}
                         fused_dynamic["action_logits"] = {0: "batch_size"}
 
-                        torch.onnx.export(
+                        _export_with_legacy_onnx(
                             fused_model,
                             fused_inputs,
                             fused_onnx_path,
-                            export_params=True,
-                            keep_initializers_as_inputs=False,
-                            opset_version=18,
                             input_names=obs_keys,
                             output_names=["action_logits"],
                             dynamic_axes=fused_dynamic
@@ -1670,7 +1678,8 @@ class TrainingDialog:
 
         tk.Label(frame_algo, text="Reward Mode:").grid(row=0, column=2, sticky="w", padx=(15, 0))
         self.combo_reward_mode = ttk.Combobox(frame_algo,
-            values=["speed_throughput", "halt_ratio", "co2_speedstd", "wait_triplet_tpstdhalt", "wait_haltratio"],
+            values=["speed_throughput", "halt_ratio", "haltratio", "co2_speedstd",
+                    "wait_triplet_tpstdhalt", "wait_haltratio", "avgocc_reward_plain"],
             state="readonly", width=22)
         self.combo_reward_mode.set("speed_throughput")
         self.combo_reward_mode.grid(row=0, column=3, padx=5, sticky="w")
@@ -1795,9 +1804,11 @@ class TrainingDialog:
         info_map = {
             'speed_throughput': 'AvgSpeed + Throughput, log-tanh (η²=0.120, legjobb)',
             'halt_ratio':       'HaltRatio, log-tanh (η²=0.156, legrobusztusabb)',
+            'haltratio':        'Sima HaltRatio (lineáris): reward = 1 - halt_ratio',
             'co2_speedstd':     'TotalCO2 + SpeedStd, log-tanh (η²=0.224)',
             'wait_triplet_tpstdhalt': 'TotalWaitingTime + (Throughput+SpeedStd+HaltRatio)/3',
             'wait_haltratio':          'TotalWaitingTime + HaltRatio  [Értékelt legjobb, η²=0.019]',
+            'avgocc_reward_plain':     'AvgOcc + reward_plain (Speed+TP), 50-50 átlagolás',
         }
         self.lbl_reward_info.config(text=f"{mode} — {info_map.get(mode, '')}")
 

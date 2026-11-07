@@ -73,7 +73,7 @@ class StrategyCompareDialog:
         param_row.pack(fill=tk.X, pady=4)
 
         ttk.Label(param_row, text="Flow szintek (veh/h, vesszővel):").pack(side=tk.LEFT)
-        self.flow_var = tk.StringVar(value="150, 300, 450, 600, 750, 900")
+        self.flow_var = tk.StringVar(value="150, 300, 450, 600")
         ttk.Entry(param_row, textvariable=self.flow_var, width=30).pack(side=tk.LEFT, padx=6)
 
         ttk.Label(param_row, text="  Epizód/szint:").pack(side=tk.LEFT)
@@ -219,7 +219,8 @@ class StrategyCompareDialog:
         if self._running:
             return
         try:
-            flows = [int(x.strip()) for x in self.flow_var.get().split(",") if x.strip()]
+            flows = [min(600, max(100, int(x.strip())))
+                     for x in self.flow_var.get().split(",") if x.strip()]
             if not flows:
                 raise ValueError("Legalább egy flow szint kell.")
         except ValueError as e:

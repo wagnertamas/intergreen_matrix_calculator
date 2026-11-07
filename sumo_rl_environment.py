@@ -56,7 +56,7 @@ class SumoRLEnvironment(gym.Env):
                  random_traffic=True,
                  traffic_period=1.0,
                  traffic_duration=3600,
-                 flow_range=(100, 900),
+                 flow_range=(100, 600),
                  statistic_output_file=None,
                  single_agent_id=None,
                  run_id=None,
@@ -92,6 +92,8 @@ class SumoRLEnvironment(gym.Env):
         # --- Reward mód ---
         # "speed_throughput": AvgSpeed + Throughput (log-tanh) ← LEGJOBB η²=0.120
         # "halt_ratio":       HaltRatio (log-tanh) ← legrobusztusabb, η²=0.156
+        # "haltratio":        Sima HaltRatio (lineáris), reward = 1 - halt_ratio
+        # "avgocc_reward_plain": AvgOcc + reward_plain (Speed+TP), mindkettő [0,1] és átlagolva
         # "co2_speedstd":     TotalCO2 + SpeedStd (log-tanh) ← η²=0.224
         self.reward_mode = reward_mode
         self.actuated_warmup_steps = int(actuated_warmup_steps)
@@ -263,6 +265,14 @@ class SumoRLEnvironment(gym.Env):
                 'MU_WAIT':  4.091, 'STD_WAIT':  1.185,  # log(AvgWaitingTime) R1C1_C adata alapján
                 'MU_HALT': -0.201, 'STD_HALT':  0.320,  # log(HaltRatio) R1C1_C adata alapján
             }
+        elif self.reward_mode in ("avgocc_reward_plain", "avgocc+reward_plain", "avgOcc+reward_plain",
+                                  "avgocc_reward_plaint", "avgOcc+reward_plaint"):
+            return {
+                'MU_SPEED': 0.617003, 'STD_SPEED': 0.951352,
+                'MU_THROUGHPUT': 2.995733, 'STD_THROUGHPUT': 0.814450,
+                # log(AvgOccupancy) default fallback (0..1 occupancy)
+                'MU_OCC': -1.80, 'STD_OCC': 0.90,
+            }
         return {}
 
     def update_reward_params(self, jid, new_params):
@@ -289,12 +299,14 @@ class SumoRLEnvironment(gym.Env):
           z = (log(x + ε) - MU) / (STD + ε)
           r = (1 + tanh(z)) / 2    →  [0, 1]
 
-        Módok:
+                Módok:
           speed_throughput:      (r_speed + r_throughput) / 2
           speed_throughput_freq: (r_speed + r_throughput) / 2 - freq_penalty
                                  ahol freq_penalty bünteti ha egy fázis >85%-ban
                                  szerepel az utolsó 90 másodpercben
           halt_ratio:            1 - r_halt  (alacsonyabb halt → magasabb reward)
+                    haltratio:             1 - halt_ratio (lineáris, "sima" változat)
+                    avgocc_reward_plain:   (reward_plain + (1-r_occ)) / 2
           co2_speedstd:          (1 - r_co2 + r_speedstd) / 2
         """
         params = self._get_reward_params(jid)
@@ -372,6 +384,45 @@ class SumoRLEnvironment(gym.Env):
             r_halt = (1.0 + np.tanh(z_h)) / 2.0
 
             return 1.0 - r_halt  # alacsonyabb halt → magasabb reward
+
+        elif self.reward_mode in ("haltratio", "halt_ratio_plain", "haltratio_plain"):
+            # "Sima" HaltRatio: lineáris inverz, normalizáció nélkül.
+            # HaltRatio [0,1] → reward [1,0]
+            halt_ratio = float(np.clip(agent.get_halt_ratio_metric(), 0.0, 1.0))
+            return 1.0 - halt_ratio
+
+        elif self.reward_mode in ("avgocc_reward_plain", "avgocc+reward_plain", "avgOcc+reward_plain",
+                                  "avgocc_reward_plaint", "avgOcc+reward_plaint"):
+            # reward_plain = (r_speed + r_throughput) / 2
+            # avgOcc komponens: alacsonyabb occupancy = jobb
+            avg_speed = agent.get_avg_speed_metric()
+            throughput = agent.get_throughput_metric()
+            avg_occ = agent.get_avg_occupancy_metric()
+
+            # Semleges reward, ha nincs adat.
+            if avg_speed == 0.0 and throughput == 0.0 and avg_occ == 0.0:
+                return 0.5
+
+            mu_s = params.get('MU_SPEED', 0.617003)
+            std_s = params.get('STD_SPEED', 0.951352)
+            mu_t = params.get('MU_THROUGHPUT', 2.995733)
+            std_t = params.get('STD_THROUGHPUT', 0.814450)
+            mu_o = params.get('MU_OCC', -1.80)
+            std_o = params.get('STD_OCC', 0.90)
+
+            z_s = (np.log(avg_speed + 1e-5) - mu_s) / (std_s + 1e-9)
+            r_speed = (1.0 + np.tanh(z_s)) / 2.0
+
+            z_t = (np.log(throughput + 1e-5) - mu_t) / (std_t + 1e-9)
+            r_throughput = (1.0 + np.tanh(z_t)) / 2.0
+
+            reward_plain = (r_speed + r_throughput) / 2.0
+
+            z_o = (np.log(avg_occ + 1e-5) - mu_o) / (std_o + 1e-9)
+            r_occ = (1.0 + np.tanh(z_o)) / 2.0
+            r_occ_inv = 1.0 - r_occ
+
+            return (reward_plain + r_occ_inv) / 2.0
 
         elif self.reward_mode == "co2_speedstd":
             avg_co2_raw = (agent.accumulated_co2 / agent.steps_measured) if agent.steps_measured > 0 else 0.0
@@ -454,6 +505,9 @@ class SumoRLEnvironment(gym.Env):
 
             return (r_wait_inv + r_halt_inv) / 2.0
 
+        # Ismeretlen mód: biztonságos fallback
+        return 0.0
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -471,12 +525,24 @@ class SumoRLEnvironment(gym.Env):
         # 1. Random forgalom generálás
         if self.random_traffic:
             if self.single_agent_id:
-                # Focused traffic: period-alapú, ha explicit kérés van
+                # Single-agent módban alapból ugyanazzal a veh/h/lane szemantikával
+                # generálunk, mint az összehasonlító pipeline. Csak explicit
+                # traffic_period kérésnél marad a régi periodikus mód.
                 if options and 'traffic_period' in options:
                     dynamic_period = options['traffic_period']
+                    self.generate_focused_traffic(period=dynamic_period)
                 else:
-                    dynamic_period = round(random.uniform(4.0, 8.0), 4)
-                self.generate_focused_traffic(period=dynamic_period)
+                    if options and 'flow_range' in options:
+                        flow_range = tuple(options['flow_range'])
+                    else:
+                        FLOW_TARGETS = [150, 300, 450, 600]
+                        FLOW_SPREADS = [0, 50, 100, 150]
+                        target = random.choice(FLOW_TARGETS)
+                        spread = random.choice(FLOW_SPREADS)
+                        flow_range = (max(100, target - spread), min(600, target + spread))
+                        print(f"[INFO] Focused traffic: target={target}, spread=±{spread} "
+                              f"→ flow_range={flow_range}")
+                    self.generate_focused_traffic(flow_range=flow_range)
             else:
                 # Epizód-szintű forgalmi target + spread randomizálás
                 # A target az összforgalom nagyságrendjét adja meg,
@@ -488,7 +554,7 @@ class SumoRLEnvironment(gym.Env):
                     FLOW_SPREADS = [50, 100, 150, 250]
                     target = random.choice(FLOW_TARGETS)
                     spread = random.choice(FLOW_SPREADS)
-                    flow_range = (max(100, target - spread), min(650, target + spread))
+                    flow_range = (max(100, target - spread), min(600, target + spread))
                     print(f"[INFO] Traffic: target={target}, spread=±{spread} "
                           f"→ flow_range={flow_range}")
                 self.generate_random_traffic(flow_range=flow_range)
@@ -546,8 +612,8 @@ class SumoRLEnvironment(gym.Env):
              })
 
         # 5. Aktuált warmup (opcionális — PPO/A2C-hez ajánlott)
-        #    Round-robin fázisváltással stabilizálja a forgalmat az epizód elején,
-        #    hogy az ágens ne induljon mindjárt egy dugós állapotból.
+        #    Fázis-specifikus occupancy-alapú vezérléssel stabilizálja a forgalmat
+        #    az epizód elején, hogy az ágens ne induljon dugós állapotból.
         #    DQN/QRDQN esetén ez 0 (a buffer-beoltás lépésszinten történik).
         #    Legacy warmup_seconds (random) — visszafelé kompatibilitás, de nem ajánlott.
         warmup_steps = self.actuated_warmup_steps
@@ -555,12 +621,11 @@ class SumoRLEnvironment(gym.Env):
             warmup_steps = int(options['actuated_warmup_steps'])
 
         if warmup_steps > 0:
-            print(f"[INFO] Aktuált warmup: {warmup_steps} lépés (round-robin)...")
+            print(f"[INFO] Aktuált warmup: {warmup_steps} lépés (occupancy-based)...")
             for _ in range(warmup_steps):
                 for agent in self.agents.values():
                     if agent.is_ready_for_action():
-                        # Round-robin: következő fázisra vált, ha kész
-                        next_phase = (agent.current_logic_idx + 1) % agent.num_phases
+                        next_phase = agent.decide_actuated_action(obs=None)
                         agent.set_target_phase(next_phase)
                     agent.update_logic()
                 traci.simulationStep()
@@ -582,7 +647,7 @@ class SumoRLEnvironment(gym.Env):
 
         return observations, infos
 
-    def generate_random_traffic(self, period=None, flow_range=(100, 900)):
+    def generate_random_traffic(self, period=None, flow_range=(100, 600)):
         """
         Lane-szintű forgalom generálás: minden bejövő lane-re külön-külön
         generál járműveket a flow_range tartományban (jármű/óra).
@@ -630,7 +695,9 @@ class SumoRLEnvironment(gym.Env):
 
         # 2. Járművek generálása lane-enként
         all_trips = []
-        min_flow, max_flow = flow_range
+        min_flow, max_flow = map(int, flow_range)
+        min_flow = max(100, min(min_flow, 600))
+        max_flow = max(min_flow, min(max_flow, 600))
         total_vehicles = 0
 
         for lane_id, (edge_id, lane_idx, to_edges) in lane_routes.items():
@@ -665,8 +732,38 @@ class SumoRLEnvironment(gym.Env):
               f"{len(lane_routes)} lane | {total_vehicles} jarmu | "
               f"Tartomany: {min_flow}-{max_flow}/h lane-enkent")
 
-    def generate_focused_traffic(self, period):
-        print(f"\n[DEBUG] 🎯 Célzott Forgalom Generálása ({self.single_agent_id}) | Period: {period}")
+    def _get_single_agent_lane_routes(self, net):
+        """A cél-junction incoming lane-jei és az elérhető kimenő edge-ek."""
+        node = net.getNode(self.single_agent_id)
+        if not node:
+            raise ValueError(f"Node {self.single_agent_id} not found in network.")
+
+        lane_routes = {}
+        for inc_edge in node.getIncoming():
+            eid = inc_edge.getID()
+            if eid.startswith(':'):
+                continue
+            for lane in inc_edge.getLanes():
+                lane_id = lane.getID()
+                lane_idx = lane.getIndex()
+                targets = set()
+                for conn in lane.getOutgoing():
+                    to_lane = conn.getToLane()
+                    to_edge = to_lane.getEdge() if to_lane is not None else None
+                    if to_edge is None:
+                        continue
+                    to_eid = to_edge.getID()
+                    if not to_eid.startswith(':'):
+                        targets.add(to_eid)
+                if targets:
+                    lane_routes[lane_id] = (eid, lane_idx, list(targets))
+        return lane_routes
+
+    def generate_focused_traffic(self, period=None, flow_range=None):
+        if flow_range is not None:
+            print(f"\n[DEBUG] 🎯 Célzott, lane-szintű forgalom ({self.single_agent_id}) | Flow: {flow_range}")
+        else:
+            print(f"\n[DEBUG] 🎯 Célzott Forgalom Generálása ({self.single_agent_id}) | Period: {period}")
         
         if 'SUMO_HOME' in os.environ:
              tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -687,30 +784,59 @@ class SumoRLEnvironment(gym.Env):
              print(f"Failed to load net with sumolib: {e}")
              return
 
-        node = net.getNode(self.single_agent_id)
-        if not node:
-             print(f"Node {self.single_agent_id} not found in network.")
+        try:
+             lane_routes = self._get_single_agent_lane_routes(net)
+        except ValueError as e:
+             print(str(e))
+             return
+
+        if flow_range is not None:
+             min_flow, max_flow = map(int, flow_range)
+             min_flow = max(100, min(min_flow, 600))
+             max_flow = max(min_flow, min(max_flow, 600))
+             if not lane_routes:
+                 print("No lane-level routes found for focused traffic.")
+                 self.generate_random_traffic(flow_range=flow_range)
+                 return
+
+             all_trips = []
+             total_vehicles = 0
+             for _, (edge_id, lane_idx, to_edges) in lane_routes.items():
+                 flow_per_hour = random.randint(min_flow, max_flow)
+                 num_vehicles = int(flow_per_hour * (self.traffic_duration / 3600.0))
+                 if num_vehicles <= 0:
+                     continue
+                 total_vehicles += num_vehicles
+
+                 avg_gap = self.traffic_duration / num_vehicles
+                 for i in range(num_vehicles):
+                     depart = i * avg_gap + random.uniform(0, avg_gap * 0.5)
+                     depart = min(depart, self.traffic_duration - 1.0)
+                     to_edge = random.choice(to_edges)
+                     all_trips.append((depart, edge_id, lane_idx, to_edge))
+
+             all_trips.sort(key=lambda x: x[0])
+             with open(self.route_file, 'w') as f:
+                 f.write('<routes>\n')
+                 f.write('    <vType id="car" accel="0.8" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="16.67" guiShape="passenger"/>\n')
+                 for idx, (depart, from_e, lane_idx, to_e) in enumerate(all_trips):
+                     f.write(f'    <trip id="veh_single_{idx}" type="car" depart="{depart:.2f}" '
+                             f'from="{from_e}" to="{to_e}" departLane="{lane_idx}" />\n')
+                 f.write('</routes>\n')
+
+             print(f"Found {len(lane_routes)} lane routes for {self.single_agent_id}")
+             print(f"[INFO] Focused lane traffic generated | {total_vehicles} vehicles | "
+                   f"range={min_flow}-{max_flow}/h/lane")
              return
 
         valid_routes = []
-        incoming_edges = node.getIncoming()
-        for inc_edge in incoming_edges:
-             outgoing_connections = inc_edge.getOutgoing()
-             for conn in outgoing_connections:
-                 # Filter connections that actually go through our node logic
-                 # Usually connections from incoming edges of a node go through that node.
-                 # Check if the connection 'via' or 'to' makes sense.
-                 if hasattr(conn, 'getTo'):
-                     out_edge = conn.getTo()
-                 else:
-                     # It's already an edge
-                     out_edge = conn
-                 
-                 valid_routes.append((inc_edge.getID(), out_edge.getID()))
+        for edge_id, _, to_edges in lane_routes.values():
+             for to_edge in to_edges:
+                 valid_routes.append((edge_id, to_edge))
 
         if not valid_routes:
              print("No valid routes found for focused traffic.")
-             self.generate_random_traffic(period)
+             self.generate_random_traffic(flow_range=self.flow_range)
              return
 
         print(f"Found {len(valid_routes)} valid OD pairs for {self.single_agent_id}")
@@ -780,6 +906,7 @@ class SumoRLEnvironment(gym.Env):
 
                 agent.detectors = sorted(temp_detectors)
                 agent.setup_spaces()
+                agent.build_phase_detector_indices()
                 agent.reset_step_metrics()
 
             self._network_mapped = True
@@ -789,6 +916,7 @@ class SumoRLEnvironment(gym.Env):
         else:
             # Reset metrics for cached agents
             for agent in self.agents.values():
+                agent.build_phase_detector_indices()
                 agent.reset_step_metrics()
 
         # --- SUMO subscriptions beállítása (minden epizód elején kell, mert traci.load után resetelődnek) ---
@@ -954,6 +1082,10 @@ class TrafficAgent:
         self.logic_phases = {int(k): v for k, v in logic_data['logic_phases'].items()}
         self.transitions = logic_data['transitions']
         self.num_phases = len(self.logic_phases)
+        self.phase_detector_indices = {}
+        self.max_green_steps = max(1, 60 // max(1, int(delta_time)))
+        self.occ_threshold = 0.15
+        self.actuated_green_timer = 0
 
         self.detectors = []
         self.incoming_lanes = []
@@ -975,6 +1107,7 @@ class TrafficAgent:
         self.min_green_timer = 0
         self.current_sumo_state = "??????"
         self.phase_timer = 0  # Hány lépése tart már az aktuális fázis
+        self.actuated_green_timer = 0
 
     def setup_spaces(self):
         num_detectors = len(self.detectors)
@@ -990,6 +1123,48 @@ class TrafficAgent:
             "flow": spaces.Box(low=0, high=np.inf, shape=(num_detectors,), dtype=np.float32),
             "speed": spaces.Box(low=0.0, high=1.0, shape=(num_detectors,), dtype=np.float32),  # normalizált [0,1], ref: 14 m/s ≈ 50 km/h
         })
+
+    def build_phase_detector_indices(self):
+        """Logic phase -> detector index map on green-controlled incoming lanes."""
+        self.phase_detector_indices = {}
+        if not self.detectors:
+            return
+
+        lane_to_idxs = {}
+        for i, det in enumerate(self.detectors):
+            try:
+                lane_id = traci.inductionloop.getLaneID(det)
+                lane_to_idxs.setdefault(lane_id, []).append(i)
+            except Exception:
+                pass
+
+        try:
+            controlled_links = traci.trafficlight.getControlledLinks(self.jid)
+        except Exception:
+            controlled_links = []
+
+        for logic_idx, sumo_idx in self.logic_phases.items():
+            pd = self.phase_registry.get(sumo_idx, {})
+            state = pd.get('state', '')
+            idxs = []
+            for sig_idx, links in enumerate(controlled_links):
+                if sig_idx >= len(state):
+                    break
+                if state[sig_idx] not in ('G', 'g'):
+                    continue
+                for link in links:
+                    if not link:
+                        continue
+                    in_lane = link[0]
+                    idxs.extend(lane_to_idxs.get(in_lane, []))
+
+            seen = set()
+            uniq = []
+            for x in idxs:
+                if x not in seen:
+                    seen.add(x)
+                    uniq.append(x)
+            self.phase_detector_indices[int(logic_idx)] = uniq
 
     def reset_step_metrics(self):
         self.steps_measured = 0
@@ -1015,6 +1190,62 @@ class TrafficAgent:
         if self.is_ready_for_action():
             if target_idx in self.logic_phases:
                 self.target_logic_idx = target_idx
+
+    def _phase_occupancy_from_obs(self, logic_idx, occ):
+        idxs = self.phase_detector_indices.get(int(logic_idx), []) if self.phase_detector_indices else []
+        arr = np.asarray(occ, dtype=np.float32).reshape(-1)
+        if arr.size == 0:
+            return 0.0
+        if idxs:
+            vals = [arr[i] for i in idxs if 0 <= i < arr.size]
+            if vals:
+                return float(np.mean(vals))
+        return float(np.mean(arr))
+
+    def _phase_occupancy_from_traci(self, logic_idx):
+        idxs = self.phase_detector_indices.get(int(logic_idx), []) if self.phase_detector_indices else []
+        dets = [self.detectors[i] for i in idxs if 0 <= i < len(self.detectors)] if idxs else self.detectors
+        if not dets:
+            return 0.0
+        total = 0.0
+        n = 0
+        for det in dets:
+            try:
+                total += traci.inductionloop.getLastStepOccupancy(det) / 100.0
+                n += 1
+            except Exception:
+                pass
+        return (total / n) if n > 0 else 0.0
+
+    def decide_actuated_action(self, obs=None):
+        """Phase-specific occupancy-based actuated decision."""
+        if not self.is_ready_for_action():
+            return self.current_logic_idx
+
+        if obs is not None:
+            occ = obs.get('occupancy', np.array([])) if isinstance(obs, dict) else obs
+            cur_occ = self._phase_occupancy_from_obs(self.current_logic_idx, occ)
+        else:
+            cur_occ = self._phase_occupancy_from_traci(self.current_logic_idx)
+
+        if self.actuated_green_timer < self.max_green_steps and cur_occ >= self.occ_threshold:
+            self.actuated_green_timer += 1
+            return self.current_logic_idx
+
+        best_idx = self.current_logic_idx
+        best_occ = -1.0
+        for idx in range(self.num_phases):
+            occ_i = (self._phase_occupancy_from_obs(idx, occ)
+                     if obs is not None else self._phase_occupancy_from_traci(idx))
+            if occ_i > best_occ:
+                best_occ = occ_i
+                best_idx = idx
+
+        if best_idx == self.current_logic_idx:
+            self.actuated_green_timer += 1
+        else:
+            self.actuated_green_timer = 0
+        return int(best_idx)
 
     def update_logic(self):
         if self.is_transitioning:
@@ -1271,6 +1502,13 @@ class TrafficAgent:
         if self.accumulated_lane_veh > 0:
             return self.accumulated_halting / self.accumulated_lane_veh
         return 0.0
+
+    def get_avg_occupancy_metric(self):
+        """Detektor alapú átlagos foglaltság [0,1]."""
+        if self.steps_measured <= 0 or len(self.detectors) == 0:
+            return 0.0
+        occ_sum = sum(self.det_accumulated_occ.get(d, 0.0) for d in self.detectors)
+        return (occ_sum / (len(self.detectors) * self.steps_measured)) / 100.0
 
     def get_speed_std_metric(self):
         """Sebességszórás az incoming lane-ek átlagai között [m/s].
