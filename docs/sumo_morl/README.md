@@ -50,9 +50,27 @@ kell. Ha már van SUMO a gépen és a `SUMO_HOME` környezeti változó be van
 Ellenőrzés:
 
 ```bash
-python -m pytest            # a könyvtár tesztjei (kb. fél perc)
-python examples/sumo_morl/01_ismerkedes.py
+python -m pytest                                   # a könyvtár tesztjei (kb. fél perc)
+python examples/sumo_morl/00_demo_fix_ido.py --gui # demó: fix idejű program a SUMO felületén
 ```
+
+## Demó: fix idejű program
+
+Mielőtt bármilyen ágenst írnál, nézd meg a működést a legegyszerűbb, klasszikus
+vezérléssel: a fázisok mindig ugyanabban a sorrendben, mindig ugyanannyi ideig
+kapnak zöldet (alapértelmezés: 30, 10 és 15 s).
+
+```bash
+python examples/sumo_morl/00_demo_fix_ido.py --gui                # SUMO grafikus felülettel
+python examples/sumo_morl/00_demo_fix_ido.py --green 40 10 20     # más zöldidők
+```
+
+A program kiírja a fázisokat, az átmeneteket és a ciklusidőt, majd minden
+fázisváltásnál a detektorokból becsült járműszámot. A végén megadja a
+jutalmakat és a valós mutatókat, és elmenti az első két ciklus
+jelzéstervét (`fix_ido_jelzesterv.png`):
+
+![Fix idejű jelzésterv](img/fix_ido_jelzesterv.png)
 
 ## Gyors kezdés
 
@@ -99,6 +117,7 @@ indul el, és látható, mit csinál az ágens.
 
 | Fájl | Mit mutat be |
 |---|---|
+| `examples/sumo_morl/00_demo_fix_ido.py` | **demó:** klasszikus fix idejű program, konzolos eseménynapló, jelzésterv-ábra (`--gui`-val látható a szimuláció) |
 | `examples/sumo_morl/01_ismerkedes.py` | a környezet, a jelzésterv kiírása, véletlen ágens |
 | `examples/sumo_morl/02_baseline_osszehasonlitas.py` | klasszikus vezérlők azonos forgalmon, Pareto-ábra |
 | `examples/sumo_morl/03_sb3_sulyozott_tanitas.py` | DQN tanítása több súlyvektorral, Pareto-front, hipertérfogat |

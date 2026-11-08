@@ -59,6 +59,10 @@ from sumo_morl.visualize import plot_scenario, plot_phases, plot_intergreen, plo
 
 res = run_episode(env, policy, seed=0, record=True)
 plot_episode(res.history, env.phase_names).savefig("epizod.png")   # fázisok, sorok, jutalmak
+
+# klasszikus jelzésterv-ábra (sávos diagram) – ehhez: TJunctionMOEnv(record_signals=True)
+from sumo_morl.visualize import plot_signal_timeline
+plot_signal_timeline(env.signal_log, env.plan, t_from=0, t_to=150).figure.savefig("jelzesterv.png")
 ```
 
 ## Összehasonlító vezérlők (baseline-ok)

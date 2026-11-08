@@ -14,6 +14,7 @@ env = TJunctionMOEnv(
     gui=False,                # sumo-gui megjelenítés
     seed=None,
     ground_truth=True,        # info["ground_truth"] kiértékeléshez
+    record_signals=False,     # env.signal_log: másodpercenkénti jelzéskép (jelzésterv-ábrához)
 )
 ```
 

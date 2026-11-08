@@ -81,6 +81,8 @@ class TJunctionMOEnv(gym.Env):
             jutalomban nem szerepelnek!
         scenario: egyedi forgatókönyv (haladóknak).
         sumo_args: további parancssori kapcsolók a SUMO-nak.
+        record_signals: ha igaz, az ``env.signal_log`` másodpercenként rögzíti a
+            jelzésképet (``[(idő, állapot), ...]``), pl. jelzésterv-ábrához.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -100,6 +102,7 @@ class TJunctionMOEnv(gym.Env):
         scenario: Optional[TJunctionScenario] = None,
         sumo_args: Sequence[str] = (),
         render_mode: Optional[str] = None,
+        record_signals: bool = False,
     ):
         super().__init__()
         self.scenario = scenario or TJunctionScenario()
@@ -116,6 +119,8 @@ class TJunctionMOEnv(gym.Env):
         self.render_mode = render_mode
         self.ground_truth = ground_truth
         self.sumo_args = list(sumo_args)
+        self.record_signals = record_signals
+        self.signal_log: List[Tuple[int, str]] = []
 
         self.detectors = self.scenario.detectors
         self.approaches = list(self.scenario.approaches)
@@ -223,6 +228,7 @@ class TJunctionMOEnv(gym.Env):
         self._start_sumo(sumo_seed)
 
         self._reader.reset()
+        self.signal_log: List[Tuple[int, str]] = []
         self._phase = 0
         self._time_in_phase = 0
         self._sim_time = 0
@@ -297,10 +303,13 @@ class TJunctionMOEnv(gym.Env):
     # ================================================================ belső léptetés
     def _set_state(self, state: str) -> None:
         self._conn.trafficlight.setRedYellowGreenState(self.plan.tls_id, state)
+        self._state = state
 
     def _sim_step(self) -> None:
         self._conn.simulationStep()
         self._sim_time += 1
+        if self.record_signals:
+            self.signal_log.append((self._sim_time, self._state))
         self._reader.sample(self._conn)
         if self.ground_truth:
             self._gt_sample()

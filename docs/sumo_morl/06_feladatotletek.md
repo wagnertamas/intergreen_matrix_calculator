@@ -4,8 +4,8 @@ Nehézség szerint növekvő sorrendben.
 
 ## Bevezető
 
-1. **Ismerkedés.** Futtasd az `01_ismerkedes.py` példát `--gui` kapcsolóval.
-   Figyeld meg az átmeneteket (sárga, piros-sárga). Melyik fázisváltás a
+1. **Ismerkedés.** Futtasd a `00_demo_fix_ido.py` demót és az `01_ismerkedes.py`
+   példát `--gui` kapcsolóval. Figyeld meg az átmeneteket (sárga, piros-sárga). Melyik fázisváltás a
    leghosszabb, és miért?
 2. **Baseline-ok.** Futtasd a `02_baseline_osszehasonlitas.py`-t. Keress olyan
    fix idejű zöldidő-kombinációt, amely a `queue` célban jobb a megadottaknál!

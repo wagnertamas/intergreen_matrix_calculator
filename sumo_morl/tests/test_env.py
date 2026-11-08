@@ -88,3 +88,12 @@ def test_pareto_and_hv():
     assert hypervolume(pts3, [0, 0, 0]) == pytest.approx(3.0)
     w = equally_spaced_weights(3, 2)
     assert np.allclose(w.sum(axis=1), 1) and len(w) == 6
+
+
+def test_signal_log():
+    e = TJunctionMOEnv(episode_length=60, seed=0, record_signals=True)
+    e.reset(seed=0)
+    e.step(2)
+    assert len(e.signal_log) == e.plan.transition_duration(0, 2) + e.min_green
+    assert e.signal_log[-1][1] == e.plan.green_state(2)
+    e.close()

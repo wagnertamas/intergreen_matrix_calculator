@@ -166,3 +166,24 @@ def plot_episode(history: Sequence[Dict], phase_names: Optional[List[str]] = Non
     axes[2].legend()
     fig.tight_layout()
     return fig
+
+
+def plot_signal_timeline(signal_log, plan, t_from: int = 0, t_to: Optional[int] = None, ax=None):
+    """Klasszikus jelzésterv-ábra (sávos diagram): jelzőcsoportonként a jelzés
+    színe az időben. ``signal_log`` = ``env.signal_log`` (``record_signals=True``)."""
+    import matplotlib.pyplot as plt
+
+    log = [(t, s) for t, s in signal_log if t >= t_from and (t_to is None or t <= t_to)]
+    if ax is None:
+        _, ax = plt.subplots(figsize=(12, 0.6 * len(plan.groups) + 1.2))
+    for gi, g in enumerate(plan.groups):
+        li = g.links[0]
+        for t, s in log:
+            ax.barh(gi, 1, left=t - 1, color=STATE_COLORS.get(s[li], "0.5"), edgecolor="none", height=0.6)
+    ax.set_yticks(range(len(plan.groups)), [g.name for g in plan.groups])
+    ax.invert_yaxis()
+    ax.set_xlabel("idő [s]")
+    ax.set_title("Jelzésterv (zöld / sárga / piros-sárga / piros)")
+    ax.set_xlim(log[0][0] - 1 if log else 0, log[-1][0] if log else 1)
+    ax.figure.tight_layout()
+    return ax
