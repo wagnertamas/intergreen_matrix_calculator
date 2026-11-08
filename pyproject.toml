@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sumo-morl"
+version = "0.1.0"
+description = "Többcélú megerősítéses tanulás (MORL) jelzőlámpa-vezérléshez SUMO-ban – oktatási könyvtár"
+readme = "docs/sumo_morl/README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "gymnasium>=0.29",
+    "eclipse-sumo>=1.18",
+    "traci>=1.18",
+    "sumolib>=1.18",
+    "matplotlib",
+    "scipy",
+    "shapely>=2",
+    "networkx",
+]
+
+[project.optional-dependencies]
+rl = ["stable-baselines3>=2.0"]
+dev = ["pytest", "pdoc"]
+
+[tool.setuptools]
+packages = ["sumo_morl"]
+# A meglévő közbensőidő-számító modulok (a repó gyökerében) is települnek,
+# mert a sumo_morl ezeket használja.
+py-modules = ["geometry_utils", "sumo_parser"]
+
+[tool.setuptools.package-data]
+sumo_morl = ["data/*.xml"]
+
+[tool.pytest.ini_options]
+testpaths = ["sumo_morl/tests"]

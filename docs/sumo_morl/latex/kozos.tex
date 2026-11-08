@@ -1,0 +1,67 @@
+% Közös preambulum a kézikönyvhöz és a programfelépítéshez
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[magyar]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs,array,longtable,tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath,amssymb}
+\usepackage{textcomp}
+\usepackage{csquotes}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{../img/}}
+\newcommand{\rootdir}{../../..}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+\definecolor{kodhatter}{RGB}{247,247,247}
+\definecolor{kulcsszo}{RGB}{0,0,150}
+\definecolor{komment}{RGB}{0,115,0}
+\definecolor{sztring}{RGB}{155,35,35}
+\definecolor{fokek}{RGB}{31,90,160}
+\definecolor{zold}{RGB}{44,160,44}
+\definecolor{sarga}{RGB}{255,191,0}
+\definecolor{narancs}{RGB}{255,127,14}
+\definecolor{piros}{RGB}{214,39,40}
+
+\newcommand{\kod}[1]{\texttt{#1}}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{kodhatter},
+  keywordstyle=\color{kulcsszo}\bfseries,
+  commentstyle=\color{komment}\itshape,
+  stringstyle=\color{sztring},
+  breaklines=true, columns=fullflexible, keepspaces=true,
+  showstringspaces=false, frame=single, rulecolor=\color{gray!35},
+  framesep=4pt, xleftmargin=4pt, xrightmargin=4pt,
+  tabsize=4, upquote=true,
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ö}{{\"o}}1 {ü}{{\"u}}1 {ő}{{\H{o}}}1 {ű}{{\H{u}}}1
+    {Ö}{{\"O}}1 {Ü}{{\"U}}1 {Ő}{{\H{O}}}1 {Ű}{{\H{U}}}1
+    {→}{{$\rightarrow$}}1 {←}{{$\leftarrow$}}1 {–}{{--}}1 {—}{{---}}1
+    {·}{{$\cdot$}}1 {×}{{$\times$}}1 {±}{{$\pm$}}1 {≥}{{$\geq$}}1 {≤}{{$\leq$}}1
+    {Σ}{{$\Sigma$}}1 {−}{{-}}1 {…}{{...}}1 {„}{{,,}}1 {”}{{''}}1
+    {═}{{=}}1 {╦}{{+}}1 {║}{{|}}1 {─}{{-}}1 {│}{{|}}1
+}
+\lstdefinestyle{bash}{language=bash,keywordstyle=\color{black}}
+\lstdefinestyle{lista}{basicstyle=\ttfamily\scriptsize,numbers=left,numberstyle=\tiny\color{gray},numbersep=5pt}
+
+\newtcolorbox{megjegyzes}[1][Megjegyzés]{colback=fokek!5,colframe=fokek!70,fonttitle=\bfseries,title=#1,
+  boxrule=0.6pt,arc=2pt,left=5pt,right=5pt,top=3pt,bottom=3pt}
+\newtcolorbox{figyelem}[1][Figyelem]{colback=piros!4,colframe=piros!70,fonttitle=\bfseries,title=#1,
+  boxrule=0.6pt,arc=2pt,left=5pt,right=5pt,top=3pt,bottom=3pt}

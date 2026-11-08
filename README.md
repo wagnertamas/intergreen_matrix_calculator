@@ -1,5 +1,9 @@
 # SUMO Intersection Analyzer
 
+> **Új: `sumo_morl` – MORL oktatási könyvtár.** Kész T-csomópont, a közbensőidő-számítóból
+> generált fázisokkal, hurokdetektoros megfigyeléssel és vektor-jutalmas Gymnasium
+> környezettel. Dokumentáció: [docs/sumo_morl/README.md](docs/sumo_morl/README.md).
+
 This application allows you to analyze SUMO network files (`.net.xml`), visualize intersections, calculate intergreen matrices, and plan traffic light phase transitions.
 
 ## Features
