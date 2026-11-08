@@ -103,7 +103,7 @@ valóságban nem elérhető.
 | `info["ground_truth"]` kulcs | Jelentés |
 |---|---|
 | `halting_vehicle_seconds` | álló járművek száma másodpercenként összegezve (a bejövő ágakon) |
-| `mean_delay_per_vehicle` | ugyanez elosztva az elindult járművek számával [s] |
+| `mean_delay_per_vehicle` | ugyanez elosztva az elindult járművek számával: átlagos álló idő járművenként [s] (a késés közelítése) |
 | `mean_travel_time` | a célba ért járművek átlagos utazási ideje [s] |
 | `co2_g` | CO2-kibocsátás a bejövő ágakon [g] |
 | `departed`, `arrived` | elindult / célba ért járművek |

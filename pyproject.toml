@@ -22,8 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 rl = ["stable-baselines3>=2.0"]
-morl = ["morl-baselines"]
-dev = ["pytest"]
+dev = ["pytest", "pdoc"]
 
 [tool.setuptools]
 packages = ["sumo_morl"]

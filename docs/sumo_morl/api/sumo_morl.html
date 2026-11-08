@@ -1,0 +1,2995 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="pdoc 16.0.0"/>
+    <title>sumo_morl API documentation</title>
+
+    <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
+    <style>/*! syntax-highlighting.css */pre{line-height:125%;}span.linenos{color:inherit; background-color:transparent; padding-left:5px; padding-right:20px;}.pdoc-code .hll{background-color:#ffffcc}.pdoc-code{background:#f8f8f8;}.pdoc-code .c{color:#3D7B7B; font-style:italic}.pdoc-code .err{border:1px solid #FF0000}.pdoc-code .k{color:#008000; font-weight:bold}.pdoc-code .o{color:#666666}.pdoc-code .ch{color:#3D7B7B; font-style:italic}.pdoc-code .cm{color:#3D7B7B; font-style:italic}.pdoc-code .cp{color:#9C6500}.pdoc-code .cpf{color:#3D7B7B; font-style:italic}.pdoc-code .c1{color:#3D7B7B; font-style:italic}.pdoc-code .cs{color:#3D7B7B; font-style:italic}.pdoc-code .gd{color:#A00000}.pdoc-code .ge{font-style:italic}.pdoc-code .gr{color:#E40000}.pdoc-code .gh{color:#000080; font-weight:bold}.pdoc-code .gi{color:#008400}.pdoc-code .go{color:#717171}.pdoc-code .gp{color:#000080; font-weight:bold}.pdoc-code .gs{font-weight:bold}.pdoc-code .gu{color:#800080; font-weight:bold}.pdoc-code .gt{color:#0044DD}.pdoc-code .kc{color:#008000; font-weight:bold}.pdoc-code .kd{color:#008000; font-weight:bold}.pdoc-code .kn{color:#008000; font-weight:bold}.pdoc-code .kp{color:#008000}.pdoc-code .kr{color:#008000; font-weight:bold}.pdoc-code .kt{color:#B00040}.pdoc-code .m{color:#666666}.pdoc-code .s{color:#BA2121}.pdoc-code .na{color:#687822}.pdoc-code .nb{color:#008000}.pdoc-code .nc{color:#0000FF; font-weight:bold}.pdoc-code .no{color:#880000}.pdoc-code .nd{color:#AA22FF}.pdoc-code .ni{color:#717171; font-weight:bold}.pdoc-code .ne{color:#CB3F38; font-weight:bold}.pdoc-code .nf{color:#0000FF}.pdoc-code .nl{color:#767600}.pdoc-code .nn{color:#0000FF; font-weight:bold}.pdoc-code .nt{color:#008000; font-weight:bold}.pdoc-code .nv{color:#19177C}.pdoc-code .ow{color:#AA22FF; font-weight:bold}.pdoc-code .w{color:#bbbbbb}.pdoc-code .mb{color:#666666}.pdoc-code .mf{color:#666666}.pdoc-code .mh{color:#666666}.pdoc-code .mi{color:#666666}.pdoc-code .mo{color:#666666}.pdoc-code .sa{color:#BA2121}.pdoc-code .sb{color:#BA2121}.pdoc-code .sc{color:#BA2121}.pdoc-code .dl{color:#BA2121}.pdoc-code .sd{color:#BA2121; font-style:italic}.pdoc-code .s2{color:#BA2121}.pdoc-code .se{color:#AA5D1F; font-weight:bold}.pdoc-code .sh{color:#BA2121}.pdoc-code .si{color:#A45A77; font-weight:bold}.pdoc-code .sx{color:#008000}.pdoc-code .sr{color:#A45A77}.pdoc-code .s1{color:#BA2121}.pdoc-code .ss{color:#19177C}.pdoc-code .bp{color:#008000}.pdoc-code .fm{color:#0000FF}.pdoc-code .vc{color:#19177C}.pdoc-code .vg{color:#19177C}.pdoc-code .vi{color:#19177C}.pdoc-code .vm{color:#19177C}.pdoc-code .il{color:#666666}</style>
+    <style>/*! theme.css */:root{--pdoc-background:#fff;}.pdoc{--text:#212529;--muted:#6c757d;--link:#3660a5;--link-hover:#1659c5;--code:#f8f8f8;--active:#fff598;--accent:#eee;--accent2:#c1c1c1;--nav-hover:rgba(255, 255, 255, 0.5);--name:#0066BB;--def:#008800;--annotation:#007020;}</style>
+    <style>/*! layout.css */html, body{width:100%;height:100%;}html, main{scroll-behavior:smooth;}body{background-color:var(--pdoc-background);}@media (max-width:769px){#navtoggle{cursor:pointer;position:absolute;width:50px;height:40px;top:1rem;right:1rem;border-color:var(--text);color:var(--text);display:flex;opacity:0.8;z-index:999;}#navtoggle:hover{opacity:1;}#togglestate + div{display:none;}#togglestate:checked + div{display:inherit;}main, header{padding:2rem 3vw;}header + main{margin-top:-3rem;}.git-button{display:none !important;}nav input[type="search"]{max-width:77%;}nav input[type="search"]:first-child{margin-top:-6px;}nav input[type="search"]:valid ~ *{display:none !important;}}@media (min-width:770px){:root{--sidebar-width:clamp(12.5rem, 28vw, 22rem);}nav{position:fixed;overflow:auto;height:100vh;width:var(--sidebar-width);}main, header{padding:3rem 2rem 3rem calc(var(--sidebar-width) + 3rem);width:calc(54rem + var(--sidebar-width));max-width:100%;}header + main{margin-top:-4rem;}#navtoggle{display:none;}}#togglestate{position:absolute;height:0;opacity:0;}nav.pdoc{--pad:clamp(0.5rem, 2vw, 1.75rem);--indent:1.5rem;background-color:var(--accent);border-right:1px solid var(--accent2);box-shadow:0 0 20px rgba(50, 50, 50, .2) inset;padding:0 0 0 var(--pad);overflow-wrap:anywhere;scrollbar-width:thin; scrollbar-color:var(--accent2) transparent; z-index:1}nav.pdoc::-webkit-scrollbar{width:.4rem; }nav.pdoc::-webkit-scrollbar-thumb{background-color:var(--accent2); }nav.pdoc > div{padding:var(--pad) 0;}nav.pdoc .module-list-button{display:inline-flex;align-items:center;color:var(--text);border-color:var(--muted);margin-bottom:1rem;}nav.pdoc .module-list-button:hover{border-color:var(--text);}nav.pdoc input[type=search]{display:block;outline-offset:0;width:calc(100% - var(--pad));}nav.pdoc .logo{max-width:calc(100% - var(--pad));max-height:35vh;display:block;margin:0 auto 1rem;transform:translate(calc(-.5 * var(--pad)), 0);}nav.pdoc ul{list-style:none;padding-left:0;}nav.pdoc > div > ul{margin-left:calc(0px - var(--pad));}nav.pdoc li a{padding:.2rem 0 .2rem calc(var(--pad) + var(--indent));}nav.pdoc > div > ul > li > a{padding-left:var(--pad);}nav.pdoc li{transition:all 100ms;}nav.pdoc li:hover{background-color:var(--nav-hover);}nav.pdoc a, nav.pdoc a:hover{color:var(--text);}nav.pdoc a{display:block;}nav.pdoc > h2:first-of-type{margin-top:1.5rem;}nav.pdoc .class:before{content:"class ";color:var(--muted);}nav.pdoc .function:after{content:"()";color:var(--muted);}nav.pdoc footer:before{content:"";display:block;width:calc(100% - var(--pad));border-top:solid var(--accent2) 1px;margin-top:1.5rem;padding-top:.5rem;}nav.pdoc footer{font-size:small;}</style>
+    <style>/*! content.css */.pdoc{color:var(--text);box-sizing:border-box;line-height:1.5;background:none;}.pdoc .pdoc-button{cursor:pointer;display:inline-block;border:solid black 1px;border-radius:2px;font-size:.75rem;padding:calc(0.5em - 1px) 1em;transition:100ms all;}.pdoc .alert{padding:1rem 1rem 1rem calc(1.5rem + 24px);border:1px solid transparent;border-radius:.25rem;background-repeat:no-repeat;background-position:.75rem center;margin-bottom:1rem;}.pdoc .alert > em{display:none;}.pdoc .alert > *:last-child{margin-bottom:0;}.pdoc .alert.note{color:#084298;background-color:#cfe2ff;border-color:#b6d4fe;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23084298%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8%2016A8%208%200%201%200%208%200a8%208%200%200%200%200%2016zm.93-9.412-1%204.705c-.07.34.029.533.304.533.194%200%20.487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703%200-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381%202.29-.287zM8%205.5a1%201%200%201%201%200-2%201%201%200%200%201%200%202z%22/%3E%3C/svg%3E");}.pdoc .alert.tip{color:#0a3622;background-color:#d1e7dd;border-color:#a3cfbb;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%230a3622%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%206a6%206%200%201%201%2010.174%204.31c-.203.196-.359.4-.453.619l-.762%201.769A.5.5%200%200%201%2010.5%2013a.5.5%200%200%201%200%201%20.5.5%200%200%201%200%201l-.224.447a1%201%200%200%201-.894.553H6.618a1%201%200%200%201-.894-.553L5.5%2015a.5.5%200%200%201%200-1%20.5.5%200%200%201%200-1%20.5.5%200%200%201-.46-.302l-.761-1.77a2%202%200%200%200-.453-.618A5.98%205.98%200%200%201%202%206m6-5a5%205%200%200%200-3.479%208.592c.263.254.514.564.676.941L5.83%2012h4.342l.632-1.467c.162-.377.413-.687.676-.941A5%205%200%200%200%208%201%22/%3E%3C/svg%3E");}.pdoc .alert.important{color:#055160;background-color:#cff4fc;border-color:#9eeaf9;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23055160%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M2%200a2%202%200%200%200-2%202v12a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V2a2%202%200%200%200-2-2zm6%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.warning{color:#664d03;background-color:#fff3cd;border-color:#ffecb5;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23664d03%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M8.982%201.566a1.13%201.13%200%200%200-1.96%200L.165%2013.233c-.457.778.091%201.767.98%201.767h13.713c.889%200%201.438-.99.98-1.767L8.982%201.566zM8%205c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%205.995A.905.905%200%200%201%208%205zm.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2z%22/%3E%3C/svg%3E");}.pdoc .alert.caution{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M11.46.146A.5.5%200%200%200%2011.107%200H4.893a.5.5%200%200%200-.353.146L.146%204.54A.5.5%200%200%200%200%204.893v6.214a.5.5%200%200%200%20.146.353l4.394%204.394a.5.5%200%200%200%20.353.146h6.214a.5.5%200%200%200%20.353-.146l4.394-4.394a.5.5%200%200%200%20.146-.353V4.893a.5.5%200%200%200-.146-.353zM8%204c.535%200%20.954.462.9.995l-.35%203.507a.552.552%200%200%201-1.1%200L7.1%204.995A.905.905%200%200%201%208%204m.002%206a1%201%200%201%201%200%202%201%201%200%200%201%200-2%22/%3E%3C/svg%3E");}.pdoc .alert.danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20fill%3D%22%23842029%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M5.52.359A.5.5%200%200%201%206%200h4a.5.5%200%200%201%20.474.658L8.694%206H12.5a.5.5%200%200%201%20.395.807l-7%209a.5.5%200%200%201-.873-.454L6.823%209.5H3.5a.5.5%200%200%201-.48-.641l2.5-8.5z%22/%3E%3C/svg%3E");}.pdoc .visually-hidden{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0, 0, 0, 0) !important;white-space:nowrap !important;border:0 !important;}.pdoc h1, .pdoc h2, .pdoc h3{font-weight:300;margin:.3em 0;padding:.2em 0;}.pdoc > section:not(.module-info) h1{font-size:1.5rem;font-weight:500;}.pdoc > section:not(.module-info) h2{font-size:1.4rem;font-weight:500;}.pdoc > section:not(.module-info) h3{font-size:1.3rem;font-weight:500;}.pdoc > section:not(.module-info) h4{font-size:1.2rem;}.pdoc > section:not(.module-info) h5{font-size:1.1rem;}.pdoc a{text-decoration:none;color:var(--link);}.pdoc a:hover{color:var(--link-hover);}.pdoc blockquote{margin-left:2rem;}.pdoc pre{border-top:1px solid var(--accent2);border-bottom:1px solid var(--accent2);margin-top:0;margin-bottom:1em;padding:.5rem 0 .5rem .5rem;overflow-x:auto;background-color:var(--code);}.pdoc code{color:var(--text);padding:.2em .4em;margin:0;font-size:85%;background-color:var(--accent);border-radius:6px;}.pdoc a > code{color:inherit;}.pdoc pre > code{display:inline-block;font-size:inherit;background:none;border:none;padding:0;}.pdoc > section:not(.module-info){margin-bottom:1.5rem;}.pdoc .modulename{margin-top:0;font-weight:bold;}.pdoc .modulename a{color:var(--link);transition:100ms all;}.pdoc .git-button{float:right;border:solid var(--link) 1px;}.pdoc .git-button:hover{background-color:var(--link);color:var(--pdoc-background);}.view-source-toggle-state,.view-source-toggle-state ~ .pdoc-code{display:none;}.view-source-toggle-state:checked ~ .pdoc-code{display:block;}.view-source-button{display:inline-block;float:right;font-size:.75rem;line-height:1.5rem;color:var(--muted);padding:0 .4rem 0 1.3rem;cursor:pointer;text-indent:-2px;}.view-source-button > span{visibility:hidden;}.module-info .view-source-button{float:none;display:flex;justify-content:flex-end;margin:-1.2rem .4rem -.2rem 0;}.view-source-button::before{position:absolute;content:"View Source";display:list-item;list-style-type:disclosure-closed;}.view-source-toggle-state:checked ~ .attr .view-source-button::before,.view-source-toggle-state:checked ~ .view-source-button::before{list-style-type:disclosure-open;}.pdoc .docstring{margin-bottom:1.5rem;}.pdoc section:not(.module-info) .docstring{margin-left:clamp(0rem, 5vw - 2rem, 1rem);}.pdoc .docstring .pdoc-code{margin-left:1em;margin-right:1em;}.pdoc h1:target,.pdoc h2:target,.pdoc h3:target,.pdoc h4:target,.pdoc h5:target,.pdoc h6:target,.pdoc .pdoc-code > pre > span:target{background-color:var(--active);box-shadow:-1rem 0 0 0 var(--active);}.pdoc .pdoc-code > pre > span:target{display:block;}.pdoc div:target > .attr,.pdoc section:target > .attr,.pdoc dd:target > a{background-color:var(--active);}.pdoc *{scroll-margin:2rem;}.pdoc .pdoc-code .linenos{user-select:none;}.pdoc .attr:hover{filter:contrast(0.95);}.pdoc section, .pdoc .classattr{position:relative;}.pdoc .headerlink{--width:clamp(1rem, 3vw, 2rem);position:absolute;top:0;left:calc(0rem - var(--width));transition:all 100ms ease-in-out;opacity:0;}.pdoc .headerlink::before{content:"#";display:block;text-align:center;width:var(--width);height:2.3rem;line-height:2.3rem;font-size:1.5rem;}.pdoc .attr:hover ~ .headerlink,.pdoc *:target > .headerlink,.pdoc .headerlink:hover{opacity:1;}.pdoc .attr{display:block;margin:.5rem 0 .5rem;padding:.4rem .4rem .4rem 1rem;background-color:var(--accent);overflow-x:auto;}.pdoc .classattr{margin-left:2rem;}.pdoc .decorator-deprecated{color:#842029;}.pdoc .decorator-deprecated ~ span{filter:grayscale(1) opacity(0.8);}.pdoc .name{color:var(--name);font-weight:bold;}.pdoc .def{color:var(--def);font-weight:bold;}.pdoc .signature{background-color:transparent;}.pdoc .param, .pdoc .return-annotation{white-space:pre;}.pdoc .signature.multiline .param{display:block;}.pdoc .signature.condensed .param{display:inline-block;}.pdoc .annotation{color:var(--annotation);}.pdoc .view-value-toggle-state,.pdoc .view-value-toggle-state ~ .default_value{display:none;}.pdoc .view-value-toggle-state:checked ~ .default_value{display:inherit;}.pdoc .view-value-button{font-size:.5rem;vertical-align:middle;border-style:dashed;margin-top:-0.1rem;}.pdoc .view-value-button:hover{background:white;}.pdoc .view-value-button::before{content:"show";text-align:center;width:2.2em;display:inline-block;}.pdoc .view-value-toggle-state:checked ~ .view-value-button::before{content:"hide";}.pdoc .inherited{margin-left:2rem;}.pdoc .inherited dt{font-weight:700;}.pdoc .inherited dt, .pdoc .inherited dd{display:inline;margin-left:0;margin-bottom:.5rem;}.pdoc .inherited dd:not(:last-child):after{content:", ";}.pdoc .inherited .class:before{content:"class ";}.pdoc .inherited .function a:after{content:"()";}.pdoc .search-result .docstring{overflow:auto;max-height:25vh;}.pdoc .search-result.focused > .attr{background-color:var(--active);}.pdoc .attribution{margin-top:2rem;display:block;opacity:0.5;transition:all 200ms;filter:grayscale(100%);}.pdoc .attribution:hover{opacity:1;filter:grayscale(0%);}.pdoc .attribution img{margin-left:5px;height:27px;vertical-align:bottom;width:50px;transition:all 200ms;}.pdoc table{display:block;width:max-content;max-width:100%;overflow:auto;margin-bottom:1rem;}.pdoc table th{font-weight:600;}.pdoc table th, .pdoc table td{padding:6px 13px;border:1px solid var(--accent2);}</style>
+    <style>/*! custom.css */</style></head>
+<body>
+    <nav class="pdoc">
+        <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
+        <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
+        <div>
+
+            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
+                   pattern=".+" required>
+
+
+
+            <h2>API Documentation</h2>
+                <ul class="memberlist">
+            <li>
+                    <a class="class" href="#TJunctionMOEnv">TJunctionMOEnv</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.__init__">TJunctionMOEnv</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.metadata">metadata</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.scenario">scenario</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.plan">plan</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.objective_names">objective_names</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.demand_spec">demand_spec</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.episode_length">episode_length</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.decision_interval">decision_interval</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.min_green">min_green</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.max_green">max_green</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.warmup">warmup</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.gui">gui</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.render_mode">render_mode</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.ground_truth">ground_truth</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.sumo_args">sumo_args</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.record_signals">record_signals</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.signal_log">signal_log</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.detectors">detectors</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.approaches">approaches</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.action_space">action_space</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.observation_space">observation_space</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.reward_space">reward_space</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.reward_dim">reward_dim</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.current_demand">current_demand</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.n_phases">n_phases</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionMOEnv.phase_names">phase_names</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.observation_names">observation_names</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.reset">reset</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.step">step</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.close">close</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionMOEnv.render">render</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#TJunctionScenario">TJunctionScenario</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#TJunctionScenario.__init__">TJunctionScenario</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.net_file">net_file</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.yellow">yellow</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.red_yellow">red_yellow</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.plan">plan</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.detectors">detectors</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.tls_id">tls_id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TJunctionScenario.approaches">approaches</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#TJunctionScenario.describe">describe</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Demand">Demand</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Demand.__init__">Demand</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Demand.flows">flows</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Demand.profile">profile</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Demand.total">total</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Demand.approach_volume">approach_volume</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Demand.constant">constant</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Demand.random">random</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Demand.scaled">scaled</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Demand.write_routes">write_routes</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#SignalPlan">SignalPlan</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#SignalPlan.__init__">SignalPlan</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.tls_id">tls_id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.links">links</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.groups">groups</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.phases">phases</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.intergreen">intergreen</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.link_intergreen">link_intergreen</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.yellow">yellow</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.red_yellow">red_yellow</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.phase_names">phase_names</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.n_links">n_links</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SignalPlan.n_phases">n_phases</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.conflicts">conflicts</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.green_state">green_state</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.phase_lanes">phase_lanes</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.group_start_offsets">group_start_offsets</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.transition">transition</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.transition_duration">transition_duration</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#SignalPlan.describe">describe</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#build_signal_plan">build_signal_plan</a>
+            </li>
+            <li>
+                    <a class="class" href="#DetectorInfo">DetectorInfo</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#DetectorInfo.__init__">DetectorInfo</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.id">id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.lane_id">lane_id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.edge_id">edge_id</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.approach">approach</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.kind">kind</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.pos">pos</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorInfo.speed_limit">speed_limit</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#DetectorSnapshot">DetectorSnapshot</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#DetectorSnapshot.__init__">DetectorSnapshot</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.duration">duration</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.detectors">detectors</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.count">count</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.occupancy">occupancy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.speed">speed</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.gap">gap</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.approach_vehicles">approach_vehicles</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.approach_vehicle_seconds">approach_vehicle_seconds</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#DetectorSnapshot.stopline_occupied_seconds">stopline_occupied_seconds</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DetectorSnapshot.by_id">by_id</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DetectorSnapshot.select">select</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="variable" href="#DEFAULT_OBJECTIVES">DEFAULT_OBJECTIVES</a>
+            </li>
+            <li>
+                    <a class="variable" href="#OBJECTIVES">OBJECTIVES</a>
+            </li>
+            <li>
+                    <a class="function" href="#list_objectives">list_objectives</a>
+            </li>
+            <li>
+                    <a class="function" href="#register_objective">register_objective</a>
+            </li>
+            <li>
+                    <a class="class" href="#LinearScalarization">LinearScalarization</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#LinearScalarization.__init__">LinearScalarization</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#LinearScalarization.weights">weights</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LinearScalarization.set_weights">set_weights</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LinearScalarization.step">step</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#WeightConditioned">WeightConditioned</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#WeightConditioned.__init__">WeightConditioned</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WeightConditioned.k">k</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WeightConditioned.fixed">fixed</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WeightConditioned.rng">rng</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WeightConditioned.weights">weights</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#WeightConditioned.observation_space">observation_space</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#WeightConditioned.reset">reset</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#WeightConditioned.observation">observation</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#WeightConditioned.step">step</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#equally_spaced_weights">equally_spaced_weights</a>
+            </li>
+            <li>
+                    <a class="function" href="#random_weights">random_weights</a>
+            </li>
+            <li>
+                    <a class="function" href="#pareto_mask">pareto_mask</a>
+            </li>
+            <li>
+                    <a class="function" href="#pareto_front">pareto_front</a>
+            </li>
+            <li>
+                    <a class="function" href="#hypervolume">hypervolume</a>
+            </li>
+            <li>
+                    <a class="function" href="#plot_pareto">plot_pareto</a>
+            </li>
+            <li>
+                    <a class="function" href="#run_episode">run_episode</a>
+            </li>
+            <li>
+                    <a class="function" href="#evaluate_policy">evaluate_policy</a>
+            </li>
+            <li>
+                    <a class="function" href="#sb3_policy">sb3_policy</a>
+            </li>
+            <li>
+                    <a class="class" href="#EpisodeResult">EpisodeResult</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#EpisodeResult.__init__">EpisodeResult</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#EpisodeResult.vector_return">vector_return</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#EpisodeResult.objective_names">objective_names</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#EpisodeResult.steps">steps</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#EpisodeResult.ground_truth">ground_truth</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#EpisodeResult.history">history</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#EpisodeResult.as_dict">as_dict</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Policy">Policy</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Policy.__init__">Policy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Policy.env">env</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Policy.reset">reset</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#RandomPolicy">RandomPolicy</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#RandomPolicy.__init__">RandomPolicy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#RandomPolicy.rng">rng</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#FixedTimePolicy">FixedTimePolicy</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#FixedTimePolicy.__init__">FixedTimePolicy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#FixedTimePolicy.green_times">green_times</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#ActuatedPolicy">ActuatedPolicy</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#ActuatedPolicy.__init__">ActuatedPolicy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ActuatedPolicy.max_green">max_green</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#ActuatedPolicy.gap">gap</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#LongestQueuePolicy">LongestQueuePolicy</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#LongestQueuePolicy.__init__">LongestQueuePolicy</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#LongestQueuePolicy.min_hold">min_hold</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#LongestQueuePolicy.phase_scores">phase_scores</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#make_env">make_env</a>
+            </li>
+    </ul>
+
+
+
+        <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
+            built with <span class="visually-hidden">pdoc</span><img
+                alt="pdoc logo"
+                src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20role%3D%22img%22%20aria-label%3D%22pdoc%20logo%22%20width%3D%22300%22%20height%3D%22160%22%20viewBox%3D%220%200%20150%2080%22%3E%3Ctitle%3Epdoc%3C/title%3E%3Cpath%20d%3D%22M132.316%2048.886c.276-4.679%202.342-6.698%204.409-7.982s4.27-1.165%206.751-1.055c1.586.07%203.044.156%204.222-.482%201.142-.619%202.026-1.932%202.162-3.739.268-3.576-1.929-5.368-5.006-5.551s-7.599.524-10.517%201.606c-4.455%201.652-8.588%206.606-9.552%208.992s-2.342%206.193-1.745%2010.873%202.664%209.221%205.878%2011.79%205.878%203.808%2010.103%204.312%203.444.229%206.062.229%205.006-2.202%204.914-4.909-2.296-5.001-4.501-4.863-3.077.505-5.281.229-7.715-2.064-7.899-9.451z%22%20fill%3D%22%23198754%22/%3E%3Ccircle%20cx%3D%22101.504%22%20cy%3D%2248.943%22%20r%3D%2214.208%22%20fill%3D%22none%22%20stroke%3D%22%23198754%22%20stroke-width%3D%229.354%22/%3E%3Cpath%20d%3D%22M87.81.002c-3.637.065-5.001.454-7.014%201.232s-3.443%201.363-6.3%204.282c-1.723%201.76-3.148%205.019-3.776%207.329-.413%201.521-.316%202.63-.316%202.63l-.195%2034.612c.065%205.774-6.755%208.305-9.612%208.37s-9.678-1.038-9.743-9.408%207.128-9.521%208.362-9.521c1.413-.13%202.526-.021%203.718-.016%202.071.009%204.157-.778%204.092-4.671s-4.157-4.736-4.157-4.736c-6.3-.843-11.43%202.206-11.43%202.206S40.917%2038.15%2041.372%2049.634%2051.568%2068.19%2061.311%2068.125s18.316-7.007%2018.445-17.193l.13-22.772c.046-2.291%202.683-3.644%204.476-4.203.745-.232%201.694-.274%201.694-.274l10.457-.13s4.871-.324%207.729-3.114%204.352-6.294%204.352-6.294.974-3.049.13-4.606-.195-1.233-2.792-3.309-8.573-4.477-8.573-4.477S91.447-.063%2087.81.002zM0%2047.169l.065%2028.417S0%2080.127%204.481%2079.997s5.072-3.866%205.049-4.152l-.113-28.482s1.624-7.656%209.937-7.721%2010.002%206.942%2010.002%208.499-.909%2010.51-9.093%2010.51c-.948%200-2.99-.567-4.145-.272-3.919%201-3.194%204.554-3.194%204.554s.065%205.061%207.404%204.996%2018.575-6.034%2018.575-19.074S26.953%2030.04%2019.549%2029.91%201.234%2035.296%200%2047.169z%22%20fill%3D%22%23198754%22/%3E%3Cg%20transform%3D%22matrix%28.325601%200%200%20.325256%20-10.32669%20-45.802786%29%22%3E%3Ccircle%20cx%3D%22297.554%22%20cy%3D%22172.286%22%20r%3D%2216.5%22%20fill%3D%22%23fff%22/%3E%3Cellipse%20cx%3D%22297.709%22%20cy%3D%22172.642%22%20rx%3D%2211.071%22%20ry%3D%2210.871%22%20fill%3D%22%23105a48%22/%3E%3Ccircle%20cx%3D%22304.104%22%20cy%3D%22167.667%22%20r%3D%224.5%22%20fill%3D%22%23fff%22/%3E%3C/g%3E%3Cpath%20d%3D%22M94.661%2017.032l.893-1.476s.99.714%201.916.925%201.575.114%202.955.114l14.565-.162c1.283-.032%203.085-.762%203.02-3.293s-.373-3.503-.373-3.503l1.283-.487s.52.503.877%201.573.309%201.995.292%202.66-.227%201.541-.227%201.541%201.564-.308%202.359-1.038.823-.779%201.489-1.508.812-.86.812-.86.552-.13.877.26.341.957.065%201.46-1.672%202.206-3.247%203.066-2.76%201.427-3.929%201.768-3.848.73-7.063.714l-10.944-.114s-2.143-.081-3.02-.373-2.241-.973-2.598-1.265z%22%20fill%3D%22%23d36d49%22/%3E%3Cg%20fill%3D%22%23105a48%22%3E%3Cellipse%20cx%3D%2293.052%22%20cy%3D%2243.567%22%20rx%3D%22.869%22%20ry%3D%221.014%22%20transform%3D%22rotate%28341.022%29%22/%3E%3Cellipse%20cx%3D%22104.3%22%20cy%3D%22-16.184%22%20rx%3D%22.865%22%20ry%3D%221.009%22%20transform%3D%22rotate%2814.786%29%22/%3E%3C/g%3E%3C/svg%3E"/>
+        </a>
+</div>
+    </nav>
+    <main class="pdoc">
+            <section class="module-info">
+                    <h1 class="modulename">
+sumo_morl    </h1>
+
+                        <div class="docstring"><p>sumo_morl – többcélú megerősítéses tanulás (MORL) jelzőlámpa-vezérléshez SUMO-ban.</p>
+
+<p>Ez az API-referencia a könyvtár összes nyilvános osztályát és függvényét leírja.
+A használat bevezetője a <em>Kézikönyv</em> (<code>kezikonyv.pdf</code>), a belső felépítés a
+<em>Programfelépítés</em> (<code>programfelepites.pdf</code>).</p>
+
+<p>Gyors kezdés::</p>
+
+<pre><code>from sumo_morl import TJunctionMOEnv
+
+env = TJunctionMOEnv(objectives=("queue", "fairness", "switches"))
+obs, info = env.reset(seed=0)
+obs, reward_vec, terminated, truncated, info = env.step(env.action_space.sample())
+env.close()
+</code></pre>
+
+<p>Modulok:</p>
+
+<ul>
+<li><code><a href="sumo_morl/env.html">sumo_morl.env</a></code> – a Gymnasium környezet (<code><a href="#TJunctionMOEnv">TJunctionMOEnv</a></code>)</li>
+<li><code><a href="sumo_morl/objectives.html">sumo_morl.objectives</a></code> – célfüggvények, saját cél regisztrálása</li>
+<li><code><a href="sumo_morl/detectors.html">sumo_morl.detectors</a></code> – hurokdetektorok és az aggregált mérések (<code><a href="#DetectorSnapshot">DetectorSnapshot</a></code>)</li>
+<li><code><a href="sumo_morl/traffic.html">sumo_morl.traffic</a></code> – forgalmi igény (<code><a href="#Demand">Demand</a></code>)</li>
+<li><code><a href="sumo_morl/morl.html">sumo_morl.morl</a></code> – skalarizálás, súlyok, Pareto-front, hipertérfogat, kiértékelés</li>
+<li><code><a href="sumo_morl/policies.html">sumo_morl.policies</a></code> – összehasonlító (klasszikus) vezérlők</li>
+<li><code><a href="sumo_morl/visualize.html">sumo_morl.visualize</a></code> – ábrák</li>
+<li><code><a href="sumo_morl/scenario.html">sumo_morl.scenario</a></code> – a T-csomópont forgatókönyv</li>
+<li><code><a href="sumo_morl/intergreen.html">sumo_morl.intergreen</a></code> – jelzőcsoportok, fázisok, átmenetek a közbenső időkből</li>
+<li><code><a href="sumo_morl/network.html">sumo_morl.network</a></code> – a hálózat generálása</li>
+<li><code><a href="sumo_morl/sumo_utils.html">sumo_morl.sumo_utils</a></code> – SUMO-binárisok megkeresése</li>
+</ul>
+</div>
+
+                
+                
+                
+            </section>
+                <section id="TJunctionMOEnv">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">TJunctionMOEnv</span><wbr>(<span class="base">typing.Generic[~ObsType, ~ActType]</span>):
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv"></a>
+    
+            <div class="docstring"><p>Többcélú jelzőlámpa-vezérlési környezet egy T-csomópontra.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>objectives:</strong>  a célfüggvények nevei (lásd <code><a href="#list_objectives">sumo_morl.list_objectives()</a></code>).
+A jutalomvektor ebben a sorrendben tartalmazza őket.</li>
+<li><strong>demand:</strong>  forgalmi igény. <code>None</code> -> minden epizódban véletlen
+(<code><a href="#Demand.random">Demand.random()</a></code>); megadható egy <code><a href="#Demand">Demand</a></code> objektum vagy
+egy függvény <code>rng -&gt; Demand</code>.</li>
+<li><strong>episode_length:</strong>  az epizód hossza szimulált másodpercben.</li>
+<li><strong>decision_interval:</strong>  zöldhosszabbítás egy "maradok" akcióra [s].</li>
+<li><strong>min_green:</strong>  minimális zöldidő váltás után [s].</li>
+<li><strong>max_green:</strong>  ha nem <code>None</code>, ennél hosszabb zöld után a környezet
+kikényszeríti a következő fázisra váltást [s].</li>
+<li><strong>warmup:</strong>  ennyi másodpercig fix idejű vezérlés fut az epizód elején, hogy
+a csomópont ne üresen induljon [s].</li>
+<li><strong>gui:</strong>  <code>sumo-gui</code> indítása (megjelenítés).</li>
+<li><strong>seed:</strong>  véletlenmag.</li>
+<li><strong>ground_truth:</strong>  ha igaz, az <code>info["ground_truth"]</code> alatt SUMO-ból
+kiolvasott "valós" mutatók is megjelennek (várakozási idő, CO2, ...).
+Ezeket <strong>csak kiértékelésre</strong> használd, a megfigyelésben és a
+jutalomban nem szerepelnek!</li>
+<li><strong>scenario:</strong>  egyedi forgatókönyv (haladóknak).</li>
+<li><strong>sumo_args:</strong>  további parancssori kapcsolók a SUMO-nak.</li>
+<li><strong>record_signals:</strong>  ha igaz, az <code>env.signal_log</code> másodpercenként rögzíti a
+jelzésképet (<code>[(idő, állapot), ...]</code>), pl. jelzésterv-ábrához.</li>
+</ul>
+</div>
+
+
+                            <div id="TJunctionMOEnv.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">TJunctionMOEnv</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">objectives</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'queue'</span><span class="p">,</span> <span class="s1">'fairness'</span><span class="p">,</span> <span class="s1">'switches'</span><span class="p">)</span>,</span><span class="param">	<span class="n">demand</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">NoneType</span><span class="p">,</span> <span class="n"><a href="#Demand">Demand</a></span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">episode_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span>,</span><span class="param">	<span class="n">decision_interval</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>,</span><span class="param">	<span class="n">min_green</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>,</span><span class="param">	<span class="n">max_green</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">warmup</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>,</span><span class="param">	<span class="n">gui</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">ground_truth</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">scenario</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n"><a href="#TJunctionScenario">TJunctionScenario</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">sumo_args</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>,</span><span class="param">	<span class="n">render_mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">record_signals</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.metadata" class="classattr">
+                                <div class="attr variable">
+            <span class="name">metadata</span>        =
+<span class="default_value">{&#39;render_modes&#39;: [&#39;human&#39;]}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.metadata"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.scenario" class="classattr">
+                                <div class="attr variable">
+            <span class="name">scenario</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.scenario"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.plan" class="classattr">
+                                <div class="attr variable">
+            <span class="name">plan</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.plan"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.objective_names" class="classattr">
+                                <div class="attr variable">
+            <span class="name">objective_names</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.objective_names"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.demand_spec" class="classattr">
+                                <div class="attr variable">
+            <span class="name">demand_spec</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.demand_spec"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.episode_length" class="classattr">
+                                <div class="attr variable">
+            <span class="name">episode_length</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.episode_length"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.decision_interval" class="classattr">
+                                <div class="attr variable">
+            <span class="name">decision_interval</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.decision_interval"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.min_green" class="classattr">
+                                <div class="attr variable">
+            <span class="name">min_green</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.min_green"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.max_green" class="classattr">
+                                <div class="attr variable">
+            <span class="name">max_green</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.max_green"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.warmup" class="classattr">
+                                <div class="attr variable">
+            <span class="name">warmup</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.warmup"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.gui" class="classattr">
+                                <div class="attr variable">
+            <span class="name">gui</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.gui"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.render_mode" class="classattr">
+                                <div class="attr variable">
+            <span class="name">render_mode</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.render_mode"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.ground_truth" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ground_truth</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.ground_truth"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.sumo_args" class="classattr">
+                                <div class="attr variable">
+            <span class="name">sumo_args</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.sumo_args"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.record_signals" class="classattr">
+                                <div class="attr variable">
+            <span class="name">record_signals</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.record_signals"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.signal_log" class="classattr">
+                                <div class="attr variable">
+            <span class="name">signal_log</span><span class="annotation">: List[Tuple[int, str]]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.signal_log"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.detectors" class="classattr">
+                                <div class="attr variable">
+            <span class="name">detectors</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.detectors"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.approaches" class="classattr">
+                                <div class="attr variable">
+            <span class="name">approaches</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.approaches"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.action_space" class="classattr">
+                                <div class="attr variable">
+            <span class="name">action_space</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.action_space"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.observation_space" class="classattr">
+                                <div class="attr variable">
+            <span class="name">observation_space</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.observation_space"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.reward_space" class="classattr">
+                                <div class="attr variable">
+            <span class="name">reward_space</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.reward_space"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.reward_dim" class="classattr">
+                                <div class="attr variable">
+            <span class="name">reward_dim</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.reward_dim"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.current_demand" class="classattr">
+                                <div class="attr variable">
+            <span class="name">current_demand</span><span class="annotation">: Optional[<a href="#Demand">Demand</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.current_demand"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.n_phases" class="classattr">
+                                <div class="attr variable">
+            <span class="name">n_phases</span><span class="annotation">: int</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.n_phases"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.phase_names" class="classattr">
+                                <div class="attr variable">
+            <span class="name">phase_names</span><span class="annotation">: List[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.phase_names"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionMOEnv.observation_names" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">observation_names</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.observation_names"></a>
+    
+            <div class="docstring"><p>A megfigyelésvektor elemeinek nevei (ugyanabban a sorrendben).</p>
+</div>
+
+
+                            </div>
+                            <div id="TJunctionMOEnv.reset" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">reset</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="o">*</span>, </span><span class="param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>, </span><span class="param"><span class="n">options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.reset"></a>
+    
+            <div class="docstring"><p>Resets the environment to an initial internal state, returning an initial observation and info.</p>
+
+<p>This method generates a new starting state often with some randomness to ensure that the agent explores the
+state space and learns a generalised policy about the environment. This randomness can be controlled
+with the <code>seed</code> parameter otherwise if the environment already has a random number generator and
+<code><a href="#TJunctionMOEnv.reset">reset()</a></code> is called with <code>seed=None</code>, the RNG is not reset.</p>
+
+<p>Therefore, <code><a href="#TJunctionMOEnv.reset">reset()</a></code> should (in the typical use case) be called with a seed right after initialization and then never again.</p>
+
+<p>For Custom environments, the first line of <code><a href="#TJunctionMOEnv.reset">reset()</a></code> should be <code>super().reset(seed=seed)</code> which implements
+the seeding correctly.</p>
+
+<p><em>Changed in version v0.25:</em>
+The <code>return_info</code> parameter was removed and now info is expected to be returned.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>seed (optional int):</strong>  The seed that is used to initialize the environment's PRNG (<code><a href="#TJunctionMOEnv.np_random">np_random</a></code>) and
+the read-only attribute <code><a href="#TJunctionMOEnv.np_random_seed">np_random_seed</a></code>.
+If the environment does not already have a PRNG and <code>seed=None</code> (the default option) is passed,
+a seed will be chosen from some source of entropy (e.g. timestamp or /dev/urandom).
+However, if the environment already has a PRNG and <code>seed=None</code> is passed, the PRNG will <em>not</em> be reset
+and the env's <code><a href="#TJunctionMOEnv.np_random_seed">np_random_seed</a></code> will <em>not</em> be altered.
+If you pass an integer, the PRNG will be reset even if it already exists.
+Usually, you want to pass an integer <em>right after the environment has been initialized and then never again</em>.
+Please refer to the minimal example above to see this paradigm in action.</li>
+<li><strong>options (optional dict):</strong>  Additional information to specify how the environment is reset (optional,
+depending on the specific environment)</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>observation (ObsType): Observation of the initial state. This will be an element of <code><a href="#TJunctionMOEnv.observation_space">observation_space</a></code>
+      (typically a numpy array) and is analogous to the observation returned by <code><a href="#TJunctionMOEnv.step">step()</a></code>.
+  info (dictionary):  This dictionary contains auxiliary information complementing <code>observation</code>. It should be analogous to
+      the <code>info</code> returned by <code><a href="#TJunctionMOEnv.step">step()</a></code>.</p>
+</blockquote>
+
+<h6 id="note">Note:</h6>
+
+<blockquote>
+  <p>As with <code><a href="#TJunctionMOEnv.step">step()</a></code>, the returned observation and info must be new data rather than a
+  buffer that a previous call already returned and that this call has mutated in place.</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="TJunctionMOEnv.step" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">step</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">action</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.step"></a>
+    
+            <div class="docstring"><p>Run one timestep of the environment's dynamics using the agent actions.</p>
+
+<p>When the end of an episode is reached (<code>terminated or truncated</code>), it is necessary to call <code><a href="#TJunctionMOEnv.reset">reset()</a></code> to
+reset this environment's state for the next episode.</p>
+
+<p><em>Changed in version 0.26:</em>
+The Step API was changed removing <code>done</code> in favor of <code>terminated</code> and <code>truncated</code> to make it clearer
+to users when the environment had terminated or truncated which is critical for reinforcement learning
+bootstrapping algorithms.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>action (ActType):</strong>  an action provided by the agent to update the environment state.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>observation (ObsType): An element of the environment's <code><a href="#TJunctionMOEnv.observation_space">observation_space</a></code> as the next observation due to the agent actions.
+      An example is a numpy array containing the positions and velocities of the pole in CartPole.
+  reward (SupportsFloat): The reward as a result of taking the action.
+  terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
+      which can be positive or negative. An example is reaching the goal state or moving into the lava from
+      the Sutton and Barto Gridworld. If true, the user needs to call <code><a href="#TJunctionMOEnv.reset">reset()</a></code>.
+  truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
+      Typically, this is a timelimit, but could also be used to indicate an agent physically going out of bounds.
+      Can be used to end the episode prematurely before a terminal state is reached.
+      If true, the user needs to call <code><a href="#TJunctionMOEnv.reset">reset()</a></code>.
+  info (dict): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
+      This might, for instance, contain: metrics that describe the agent's performance state, variables that are
+      hidden from observations, or individual reward terms that are combined to produce the total reward.
+      In OpenAI Gym <v26, it contains "TimeLimit.truncated" to distinguish truncation and termination,
+      however this is deprecated in favour of returning terminated and truncated variables.
+  done (bool): (Deprecated) A boolean value for if the episode has ended, in which case further <code><a href="#TJunctionMOEnv.step">step()</a></code> calls will
+      return undefined results. This was removed in OpenAI Gym v26 in favor of terminated and truncated attributes.
+      A done signal may be emitted for different reasons: Maybe the task underlying the environment was solved successfully,
+      a certain timelimit was exceeded, or the physics simulation has entered an invalid state.</p>
+</blockquote>
+
+<h6 id="note">Note:</h6>
+
+<blockquote>
+  <p>Users commonly keep the data from every timestep, most obviously in a replay or rollout buffer, so each
+  call must return new observation and info objects rather than modifying and returning the same buffer.
+  <code>gymnasium.utils.env_checker.check_env()</code> checks this.</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="TJunctionMOEnv.close" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">close</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.close"></a>
+    
+            <div class="docstring"><p>After the user has finished using the environment, close contains the code necessary to "clean up" the environment.</p>
+
+<p>This is critical for closing rendering windows, database or HTTP connections.
+Calling <code><a href="#TJunctionMOEnv.close">close</a></code> on an already closed environment has no effect and won't raise an error.</p>
+</div>
+
+
+                            </div>
+                            <div id="TJunctionMOEnv.render" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">render</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionMOEnv.render"></a>
+    
+            <div class="docstring"><p>Compute the render frames as specified by <code><a href="#TJunctionMOEnv.render_mode">render_mode</a></code> during the initialization of the environment.</p>
+
+<p>The environment's <code><a href="#TJunctionMOEnv.metadata">metadata</a></code> render modes (<code>env.metadata["render_modes"]</code>) should contain the possible
+ways to implement the render modes. In addition, list versions for most render modes is achieved through
+<code>gymnasium.make</code> which automatically applies a wrapper to collect rendered frames.</p>
+
+<h6 id="note">Note:</h6>
+
+<blockquote>
+  <p>As the <code><a href="#TJunctionMOEnv.render_mode">render_mode</a></code> is known during <code><a href="#TJunctionMOEnv.__init__">__init__</a></code>, the objects used to render the environment state
+  should be initialised in <code><a href="#TJunctionMOEnv.__init__">__init__</a></code>.</p>
+</blockquote>
+
+<p>By convention, if the <code><a href="#TJunctionMOEnv.render_mode">render_mode</a></code> is:</p>
+
+<ul>
+<li>None (default): no render is computed.</li>
+<li>"human": The environment is continuously rendered in the current display or terminal, usually for human consumption.
+This rendering should occur during <code><a href="#TJunctionMOEnv.step">step()</a></code> and <code><a href="#TJunctionMOEnv.render">render()</a></code> doesn't need to be called. Returns <code>None</code>.</li>
+<li>"rgb_array": Return a single frame representing the current state of the environment.
+A frame is a <code>np.ndarray</code> with shape <code>(x, y, 3)</code> representing RGB values for an x-by-y pixel image.</li>
+<li>"ansi": Return a strings (<code>str</code>) or <code>StringIO.StringIO</code> containing a terminal-style text representation
+for each time step. The text can include newlines and ANSI escape sequences (e.g. for colors).</li>
+<li>"rgb_array_list" and "ansi_list": List based version of render modes are possible (except Human) through the
+wrapper, <code>gymnasium.wrappers.RenderCollection</code> that is automatically applied during <code>gymnasium.make(..., render_mode="rgb_array_list")</code>.
+The frames collected are popped after <code><a href="#TJunctionMOEnv.render">render()</a></code> is called or <code><a href="#TJunctionMOEnv.reset">reset()</a></code>.</li>
+</ul>
+
+<h6 id="note-2">Note:</h6>
+
+<blockquote>
+  <p>Make sure that your class's <code><a href="#TJunctionMOEnv.metadata">metadata</a></code> <code>"render_modes"</code> key includes the list of supported modes.</p>
+</blockquote>
+
+<p><em>Changed in version 0.25.0:</em>
+The render function was changed to no longer accept parameters, rather these parameters should be specified
+in the environment initialised, i.e., <code>gymnasium.make("CartPole-v1", render_mode="human")</code></p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="TJunctionScenario">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass</div>
+
+    <span class="def">class</span>
+    <span class="name">TJunctionScenario</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario"></a>
+    
+            <div class="docstring"><p>Mindent tartalmaz, ami a szimulációhoz kell.</p>
+
+<h6 id="attributes">Attributes:</h6>
+
+<ul>
+<li><strong>net_file:</strong>  hálózat fájl.</li>
+<li><strong>plan:</strong>  a jelzésterv (fázisok, közbenső idők, átmenetek).</li>
+<li><strong>detectors:</strong>  a hurokdetektorok listája.</li>
+</ul>
+</div>
+
+
+                            <div id="TJunctionScenario.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">TJunctionScenario</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">net_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/home/user/intergreen_matrix_calculator/sumo_morl/data/t_junction.net.xml'</span>,</span><span class="param">	<span class="n">yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>,</span><span class="param">	<span class="n">red_yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>,</span><span class="param">	<span class="n">tls_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'C'</span>,</span><span class="param">	<span class="n">approaches</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'W'</span><span class="p">,</span> <span class="s1">'E'</span><span class="p">,</span> <span class="s1">'S'</span><span class="p">)</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.net_file" class="classattr">
+                                <div class="attr variable">
+            <span class="name">net_file</span><span class="annotation">: str</span>        =
+<span class="default_value">&#39;/home/user/intergreen_matrix_calculator/sumo_morl/data/t_junction.net.xml&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.net_file"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.yellow" class="classattr">
+                                <div class="attr variable">
+            <span class="name">yellow</span><span class="annotation">: int</span>        =
+<span class="default_value">3</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.yellow"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.red_yellow" class="classattr">
+                                <div class="attr variable">
+            <span class="name">red_yellow</span><span class="annotation">: int</span>        =
+<span class="default_value">2</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.red_yellow"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.plan" class="classattr">
+                                <div class="attr variable">
+            <span class="name">plan</span><span class="annotation">: <a href="#SignalPlan">SignalPlan</a></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.plan"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.detectors" class="classattr">
+                                <div class="attr variable">
+            <span class="name">detectors</span><span class="annotation">: List[<a href="#DetectorInfo">DetectorInfo</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.detectors"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.tls_id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tls_id</span><span class="annotation">: str</span>        =
+<span class="default_value">&#39;C&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.tls_id"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.approaches" class="classattr">
+                                <div class="attr variable">
+            <span class="name">approaches</span><span class="annotation">: tuple</span>        =
+<span class="default_value">(&#39;W&#39;, &#39;E&#39;, &#39;S&#39;)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.approaches"></a>
+    
+    
+
+                            </div>
+                            <div id="TJunctionScenario.describe" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">describe</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#TJunctionScenario.describe"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="Demand">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass</div>
+
+    <span class="def">class</span>
+    <span class="name">Demand</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#Demand"></a>
+    
+            <div class="docstring"><p>Forgalmi igény.</p>
+
+<h6 id="attributes">Attributes:</h6>
+
+<ul>
+<li><strong>flows:</strong>  <code>{(honnan, hova): jármű/óra}</code>, pl. <code>{("W", "E"): 500}</code>.</li>
+<li><strong>profile:</strong>  időbeli szorzók (egyenlő hosszú szakaszokra osztva az
+epizódot), pl. <code>(0.5, 1.0, 1.5, 1.0)</code> egy csúcsórás hullámhoz.
+<code>(1.0,)</code> = állandó igény.</li>
+</ul>
+</div>
+
+
+                            <div id="Demand.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">Demand</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">flows</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>,</span><span class="param">	<span class="n">profile</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,)</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.flows" class="classattr">
+                                <div class="attr variable">
+            <span class="name">flows</span><span class="annotation">: Dict[Tuple[str, str], float]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.flows"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.profile" class="classattr">
+                                <div class="attr variable">
+            <span class="name">profile</span><span class="annotation">: Sequence[float]</span>        =
+<span class="default_value">(1.0,)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.profile"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.total" class="classattr">
+                                <div class="attr variable">
+            <span class="name">total</span><span class="annotation">: float</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.total"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.approach_volume" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">approach_volume</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">approach</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">float</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.approach_volume"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.constant" class="classattr">
+                                <div class="attr function">
+                    <div class="decorator decorator-classmethod">@classmethod</div>
+
+        <span class="def">def</span>
+        <span class="name">constant</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">cls</span>,</span><span class="param">	<span class="n">main</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">500</span>,</span><span class="param">	<span class="n">side</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">200</span>,</span><span class="param">	<span class="n">left_share</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>,</span><span class="param">	<span class="n">right_share</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span></span><span class="return-annotation">) -> <span class="n"><a href="#Demand">Demand</a></span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.constant"></a>
+    
+            <div class="docstring"><p>Egyszerű, állandó igény a főirányon (ny–k) és a mellékirányon (dél).</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>main:</strong>  a főirány egy irányának forgalma [jármű/óra].</li>
+<li><strong>side:</strong>  a déli mellékág forgalma [jármű/óra].</li>
+<li><strong>left_share:</strong>  a keletről balra (délre) kanyarodók aránya.</li>
+<li><strong>right_share:</strong>  a nyugatról jobbra (délre) kanyarodók aránya.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="Demand.random" class="classattr">
+                                <div class="attr function">
+                    <div class="decorator decorator-classmethod">@classmethod</div>
+
+        <span class="def">def</span>
+        <span class="name">random</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">cls</span>,</span><span class="param">	<span class="n">rng</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">Generator</span>,</span><span class="param">	<span class="n">main_range</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">700</span><span class="p">)</span>,</span><span class="param">	<span class="n">side_range</span><span class="o">=</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>,</span><span class="param">	<span class="n">turn_range</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">)</span>,</span><span class="param">	<span class="n">profile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n"><a href="#Demand">Demand</a></span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.random"></a>
+    
+            <div class="docstring"><p>Véletlen igény sorsolása (epizódonként más-más).</p>
+</div>
+
+
+                            </div>
+                            <div id="Demand.scaled" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">scaled</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">factor</span><span class="p">:</span> <span class="nb">float</span></span><span class="return-annotation">) -> <span class="n"><a href="#Demand">Demand</a></span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.scaled"></a>
+    
+    
+
+                            </div>
+                            <div id="Demand.write_routes" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">write_routes</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">out_file</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">duration</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Demand.write_routes"></a>
+    
+            <div class="docstring"><p>SUMO <code>.rou.xml</code> írása <code>&lt;flow&gt;</code> elemekkel (Poisson-szerű érkezés).</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>out_file:</strong>  a kimeneti fájl.</li>
+<li><strong>duration:</strong>  az igény időtartama [s]; a <code><a href="#Demand.profile">profile</a></code> szakaszai ezt osztják fel.</li>
+<li><strong>seed:</strong>  nem használt; az érkezések véletlenszerűségét a SUMO <code>--seed</code>
+kapcsolója adja (a környezet ezt állítja be).</li>
+</ul>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="SignalPlan">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass</div>
+
+    <span class="def">class</span>
+    <span class="name">SignalPlan</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan"></a>
+    
+            <div class="docstring"><p>A csomópont teljes jelzésterve.</p>
+
+<h6 id="attributes">Attributes:</h6>
+
+<ul>
+<li><strong>groups:</strong>  jelzőcsoportok listája.</li>
+<li><strong>phases:</strong>  fázisok; mindegyik a benne zöldet kapó csoportok indexeinek listája.</li>
+<li><strong>intergreen:</strong>  <code>[kiürítő][belépő]</code> közbenső idő mátrix a csoportok között
+[s]; <code>nan</code>, ha a két csoport nem konfliktusos.</li>
+<li><strong>link_intergreen:</strong>  a mozgás (link) szintű mátrix, ahogy a közbensőidő-számító
+kód kiadta.</li>
+<li><strong>n_links:</strong>  a SUMO állapot-sztring hossza.</li>
+<li><strong>yellow:</strong>  sárga idő [s].</li>
+<li><strong>red_yellow:</strong>  piros-sárga idő [s].</li>
+</ul>
+</div>
+
+
+                            <div id="SignalPlan.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">SignalPlan</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">tls_id</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">links</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n"><a href="sumo_morl/intergreen.html#Link">sumo_morl.intergreen.Link</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">groups</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n"><a href="sumo_morl/intergreen.html#SignalGroup">sumo_morl.intergreen.SignalGroup</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">phases</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>,</span><span class="param">	<span class="n">intergreen</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">link_intergreen</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>,</span><span class="param">	<span class="n">red_yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>,</span><span class="param">	<span class="n">phase_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.tls_id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tls_id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.tls_id"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.links" class="classattr">
+                                <div class="attr variable">
+            <span class="name">links</span><span class="annotation">: List[<a href="sumo_morl/intergreen.html#Link">sumo_morl.intergreen.Link</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.links"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.groups" class="classattr">
+                                <div class="attr variable">
+            <span class="name">groups</span><span class="annotation">: List[<a href="sumo_morl/intergreen.html#SignalGroup">sumo_morl.intergreen.SignalGroup</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.groups"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.phases" class="classattr">
+                                <div class="attr variable">
+            <span class="name">phases</span><span class="annotation">: List[List[int]]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.phases"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.intergreen" class="classattr">
+                                <div class="attr variable">
+            <span class="name">intergreen</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.intergreen"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.link_intergreen" class="classattr">
+                                <div class="attr variable">
+            <span class="name">link_intergreen</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.link_intergreen"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.yellow" class="classattr">
+                                <div class="attr variable">
+            <span class="name">yellow</span><span class="annotation">: int</span>        =
+<span class="default_value">3</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.yellow"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.red_yellow" class="classattr">
+                                <div class="attr variable">
+            <span class="name">red_yellow</span><span class="annotation">: int</span>        =
+<span class="default_value">2</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.red_yellow"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.phase_names" class="classattr">
+                                <div class="attr variable">
+            <span class="name">phase_names</span><span class="annotation">: List[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.phase_names"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.n_links" class="classattr">
+                                <div class="attr variable">
+            <span class="name">n_links</span><span class="annotation">: int</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.n_links"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.n_phases" class="classattr">
+                                <div class="attr variable">
+            <span class="name">n_phases</span><span class="annotation">: int</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.n_phases"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.conflicts" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">conflicts</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">gi</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">gj</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.conflicts"></a>
+    
+            <div class="docstring"><p>Igaz, ha a két jelzőcsoport konfliktusos (nem kaphat egyszerre zöldet).</p>
+</div>
+
+
+                            </div>
+                            <div id="SignalPlan.green_state" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">green_state</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">phase</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.green_state"></a>
+    
+            <div class="docstring"><p>A <code>phase</code> fázis SUMO állapot-sztringje (pl. <code>'GrrrGG'</code>).</p>
+</div>
+
+
+                            </div>
+                            <div id="SignalPlan.phase_lanes" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">phase_lanes</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">phase</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.phase_lanes"></a>
+    
+            <div class="docstring"><p>A fázisban zöldet kapó bejövő sávok azonosítói.</p>
+</div>
+
+
+                            </div>
+                            <div id="SignalPlan.group_start_offsets" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">group_start_offsets</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">from_phase</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">to_phase</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.group_start_offsets"></a>
+    
+            <div class="docstring"><p>Az induló csoportok zöldkezdete a régi zöld vége után [s].</p>
+</div>
+
+
+                            </div>
+                            <div id="SignalPlan.transition" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">transition</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">from_phase</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">to_phase</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.transition"></a>
+    
+            <div class="docstring"><p>Átmenet két fázis között: <code>[(állapot, időtartam_s), ...]</code>.</p>
+
+<p><code>t = 0</code> a régi zöld vége. A megszűnő csoportok <code><a href="#SignalPlan.yellow">yellow</a></code> ideig sárgát,
+utána pirosat kapnak; az induló csoportok annyi idő után kapnak zöldet,
+amennyit a közbenső idő mátrix előír (legalább <code><a href="#SignalPlan.red_yellow">red_yellow</a></code>), előtte
+<code><a href="#SignalPlan.red_yellow">red_yellow</a></code> ideig piros-sárgát. A megmaradó csoportok végig zöldek.
+Az átmenet akkor ér véget, amikor az utolsó induló csoport is zöldet kap.</p>
+</div>
+
+
+                            </div>
+                            <div id="SignalPlan.transition_duration" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">transition_duration</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">from_phase</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">to_phase</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">int</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.transition_duration"></a>
+    
+    
+
+                            </div>
+                            <div id="SignalPlan.describe" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">describe</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#SignalPlan.describe"></a>
+    
+            <div class="docstring"><p>Ember által olvasható összefoglaló a jelzéstervről.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="build_signal_plan">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">build_signal_plan</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">net_file</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">tls_id</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">phases</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>,</span><span class="param">	<span class="n">red_yellow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>,</span><span class="param">	<span class="n">group_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">phase_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n"><a href="#SignalPlan">SignalPlan</a></span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#build_signal_plan"></a>
+    
+            <div class="docstring"><p>Teljes jelzésterv előállítása egy <code>.net.xml</code> fájlból.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>net_file:</strong>  hálózat fájl.</li>
+<li><strong>tls_id:</strong>  a jelzőlámpás csomópont azonosítója.</li>
+<li><strong>phases:</strong>  opcionális kézi fázislista (csoport-indexek); ha <code>None</code>, a
+konfliktusmentes klikkek lesznek a fázisok.</li>
+<li><strong>yellow, red_yellow:</strong>  sárga és piros-sárga idő [s].</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="DetectorInfo">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass</div>
+
+    <span class="def">class</span>
+    <span class="name">DetectorInfo</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo"></a>
+    
+    
+
+                            <div id="DetectorInfo.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">DetectorInfo</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">lane_id</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">edge_id</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">approach</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">pos</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">speed_limit</span><span class="p">:</span> <span class="nb">float</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.id"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.lane_id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">lane_id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.lane_id"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.edge_id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">edge_id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.edge_id"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.approach" class="classattr">
+                                <div class="attr variable">
+            <span class="name">approach</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.approach"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.kind" class="classattr">
+                                <div class="attr variable">
+            <span class="name">kind</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.kind"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.pos" class="classattr">
+                                <div class="attr variable">
+            <span class="name">pos</span><span class="annotation">: float</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.pos"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorInfo.speed_limit" class="classattr">
+                                <div class="attr variable">
+            <span class="name">speed_limit</span><span class="annotation">: float</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorInfo.speed_limit"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="DetectorSnapshot">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass(eq=False)</div>
+
+    <span class="def">class</span>
+    <span class="name">DetectorSnapshot</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot"></a>
+    
+            <div class="docstring"><p>Egy vezérlési lépés (több szimulációs másodperc) aggregált hurokadatai.</p>
+
+<p>Minden tömb a <code><a href="#DetectorSnapshot.detectors">detectors</a></code> lista sorrendjét követi.</p>
+</div>
+
+
+                            <div id="DetectorSnapshot.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">DetectorSnapshot</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">detectors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n"><a href="#DetectorInfo">DetectorInfo</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">count</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">occupancy</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">speed</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">gap</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">approach_vehicles</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>,</span><span class="param">	<span class="n">approach_vehicle_seconds</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>,</span><span class="param">	<span class="n">stopline_occupied_seconds</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.duration" class="classattr">
+                                <div class="attr variable">
+            <span class="name">duration</span><span class="annotation">: float</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.duration"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.detectors" class="classattr">
+                                <div class="attr variable">
+            <span class="name">detectors</span><span class="annotation">: List[<a href="#DetectorInfo">DetectorInfo</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.detectors"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.count" class="classattr">
+                                <div class="attr variable">
+            <span class="name">count</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.count"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.occupancy" class="classattr">
+                                <div class="attr variable">
+            <span class="name">occupancy</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.occupancy"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.speed" class="classattr">
+                                <div class="attr variable">
+            <span class="name">speed</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.speed"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.gap" class="classattr">
+                                <div class="attr variable">
+            <span class="name">gap</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.gap"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.approach_vehicles" class="classattr">
+                                <div class="attr variable">
+            <span class="name">approach_vehicles</span><span class="annotation">: Dict[str, float]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.approach_vehicles"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.approach_vehicle_seconds" class="classattr">
+                                <div class="attr variable">
+            <span class="name">approach_vehicle_seconds</span><span class="annotation">: Dict[str, float]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.approach_vehicle_seconds"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.stopline_occupied_seconds" class="classattr">
+                                <div class="attr variable">
+            <span class="name">stopline_occupied_seconds</span><span class="annotation">: numpy.ndarray</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.stopline_occupied_seconds"></a>
+    
+    
+
+                            </div>
+                            <div id="DetectorSnapshot.by_id" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">by_id</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.by_id"></a>
+    
+            <div class="docstring"><p><code>{detektor_id: {count, occupancy, speed, gap}}</code> szótár.</p>
+</div>
+
+
+                            </div>
+                            <div id="DetectorSnapshot.select" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">select</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">lane_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">approach</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#DetectorSnapshot.select"></a>
+    
+            <div class="docstring"><p>Indexmaszk a detektorok szűréséhez (típus / sáv / ág szerint).</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="DEFAULT_OBJECTIVES">
+                    <div class="attr variable">
+            <span class="name">DEFAULT_OBJECTIVES</span>        =
+<span class="default_value">(&#39;queue&#39;, &#39;fairness&#39;, &#39;switches&#39;)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DEFAULT_OBJECTIVES"></a>
+    
+    
+
+                </section>
+                <section id="OBJECTIVES">
+                    <div class="attr variable">
+            <span class="name">OBJECTIVES</span>        =
+<input id="OBJECTIVES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="OBJECTIVES-view-value"></label><span class="default_value">{&#39;queue&#39;: Objective(name=&#39;queue&#39;, fn=&lt;function _queue&gt;, scale=0.01, doc=&#39;-(becsült járműszám az ágakon, másodpercekre összegezve) [jármű*s]; a teljes késleltetés közelítése (min.)&#39;), &#39;throughput&#39;: Objective(name=&#39;throughput&#39;, fn=&lt;function _throughput&gt;, scale=0.1, doc=&#39;A stopvonali hurkokon áthaladt járművek száma [jármű] (max.)&#39;), &#39;fairness&#39;: Objective(name=&#39;fairness&#39;, fn=&lt;function _fairness&gt;, scale=0.02, doc=&#39;-(a legrosszabb ág becsült járműszáma, másodpercekre összegezve) [jármű*s]; méltányosság az ágak között (min.)&#39;), &#39;switches&#39;: Objective(name=&#39;switches&#39;, fn=&lt;function _switches&gt;, scale=1.0, doc=&#39;-1 minden fázisváltásnál; stabil, kevés váltásos vezérlés (min.)&#39;), &#39;stopline_occupancy&#39;: Objective(name=&#39;stopline_occupancy&#39;, fn=&lt;function _stopline_occ&gt;, scale=0.1, doc=&#39;-(a stopvonali hurkok foglalt másodpercei) [s]; a stopvonalnál álló/lassú járművek közelítése (min.)&#39;)}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#OBJECTIVES"></a>
+    
+    
+
+                </section>
+                <section id="list_objectives">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">list_objectives</span><span class="signature pdoc-code condensed">(<span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#list_objectives"></a>
+    
+            <div class="docstring"><p>Az elérhető célfüggvények listája rövid leírással.</p>
+</div>
+
+
+                </section>
+                <section id="register_objective">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">register_objective</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>, </span><span class="param"><span class="n">doc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#register_objective"></a>
+    
+            <div class="docstring"><p>Dekorátor új célfüggvény regisztrálásához (lásd a modul leírását).</p>
+</div>
+
+
+                </section>
+                <section id="LinearScalarization">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">LinearScalarization</span><wbr>(<span class="base">gymnasium.core.Env[~WrapperObsType, ~WrapperActType]</span>, <span class="base">typing.Generic[~WrapperObsType, ~WrapperActType, ~ObsType, ~ActType]</span>):
+
+        
+    </div>
+    <a class="headerlink" href="#LinearScalarization"></a>
+    
+            <div class="docstring"><p>A vektor-jutalmat súlyozott összeggé alakítja: <code>r = w · r_vec</code>.</p>
+
+<p>Így bármely egycélú RL könyvtár (pl. Stable-Baselines3) használható. Az
+eredeti vektor az <code>info["vector_reward"]</code> alatt marad elérhető.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>env:</strong>  a többcélú környezet.</li>
+<li><strong>weights:</strong>  súlyvektor (célfüggvényenként egy szám, tipikusan összegük 1).</li>
+</ul>
+</div>
+
+
+                            <div id="LinearScalarization.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">LinearScalarization</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span><span class="p">:</span> <span class="n">gymnasium</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Env</span>, </span><span class="param"><span class="n">weights</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LinearScalarization.__init__"></a>
+    
+            <div class="docstring"><p>Wraps an environment to allow a modular transformation of the <code><a href="#LinearScalarization.step">step()</a></code> and <code><a href="#LinearScalarization.reset">reset()</a></code> methods.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>env:</strong>  The environment to wrap</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="LinearScalarization.weights" class="classattr">
+                                <div class="attr variable">
+            <span class="name">weights</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LinearScalarization.weights"></a>
+    
+    
+
+                            </div>
+                            <div id="LinearScalarization.set_weights" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">set_weights</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">weights</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#LinearScalarization.set_weights"></a>
+    
+    
+
+                            </div>
+                            <div id="LinearScalarization.step" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">step</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">action</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#LinearScalarization.step"></a>
+    
+            <div class="docstring"><p>Uses the <code><a href="#LinearScalarization.step">step()</a></code> of the <code><a href="#LinearScalarization.env">env</a></code> that can be overwritten to change the returned data.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="WeightConditioned">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">WeightConditioned</span><wbr>(<span class="base">gymnasium.core.Wrapper[~WrapperObsType, ~ActType, ~ObsType, ~ActType]</span>):
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned"></a>
+    
+            <div class="docstring"><p>A súlyvektort hozzáfűzi a megfigyeléshez (súly-kondicionált ágensekhez).</p>
+
+<p>Minden <code><a href="#WeightConditioned.reset">reset</a></code>-kor új súlyt sorsol (vagy fixet használ), és a jutalmat
+is ezzel skalarizálja. Egyetlen hálóval így a teljes Pareto-front tanulható.</p>
+</div>
+
+
+                            <div id="WeightConditioned.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">WeightConditioned</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">env</span><span class="p">:</span> <span class="n">gymnasium</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Env</span>,</span><span class="param">	<span class="n">weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.__init__"></a>
+    
+            <div class="docstring"><p>Constructor for the observation wrapper.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>env:</strong>  Environment to be wrapped.</li>
+</ul>
+</div>
+
+
+                            </div>
+                            <div id="WeightConditioned.k" class="classattr">
+                                <div class="attr variable">
+            <span class="name">k</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.k"></a>
+    
+    
+
+                            </div>
+                            <div id="WeightConditioned.fixed" class="classattr">
+                                <div class="attr variable">
+            <span class="name">fixed</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.fixed"></a>
+    
+    
+
+                            </div>
+                            <div id="WeightConditioned.rng" class="classattr">
+                                <div class="attr variable">
+            <span class="name">rng</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.rng"></a>
+    
+    
+
+                            </div>
+                            <div id="WeightConditioned.weights" class="classattr">
+                                <div class="attr variable">
+            <span class="name">weights</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.weights"></a>
+    
+    
+
+                            </div>
+                            <div id="WeightConditioned.observation_space" class="classattr">
+                                <div class="attr variable">
+            <span class="name">observation_space</span><span class="annotation">: Union[gymnasium.spaces.space.Space[~ObsType], gymnasium.spaces.space.Space[~WrapperObsType]]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.observation_space"></a>
+    
+            <div class="docstring"><p>Return the <code>Env</code> <code><a href="#WeightConditioned.observation_space">observation_space</a></code> unless overwritten then the wrapper <code><a href="#WeightConditioned.observation_space">observation_space</a></code> is used.</p>
+</div>
+
+
+                            </div>
+                            <div id="WeightConditioned.reset" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">reset</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="o">**</span><span class="n">kw</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.reset"></a>
+    
+            <div class="docstring"><p>Modifies the <code><a href="#WeightConditioned.env">env</a></code> after calling <code><a href="#WeightConditioned.reset">reset()</a></code>, returning a modified observation using <code>self.observation()</code>.</p>
+</div>
+
+
+                            </div>
+                            <div id="WeightConditioned.observation" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">observation</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">obs</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.observation"></a>
+    
+            <div class="docstring"><p>Returns a modified observation.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>observation:</strong>  The <code><a href="#WeightConditioned.env">env</a></code> observation</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>The modified observation</p>
+</blockquote>
+</div>
+
+
+                            </div>
+                            <div id="WeightConditioned.step" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">step</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">action</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#WeightConditioned.step"></a>
+    
+            <div class="docstring"><p>Modifies the <code><a href="#WeightConditioned.env">env</a></code> after calling <code><a href="#WeightConditioned.step">step()</a></code> using <code>self.observation()</code> on the returned observations.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="equally_spaced_weights">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">equally_spaced_weights</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">n_objectives</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">n_divisions</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#equally_spaced_weights"></a>
+    
+            <div class="docstring"><p>Egyenletes rács a súly-szimplexen (összeg = 1).</p>
+
+<p>Pl. <code>equally_spaced_weights(2, 4)</code> ->
+<code>[[0,1], [.25,.75], [.5,.5], [.75,.25], [1,0]]</code>.</p>
+</div>
+
+
+                </section>
+                <section id="random_weights">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">random_weights</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">n_objectives</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>,</span><span class="param">	<span class="n">rng</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">_generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#random_weights"></a>
+    
+            <div class="docstring"><p>Egyenletes eloszlású véletlen súlyvektorok a szimplexen (Dirichlet(1)).</p>
+</div>
+
+
+                </section>
+                <section id="pareto_mask">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">pareto_mask</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">points</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#pareto_mask"></a>
+    
+            <div class="docstring"><p>Igaz azokra a pontokra, amelyek nem dominált (Pareto-optimális) pontok.</p>
+
+<p>Konvenció: minden célt <strong>maximalizálunk</strong> (a környezet jutalmai ilyenek).</p>
+</div>
+
+
+                </section>
+                <section id="pareto_front">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">pareto_front</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">points</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#pareto_front"></a>
+    
+            <div class="docstring"><p>A nem dominált pontok (lásd <code><a href="#pareto_mask">pareto_mask()</a></code>).</p>
+</div>
+
+
+                </section>
+                <section id="hypervolume">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">hypervolume</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">points</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>, </span><span class="param"><span class="n">ref</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">float</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#hypervolume"></a>
+    
+            <div class="docstring"><p>Hipertérfogat (maximalizálás, <code>ref</code> = minden pontnál rosszabb referencia).</p>
+
+<p>Pontos, rekurzív szeletelős algoritmus; kis pontszámra (&lt; néhány száz) és
+2–4 célra bőven elég gyors.</p>
+</div>
+
+
+                </section>
+                <section id="plot_pareto">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">plot_pareto</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">points</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">objective_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>,</span><span class="param">	<span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">ax</span><span class="o">=</span><span class="kc">None</span>,</span><span class="param">	<span class="n">highlight_front</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'Pareto-front'</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#plot_pareto"></a>
+    
+            <div class="docstring"><p>2D Pareto-ábra (több cél esetén minden célpárra külön ábra).</p>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>A matplotlib <code>Figure</code>.</p>
+</blockquote>
+</div>
+
+
+                </section>
+                <section id="run_episode">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">run_episode</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">env</span><span class="p">:</span> <span class="n">gymnasium</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Env</span>,</span><span class="param">	<span class="n">policy</span><span class="p">:</span> <span class="n">Callable</span>,</span><span class="param">	<span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">record</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span></span><span class="return-annotation">) -> <span class="n"><a href="#EpisodeResult">EpisodeResult</a></span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#run_episode"></a>
+    
+            <div class="docstring"><p>Egy teljes epizód lefuttatása egy vezérlővel.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>env:</strong>  a (nem skalarizált) többcélú környezet.</li>
+<li><strong>policy:</strong>  <code>policy(obs, info) -&gt; akció</code> függvény (vagy <code>~<a href="#Policy">sumo_morl.policies.Policy</a></code>).
+Stable-Baselines3 modellhez lásd <code><a href="#sb3_policy">sb3_policy()</a></code>.</li>
+<li><strong>seed:</strong>  a reset magja (azonos mag = azonos forgalom).</li>
+<li><strong>record:</strong>  lépésenkénti napló (<code>history</code>) gyűjtése.</li>
+<li><strong>gamma:</strong>  diszkont (1.0 = egyszerű összeg).</li>
+</ul>
+</div>
+
+
+                </section>
+                <section id="evaluate_policy">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">evaluate_policy</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">env</span><span class="p">:</span> <span class="n">gymnasium</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Env</span>,</span><span class="param">	<span class="n">policy</span><span class="p">:</span> <span class="n">Callable</span>,</span><span class="param">	<span class="n">n_episodes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>,</span><span class="param">	<span class="n">seeds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#evaluate_policy"></a>
+    
+            <div class="docstring"><p>Több epizódos kiértékelés. Visszaadja a vektor-hozamok átlagát és szórását.</p>
+
+<p>Azonos <code>seeds</code> listával a különböző vezérlők azonos forgalmon hasonlíthatók össze.</p>
+</div>
+
+
+                </section>
+                <section id="sb3_policy">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">sb3_policy</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">model</span>,</span><span class="param">	<span class="n">weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></span><span class="return-annotation">) -> <span class="n">Callable</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#sb3_policy"></a>
+    
+            <div class="docstring"><p>Stable-Baselines3 modellből <code>policy(obs, info)</code> függvényt készít.</p>
+
+<p>Ha a modellt <code><a href="#WeightConditioned">WeightConditioned</a></code> környezeten tanítottuk, add meg a
+<code>weights</code> súlyt is, ezt fűzzük a megfigyeléshez.</p>
+</div>
+
+
+                </section>
+                <section id="EpisodeResult">
+                    <div class="attr class">
+                    <div class="decorator decorator-dataclass">@dataclass</div>
+
+    <span class="def">class</span>
+    <span class="name">EpisodeResult</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult"></a>
+    
+    
+
+                            <div id="EpisodeResult.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">EpisodeResult</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">vector_return</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>,</span><span class="param">	<span class="n">objective_names</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>,</span><span class="param">	<span class="n">steps</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">ground_truth</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span>,</span><span class="param">	<span class="n">history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.vector_return" class="classattr">
+                                <div class="attr variable">
+            <span class="name">vector_return</span><span class="annotation">: numpy.ndarray</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.vector_return"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.objective_names" class="classattr">
+                                <div class="attr variable">
+            <span class="name">objective_names</span><span class="annotation">: Sequence[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.objective_names"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.steps" class="classattr">
+                                <div class="attr variable">
+            <span class="name">steps</span><span class="annotation">: int</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.steps"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.ground_truth" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ground_truth</span><span class="annotation">: Dict[str, float]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.ground_truth"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.history" class="classattr">
+                                <div class="attr variable">
+            <span class="name">history</span><span class="annotation">: List[Dict]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.history"></a>
+    
+    
+
+                            </div>
+                            <div id="EpisodeResult.as_dict" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">as_dict</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#EpisodeResult.as_dict"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="Policy">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Policy</span>:
+
+        
+    </div>
+    <a class="headerlink" href="#Policy"></a>
+    
+            <div class="docstring"><p>Alap osztály: <code>policy(obs, info) -&gt; akció</code>.</p>
+</div>
+
+
+                            <div id="Policy.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">Policy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Policy.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="Policy.env" class="classattr">
+                                <div class="attr variable">
+            <span class="name">env</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Policy.env"></a>
+    
+    
+
+                            </div>
+                            <div id="Policy.reset" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">reset</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Policy.reset"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="RandomPolicy">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">RandomPolicy</span><wbr>(<span class="base"><a href="#Policy">sumo_morl.Policy</a></span>):
+
+        
+    </div>
+    <a class="headerlink" href="#RandomPolicy"></a>
+    
+            <div class="docstring"><p>Véletlen fázisválasztás.</p>
+</div>
+
+
+                            <div id="RandomPolicy.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">RandomPolicy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span>, </span><span class="param"><span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RandomPolicy.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="RandomPolicy.rng" class="classattr">
+                                <div class="attr variable">
+            <span class="name">rng</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RandomPolicy.rng"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#Policy">Policy</a></dt>
+                                <dd id="RandomPolicy.env" class="variable"><a href="#Policy.env">env</a></dd>
+                <dd id="RandomPolicy.reset" class="function"><a href="#Policy.reset">reset</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="FixedTimePolicy">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">FixedTimePolicy</span><wbr>(<span class="base"><a href="#Policy">sumo_morl.Policy</a></span>):
+
+        
+    </div>
+    <a class="headerlink" href="#FixedTimePolicy"></a>
+    
+            <div class="docstring"><p>Fix idejű (ciklikus) vezérlés: minden fázis adott ideig zöld.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>green_times:</strong>  zöldidők fázisonként [s]. Mivel a döntések
+<code>decision_interval</code> lépésekben jönnek, a tényleges zöldidő ennek
+többszörösére kerekedik fel.</li>
+</ul>
+</div>
+
+
+                            <div id="FixedTimePolicy.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">FixedTimePolicy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span>, </span><span class="param"><span class="n">green_times</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#FixedTimePolicy.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="FixedTimePolicy.green_times" class="classattr">
+                                <div class="attr variable">
+            <span class="name">green_times</span>
+
+        
+    </div>
+    <a class="headerlink" href="#FixedTimePolicy.green_times"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#Policy">Policy</a></dt>
+                                <dd id="FixedTimePolicy.env" class="variable"><a href="#Policy.env">env</a></dd>
+                <dd id="FixedTimePolicy.reset" class="function"><a href="#Policy.reset">reset</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="ActuatedPolicy">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">ActuatedPolicy</span><wbr>(<span class="base"><a href="#Policy">sumo_morl.Policy</a></span>):
+
+        
+    </div>
+    <a class="headerlink" href="#ActuatedPolicy"></a>
+    
+            <div class="docstring"><p>Járműkövető (forgalomfüggő) vezérlés időrés-figyeléssel.</p>
+
+<p>A zöld addig hosszabbodik, amíg az aktuális fázis sávjainak előjelző
+(<code>advance</code>) hurkain <code><a href="#ActuatedPolicy.gap">gap</a></code> másodpercen belül volt érzékelés, de legfeljebb
+<code><a href="#ActuatedPolicy.max_green">max_green</a></code> másodpercig. Utána a következő olyan fázisra vált, amelynek a
+sávjaiban van igény (stopvonali vagy előjelző hurok foglalt / számlált).</p>
+</div>
+
+
+                            <div id="ActuatedPolicy.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">ActuatedPolicy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span>, </span><span class="param"><span class="n">max_green</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">45</span>, </span><span class="param"><span class="n">gap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ActuatedPolicy.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="ActuatedPolicy.max_green" class="classattr">
+                                <div class="attr variable">
+            <span class="name">max_green</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ActuatedPolicy.max_green"></a>
+    
+    
+
+                            </div>
+                            <div id="ActuatedPolicy.gap" class="classattr">
+                                <div class="attr variable">
+            <span class="name">gap</span>
+
+        
+    </div>
+    <a class="headerlink" href="#ActuatedPolicy.gap"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#Policy">Policy</a></dt>
+                                <dd id="ActuatedPolicy.env" class="variable"><a href="#Policy.env">env</a></dd>
+                <dd id="ActuatedPolicy.reset" class="function"><a href="#Policy.reset">reset</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="LongestQueuePolicy">
+                    <div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">LongestQueuePolicy</span><wbr>(<span class="base"><a href="#Policy">sumo_morl.Policy</a></span>):
+
+        
+    </div>
+    <a class="headerlink" href="#LongestQueuePolicy"></a>
+    
+            <div class="docstring"><p>Mohó vezérlő: a legnagyobb becsült igényű fázist választja.</p>
+
+<p>Az igény a fázis sávjainak stopvonali + előjelző hurok foglaltsága, valamint
+a sávok ágainak bemenet–kimenet járműszám-becslése alapján számolódik.</p>
+</div>
+
+
+                            <div id="LongestQueuePolicy.__init__" class="classattr">
+                                <div class="attr function">
+            
+        <span class="name">LongestQueuePolicy</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">env</span>, </span><span class="param"><span class="n">min_hold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span></span>)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LongestQueuePolicy.__init__"></a>
+    
+    
+
+                            </div>
+                            <div id="LongestQueuePolicy.min_hold" class="classattr">
+                                <div class="attr variable">
+            <span class="name">min_hold</span>
+
+        
+    </div>
+    <a class="headerlink" href="#LongestQueuePolicy.min_hold"></a>
+    
+    
+
+                            </div>
+                            <div id="LongestQueuePolicy.phase_scores" class="classattr">
+                                <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">phase_scores</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">snap</span></span><span class="return-annotation">) -> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span>:</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#LongestQueuePolicy.phase_scores"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#Policy">Policy</a></dt>
+                                <dd id="LongestQueuePolicy.env" class="variable"><a href="#Policy.env">env</a></dd>
+                <dd id="LongestQueuePolicy.reset" class="function"><a href="#Policy.reset">reset</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="make_env">
+                    <div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">make_env</span><span class="signature pdoc-code condensed">(<span class="param"><span class="o">**</span><span class="n">kwargs</span></span><span class="return-annotation">):</span></span>
+
+        
+    </div>
+    <a class="headerlink" href="#make_env"></a>
+    
+            <div class="docstring"><p>Rövidítés: <code>TJunctionMOEnv(**kwargs)</code>.</p>
+</div>
+
+
+                </section>
+    </main>
+<script>
+    function escapeHTML(html) {
+        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
+    }
+
+    const originalContent = document.querySelector("main.pdoc");
+    let currentContent = originalContent;
+
+    function setContent(innerHTML) {
+        let elem;
+        if (innerHTML) {
+            elem = document.createElement("main");
+            elem.classList.add("pdoc");
+            elem.innerHTML = innerHTML;
+        } else {
+            elem = originalContent;
+        }
+        if (currentContent !== elem) {
+            currentContent.replaceWith(elem);
+            currentContent = elem;
+        }
+    }
+
+    function getSearchTerm() {
+        return (new URL(window.location)).searchParams.get("search");
+    }
+
+    const searchBox = document.querySelector(".pdoc input[type=search]");
+    searchBox.addEventListener("input", function () {
+        let url = new URL(window.location);
+        if (searchBox.value.trim()) {
+            url.hash = "";
+            url.searchParams.set("search", searchBox.value);
+        } else {
+            url.searchParams.delete("search");
+        }
+        history.replaceState("", "", url.toString());
+        onInput();
+    });
+    window.addEventListener("popstate", onInput);
+
+
+    let search, searchErr;
+
+    async function initialize() {
+        try {
+            search = await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve(window.pdocSearch);
+                script.onerror = (e) => reject(e);
+                script.src = "search.js";
+                document.getElementsByTagName("head")[0].appendChild(script);
+            });
+        } catch (e) {
+            console.error("Cannot fetch pdoc search index");
+            searchErr = "Cannot fetch search index.";
+        }
+        onInput();
+
+        document.querySelector("nav.pdoc").addEventListener("click", e => {
+            if (e.target.hash) {
+                searchBox.value = "";
+                searchBox.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    function onInput() {
+        setContent((() => {
+            const term = getSearchTerm();
+            if (!term) {
+                return null
+            }
+            if (searchErr) {
+                return `<h3>Error: ${searchErr}</h3>`
+            }
+            if (!search) {
+                return "<h3>Searching...</h3>"
+            }
+
+            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+
+            const results = search(term);
+
+            let html;
+            if (results.length === 0) {
+                html = `No search results for '${escapeHTML(term)}'.`
+            } else {
+                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
+            }
+            for (let result of results.slice(0, 10)) {
+                let doc = result.doc;
+                let url = `${doc.modulename.replaceAll(".", "/")}.html`;
+                if (doc.qualname) {
+                    url += `#${doc.qualname}`;
+                }
+
+                let heading;
+                switch (result.doc.kind) {
+                    case "function":
+                        if (doc.fullname.endsWith(".__init__")) {
+                            heading = `<span class="name">${doc.fullname.replace(/\.__init__$/, "")}</span>${doc.signature}`;
+                        } else {
+                            heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span>${doc.signature}`;
+                        }
+                        break;
+                    case "class":
+                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
+                        if (doc.bases)
+                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
+                        heading += `:`;
+                        break;
+                    case "variable":
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        if (doc.annotation)
+                            heading += `<span class="annotation">${doc.annotation}</span>`;
+                        if (doc.default_value)
+                            heading += `<span class="default_value"> = ${doc.default_value}</span>`;
+                        break;
+                    default:
+                        heading = `<span class="name">${doc.fullname}</span>`;
+                        break;
+                }
+                html += `
+                        <section class="search-result">
+                        <a href="${url}" class="attr ${doc.kind}">${heading}</a>
+                        <div class="docstring">${doc.doc}</div>
+                        </section>
+                    `;
+
+            }
+            return html;
+        })());
+    }
+
+    if (getSearchTerm()) {
+        initialize();
+        searchBox.value = getSearchTerm();
+        onInput();
+    } else {
+        searchBox.addEventListener("focus", initialize, {once: true});
+    }
+
+    searchBox.addEventListener("keydown", e => {
+        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
+            let focused = currentContent.querySelector(".search-result.focused");
+            if (!focused) {
+                currentContent.querySelector(".search-result").classList.add("focused");
+            } else if (
+                e.key === "ArrowDown"
+                && focused.nextElementSibling
+                && focused.nextElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.nextElementSibling.classList.add("focused");
+                focused.nextElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "ArrowUp"
+                && focused.previousElementSibling
+                && focused.previousElementSibling.classList.contains("search-result")
+            ) {
+                focused.classList.remove("focused");
+                focused.previousElementSibling.classList.add("focused");
+                focused.previousElementSibling.scrollIntoView({
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
+                });
+            } else if (
+                e.key === "Enter"
+            ) {
+                focused.querySelector("a").click();
+            }
+        }
+    });
+</script></body>
+</html>

@@ -3,9 +3,8 @@ Többcélú (MORL) Gymnasium környezet a T-csomópont jelzőlámpájához.
 
 A környezet az MO-Gymnasium konvenciót követi: a ``step`` jutalma egy
 ``numpy`` **vektor** (célfüggvényenként egy elem), és van ``reward_space``
-attribútuma. Így közvetlenül használható pl. a ``morl-baselines`` könyvtár
-algoritmusaival, illetve skalarizáló wrapperrel bármely egycélú RL
-könyvtárral (pl. Stable-Baselines3).
+attribútuma. Skalarizáló wrapperrel (:class:`sumo_morl.morl.LinearScalarization`)
+bármely egycélú RL könyvtárral (pl. Stable-Baselines3) használható.
 
 Vezérlés (fázis alapú)
 ----------------------

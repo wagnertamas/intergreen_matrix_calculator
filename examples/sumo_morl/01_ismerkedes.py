@@ -1,7 +1,7 @@
 """
 01 – Ismerkedés a környezettel.
 
-Futtatás (a repó gyökeréből):
+Futtatás (a csomag gyökérkönyvtárából):
     python examples/sumo_morl/01_ismerkedes.py
     python examples/sumo_morl/01_ismerkedes.py --gui     # SUMO grafikus felülettel
 """

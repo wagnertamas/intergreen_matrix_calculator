@@ -43,7 +43,7 @@ haladókat.
 
 ## A közbenső idők számítása
 
-A közbenső időket a repó meglévő közbensőidő-számító kódja (`geometry_utils.py`,
+A közbenső időket a mellékelt közbensőidő-számító kód (`geometry_utils.py`,
 `sumo_parser.py`) számolja a SUMO hálózat geometriájából:
 
 1. minden mozgás pályáját simított görbével közelíti, és kiszámolja a

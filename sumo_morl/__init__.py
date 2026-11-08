@@ -1,6 +1,10 @@
 """
 sumo_morl – többcélú megerősítéses tanulás (MORL) jelzőlámpa-vezérléshez SUMO-ban.
 
+Ez az API-referencia a könyvtár összes nyilvános osztályát és függvényét leírja.
+A használat bevezetője a *Kézikönyv* (``kezikonyv.pdf``), a belső felépítés a
+*Programfelépítés* (``programfelepites.pdf``).
+
 Gyors kezdés::
 
     from sumo_morl import TJunctionMOEnv
@@ -10,7 +14,19 @@ Gyors kezdés::
     obs, reward_vec, terminated, truncated, info = env.step(env.action_space.sample())
     env.close()
 
-Részletek: ``docs/sumo_morl/`` (magyar nyelvű dokumentáció).
+Modulok:
+
+* `sumo_morl.env` – a Gymnasium környezet (`TJunctionMOEnv`)
+* `sumo_morl.objectives` – célfüggvények, saját cél regisztrálása
+* `sumo_morl.detectors` – hurokdetektorok és az aggregált mérések (`DetectorSnapshot`)
+* `sumo_morl.traffic` – forgalmi igény (`Demand`)
+* `sumo_morl.morl` – skalarizálás, súlyok, Pareto-front, hipertérfogat, kiértékelés
+* `sumo_morl.policies` – összehasonlító (klasszikus) vezérlők
+* `sumo_morl.visualize` – ábrák
+* `sumo_morl.scenario` – a T-csomópont forgatókönyv
+* `sumo_morl.intergreen` – jelzőcsoportok, fázisok, átmenetek a közbenső időkből
+* `sumo_morl.network` – a hálózat generálása
+* `sumo_morl.sumo_utils` – SUMO-binárisok megkeresése
 """
 from .detectors import DetectorInfo, DetectorSnapshot
 from .env import DEFAULT_OBJECTIVES, TJunctionMOEnv

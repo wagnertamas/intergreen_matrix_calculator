@@ -10,7 +10,7 @@ A demóval megnézhető, hogyan működik a szimuláció, mit látnak a
 hurokdetektorok, és milyen jutalmakat ad a környezet – még mielőtt bármilyen
 tanuló ágenst írnánk.
 
-Futtatás (a repó gyökeréből):
+Futtatás (a csomag gyökérkönyvtárából):
     python examples/sumo_morl/00_demo_fix_ido.py --gui                # SUMO grafikus felülettel
     python examples/sumo_morl/00_demo_fix_ido.py                      # csak konzol
     python examples/sumo_morl/00_demo_fix_ido.py --green 40 10 20     # más zöldidők

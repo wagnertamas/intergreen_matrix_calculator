@@ -9,7 +9,7 @@ Minden forgalomtechnikai rész készen van:
 
 * egy **T-csomópont** hálózata (a keleti ág ketté van osztva balra kanyarodó és
   egyenes sávra),
-* a **közbenső idők** (intergreen) a repó közbensőidő-számító kódjával készülnek, a
+* a **közbenső idők** (intergreen) a mellékelt közbensőidő-számító kóddal készülnek, a
   csomópont geometriájából,
 * a **fázisok**, és köztük a szabályos **átmenetek** (sárga, piros, piros-sárga),
 * **indukcióshurok-detektorok** minden bejövő sávon,
@@ -20,6 +20,16 @@ A hallgató feladata „csak” az ágens: minden döntési pontban meg kell mon
 **melyik fázis** legyen a következő.
 
 ![A csomópont](img/csomopont.png)
+
+## Dokumentáció
+
+| Dokumentum | Tartalom |
+|---|---|
+| `docs/sumo_morl/latex/kezikonyv.pdf` | **Kézikönyv**: mit modellez a könyvtár, mit lát és mit csinálhat az ágens, jutalmak, munkafolyamat, feladatok |
+| `docs/sumo_morl/latex/programfelepites.pdf` | **Programfelépítés**: modulok, osztályok, adatfolyam, kiterjesztési pontok, teljes forráskód |
+| `docs/sumo_morl/api/index.html` | **API-referencia** (böngészőben): minden osztály és függvény a docstringekből |
+
+A dokumentáció újragenerálása: `pip install pdoc`, majd `python docs/sumo_morl/latex/build_docs.py`.
 
 ## Tartalom
 
@@ -34,7 +44,7 @@ A hallgató feladata „csak” az ágens: minden döntési pontban meg kell mon
 
 ## Telepítés
 
-Python 3.9 vagy újabb kell. A repó gyökeréből:
+Python 3.9 vagy újabb kell. A csomag gyökérkönyvtárából (ahol a `pyproject.toml` van):
 
 ```bash
 python -m venv .venv
@@ -139,6 +149,5 @@ indul el, és látható, mit csinál az ágens.
 | `sumo_morl/visualize.py` | ábrák (csomópont, fázisok, közbenső idők, epizód) |
 | `sumo_morl/data/t_junction.net.xml` | a kész hálózat |
 
-A közbenső időket a repó gyökerében lévő, már meglévő `geometry_utils.py` és
-`sumo_parser.py` számolja (ugyanaz a kód, amit a GUI-s közbensőidő-számító is
-használ); a `pip install -e .` ezeket is telepíti.
+A közbenső időket a gyökérkönyvtárban lévő `geometry_utils.py` és
+`sumo_parser.py` számolja; a `pip install -e .` ezeket is telepíti.

@@ -79,7 +79,14 @@ class Demand:
         return Demand({m: v * factor for m, v in self.flows.items()}, self.profile)
 
     def write_routes(self, out_file: str, duration: int, seed: int = 0) -> str:
-        """SUMO ``.rou.xml`` írása ``<flow>`` elemekkel (Poisson-szerű érkezés)."""
+        """SUMO ``.rou.xml`` írása ``<flow>`` elemekkel (Poisson-szerű érkezés).
+
+        Args:
+            out_file: a kimeneti fájl.
+            duration: az igény időtartama [s]; a ``profile`` szakaszai ezt osztják fel.
+            seed: nem használt; az érkezések véletlenszerűségét a SUMO ``--seed``
+                kapcsolója adja (a környezet ezt állítja be).
+        """
         root = ET.Element("routes")
         ET.SubElement(root, "vType", id="car", vClass="passenger", length="4.5", minGap="2.5",
                       accel="2.6", decel="4.5", sigma="0.5", maxSpeed="16.67")

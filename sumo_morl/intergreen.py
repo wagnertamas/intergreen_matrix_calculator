@@ -1,7 +1,7 @@
 """
 Jelzésterv (fázisok + közbenső idők) automatikus előállítása.
 
-A közbenső időket (intergreen) **a repó meglévő közbensőidő-számító kódja**
+A közbenső időket (intergreen) **a mellékelt közbensőidő-számító kód**
 (:mod:`geometry_utils` + :mod:`sumo_parser`) számolja ki a csomópont
 geometriájából (ütközési pontok, kanyarodási sugarak, sebességek). Ez a modul
 erre építve:
@@ -30,7 +30,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-# A repó gyökerében lévő közbensőidő-számító modulok importálása.
+# A gyökérkönyvtárban lévő közbensőidő-számító modulok importálása.
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:  # pragma: no cover - csak forrásból futtatva kell
     sys.path.insert(0, _REPO_ROOT)
@@ -227,8 +227,8 @@ def compute_link_intergreen(net_file: str, tls_id: str) -> np.ndarray:
         ``n_links x n_links`` mátrix, ``[kiürítő][belépő]`` közbenső idő [s],
         ``nan`` ahol nincs ütközési pont.
     """
-    from geometry_utils import calculate_junction_data  # repó gyökér
-    from sumo_parser import SumoInternalParser          # repó gyökér
+    from geometry_utils import calculate_junction_data  # gyökérkönyvtár
+    from sumo_parser import SumoInternalParser          # gyökérkönyvtár
 
     with contextlib.redirect_stdout(io.StringIO()):
         parser = SumoInternalParser(net_file)
