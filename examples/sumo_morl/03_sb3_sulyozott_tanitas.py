@@ -9,6 +9,12 @@ Futtatás:   python examples/sumo_morl/03_sb3_sulyozott_tanitas.py --timesteps 2
 
 A tanítás hosszabb ideig tart; a kis timesteps csak kipróbálásra jó.
 """
+import os
+import sys
+
+# Telepítés nélküli futtatáshoz: a csomag gyökérkönyvtára a modulkeresési útvonalra kerül.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import argparse
 
 import matplotlib

@@ -47,7 +47,7 @@ A dokumentáció újragenerálása: `pip install pdoc`, majd `python docs/sumo_m
 Python 3.9 vagy újabb kell. A csomag gyökérkönyvtárából (ahol a `pyproject.toml` van):
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e .                   # a könyvtár + SUMO (eclipse-sumo pip csomag)
 pip install -e ".[rl]"             # + Stable-Baselines3 (a 03-as példához)

@@ -5,6 +5,12 @@ Ezek adják az alapvonalat (baseline), amit egy jó MORL ágensnek meg kell vern
 
     python examples/sumo_morl/02_baseline_osszehasonlitas.py
 """
+import os
+import sys
+
+# Telepítés nélküli futtatáshoz: a csomag gyökérkönyvtára a modulkeresési útvonalra kerül.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import matplotlib
 
 matplotlib.use("Agg")

@@ -5,6 +5,12 @@ Futtatás (a csomag gyökérkönyvtárából):
     python examples/sumo_morl/01_ismerkedes.py
     python examples/sumo_morl/01_ismerkedes.py --gui     # SUMO grafikus felülettel
 """
+import os
+import sys
+
+# Telepítés nélküli futtatáshoz: a csomag gyökérkönyvtára a modulkeresési útvonalra kerül.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import argparse
 
 import numpy as np

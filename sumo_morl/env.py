@@ -51,8 +51,11 @@ def _import_traci():
     home = sumo_home()
     if home and os.path.join(home, "tools") not in sys.path:
         sys.path.append(os.path.join(home, "tools"))
-    import traci  # noqa: WPS433
-
+    try:
+        import traci  # noqa: WPS433
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("A 'traci' csomag nem található. Telepítsd a függőségeket a csomag "
+                          "gyökérkönyvtárában: pip install -e .") from e
     return traci
 
 

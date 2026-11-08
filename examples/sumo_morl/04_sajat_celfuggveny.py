@@ -6,6 +6,12 @@ adatokból (``ctx``) számolhat. Konvenció: nagyobb = jobb.
 
     python examples/sumo_morl/04_sajat_celfuggveny.py
 """
+import os
+import sys
+
+# Telepítés nélküli futtatáshoz: a csomag gyökérkönyvtára a modulkeresési útvonalra kerül.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import numpy as np
 
 from sumo_morl import FixedTimePolicy, TJunctionMOEnv, register_objective, run_episode

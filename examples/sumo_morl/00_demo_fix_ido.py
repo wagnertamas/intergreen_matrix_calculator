@@ -15,6 +15,12 @@ Futtatás (a csomag gyökérkönyvtárából):
     python examples/sumo_morl/00_demo_fix_ido.py                      # csak konzol
     python examples/sumo_morl/00_demo_fix_ido.py --green 40 10 20     # más zöldidők
 """
+import os
+import sys
+
+# Telepítés nélküli futtatáshoz: a csomag gyökérkönyvtára a modulkeresési útvonalra kerül.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import argparse
 
 import matplotlib

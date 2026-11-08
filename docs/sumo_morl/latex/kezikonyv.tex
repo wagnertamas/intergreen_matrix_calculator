@@ -89,7 +89,7 @@ váltsanak.
 Python 3.9 vagy újabb kell. A csomag gyökérkönyvtárában (ahol a \kod{pyproject.toml} van):
 
 \begin{lstlisting}[style=bash]
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e .                 # a könyvtár és a SUMO
 pip install -e ".[rl]"           # opcionális: Stable-Baselines3 a tanítási példához
@@ -644,8 +644,13 @@ párhuzamosan is futtatható (pl. \kod{SubprocVecEnv}), mindegyik saját SUMO-fo
   \item[\enquote{Nem található a(z) 'sumo' program}]
     Telepítsd a csomagot \kod{pip install -e .} paranccsal (ez hozza a SUMO-t), vagy állítsd be a
     \kod{SUMO\_HOME} változót a meglévő SUMO-telepítésre.
+  \item[\kod{ModuleNotFoundError: No module named 'sumo\_morl'} vagy \kod{'traci'}]
+    A csomag nincs telepítve az éppen használt Pythonba. A csomag gyökérkönyvtárában:
+    \kod{python3 -m venv .venv}, \kod{source .venv/bin/activate}, \kod{pip install -e .}, és a
+    példákat ugyanebben a terminálban futtasd.
   \item[A \kod{--gui} nem nyit ablakot]
-    Távoli gépen vagy Colabban nincs grafikus felület; ott a \kod{gui=False} használható.
+    Távoli gépen vagy Colabban nincs grafikus felület; ott a \kod{gui=False} használható. macOS-en a
+    SUMO grafikus felületéhez szükség lehet az XQuartz telepítésére.
   \item[Lassú a tanítás]
     \kod{ground\_truth=False}, rövidebb epizód (\kod{episode\_length}), párhuzamos környezetek.
   \item[\kod{RuntimeError: Előbb hívd meg a reset()-et!}]
